@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Exact colors from your design specification */
+  --primary-yellow: #FDC123;
+  --primary-blue: #1C356B;
+  --light-blue: #EFF8FF;
+  --custom-white: #FEFFFE;
+  --dark-gray: #282827;
+
+  /* Convert to HSL for shadcn compatibility */
+  --background: 0 0% 100%; /* FEFFFE */
+  --foreground: 218 60% 26%; /* 1C356B */
+  --card: 0 0% 100%; /* FEFFFE */
+  --card-foreground: 218 60% 26%; /* 1C356B */
+  --popover: 0 0% 100%; /* FEFFFE */
+  --popover-foreground: 218 60% 26%; /* 1C356B */
+  --primary: 218 60% 26%; /* 1C356B */
+  --primary-foreground: 0 0% 100%; /* FEFFFE */
+  --secondary: 46 98% 56%; /* FDC123 */
+  --secondary-foreground: 218 60% 26%; /* 1C356B */
+  --muted: 216 100% 97%; /* EFF8FF */
+  --muted-foreground: 0 1% 16%; /* 282827 */
+  --accent: 216 100% 97%; /* EFF8FF */
+  --accent-foreground: 218 60% 26%; /* 1C356B */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 216 100% 95%;
+  --input: 216 100% 97%; /* EFF8FF */
+  --ring: 218 60% 26%; /* 1C356B */
+  --radius: 0.5rem;
+  --chart-1: 218 60% 26%; /* 1C356B */
+  --chart-2: 46 98% 56%; /* FDC123 */
+  --chart-3: 216 100% 97%; /* EFF8FF */
+  --chart-4: 0 1% 16%; /* 282827 */
+  --chart-5: 0 84% 60%;
+}
+
+.dark {
+  --background: 0 1% 16%; /* 282827 */
+  --foreground: 0 0% 99%; /* FEFFFE */
+  --card: 0 1% 12%;
+  --card-foreground: 0 0% 99%; /* FEFFFE */
+  --popover: 0 1% 12%;
+  --popover-foreground: 0 0% 99%; /* FEFFFE */
+  --primary: 218 60% 26%; /* 1C356B */
+  --primary-foreground: 0 0% 100%; /* FEFFFE */
+  --secondary: 46 98% 56%; /* FDC123 */
+  --secondary-foreground: 218 60% 26%; /* 1C356B */
+  --muted: 0 1% 12%;
+  --muted-foreground: 0 0% 65%;
+  --accent: 0 1% 12%;
+  --accent-foreground: 46 98% 56%; /* FDC123 */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 20%;
+  --input: 0 0% 18%;
+  --ring: 218 60% 26%; /* 1C356B */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+}
+
+@layer utilities {
+  .text-primary-yellow {
+    color: var(--primary-yellow);
+  }
+  
+  .bg-primary-yellow {
+    background-color: var(--primary-yellow);
+  }
+  
+  .text-primary-blue {
+    color: var(--primary-blue);
+  }
+  
+  .bg-primary-blue {
+    background-color: var(--primary-blue);
+  }
+  
+  .bg-light-blue {
+    background-color: var(--light-blue);
+  }
+  
+  .bg-custom-white {
+    background-color: var(--custom-white);
+  }
+  
+  .bg-dark-gray {
+    background-color: var(--dark-gray);
+  }
+}
