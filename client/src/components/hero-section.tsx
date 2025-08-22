@@ -65,7 +65,7 @@ export function HeroSection() {
           <div className="w-full lg:w-1/2 order-1 lg:order-1">
             <div className="relative w-full h-48 sm:h-64 lg:h-80 xl:h-96">
               <img
-                src="/src/assets/APCB_logo.png"
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
                 alt="Alliance Procurement & Capacity Building Logo"
                 className="w-full h-full object-contain lg:object-cover rounded-lg"
                 onError={(e) => {
