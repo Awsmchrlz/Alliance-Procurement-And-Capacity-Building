@@ -62,7 +62,9 @@ export function ServicesSection() {
               <p className="text-gray-600 dark:text-gray-300 mb-6" data-testid={`service-description-${index}`}>
                 {service.description}
               </p>
-              <button className="text-primary-blue dark:text-primary-yellow hover:underline font-medium" data-testid={`service-learn-more-${index}`}>
+              <button className="text-primary-blue dark:text-primary-yellow hover:underline font-medium"
+               data-testid={`service-learn-more-${index}`}
+               onClick={() => window.location.href = "/services"}>
                 Learn More →
               </button>
             </div>

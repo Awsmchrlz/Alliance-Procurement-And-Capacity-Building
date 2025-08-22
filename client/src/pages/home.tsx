@@ -5,6 +5,7 @@ import { UpcomingEventsSection } from "@/components/upcoming-events";
 import { AboutSection } from "@/components/about-section";
 import { ServicesSection } from "@/components/services-section";
 import { NewsletterSection } from "@/components/newsletter-section";
+import { TestimonialsSection } from "@/components/testimonial-section";
 import { Footer } from "@/components/footer";
 
 export default function Home() {
@@ -16,6 +17,7 @@ export default function Home() {
       <UpcomingEventsSection />
       <AboutSection />
       <ServicesSection />
+      <TestimonialsSection />
       <NewsletterSection />
       <Footer />
     </div>

@@ -94,9 +94,11 @@ export function EventCard({ event, onRegister, featured = false }: EventCardProp
           {/* Footer Section */}
           <div className="pt-4">
             <Button
+
               onClick={handleRegister}
-              className="bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider"
+              className="hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider"
               data-testid={`event-register-${event.id}`}
+              style={{ background: `#1C356B` }}
             >
               READ MORE →
             </Button>

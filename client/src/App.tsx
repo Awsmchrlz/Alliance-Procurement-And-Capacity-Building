@@ -8,6 +8,8 @@ import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
+import Services from "@/pages/services";
+import About from "@/pages/about";
 import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
@@ -17,6 +19,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/services" component={Services} />
+      <Route path="/about" component={About} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin-dashboard" component={AdminDashboard} />
       <Route component={NotFound} />

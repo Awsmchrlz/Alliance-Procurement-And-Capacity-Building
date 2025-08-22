@@ -75,7 +75,7 @@ export function UpcomingEventsSection() {
 
           <div className="rounded-xl p-4 text-center transition-all duration-300">
             <h3 className="text-xl font-bold mb-4 text-blue-900 uppercase tracking-wider" data-testid="upcoming-events-title">
-              SEE UPCOMING EVENTS
+              UPCOMING EVENTS
             </h3>
             <button
               className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"

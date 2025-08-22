@@ -53,7 +53,7 @@ export function NewsletterSection() {
   };
 
   return (
-    <section className="py-12 bg-slate-800">
+    <section className="py-12" style={{ background: `#1C356B` }}>
       <div className="container mx-auto px-6">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
 
