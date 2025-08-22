@@ -28,10 +28,10 @@ export function Navigation() {
 
   const navLinks = [
     { href: "/", id: "home", label: "Home", isRoute: true, icon: Home },
-    { href: "#about", id: "about", label: "About", isRoute: false, icon: Info },
-    { href: "#services", id: "services", label: "Services", isRoute: false, icon: Briefcase },
     { href: "#events", id: "events", label: "Events", isRoute: false, icon: Calendar },
+    { href: "#services", id: "services", label: "Services", isRoute: false, icon: Briefcase },
     { href: "#contact", id: "contact", label: "Contact", isRoute: false, icon: Mail },
+    { href: "#about", id: "about", label: "About", isRoute: false, icon: Info }
   ];
 
   // Intersection Observer for active section detection
