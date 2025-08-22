@@ -10,7 +10,8 @@ const LoginPage = () => {
 
   // Background images
   const backgroundImages = [
-   "/src/assets/background-images/groupPhoto1.jpg"
+      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
+   "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858600/groupPhoto4_shvwfy.jpg"
   ];
 
   // Image rotation effect

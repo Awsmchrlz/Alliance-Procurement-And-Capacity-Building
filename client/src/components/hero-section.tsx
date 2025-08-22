@@ -5,8 +5,10 @@ import { useState, useEffect } from "react";
 export function HeroSection() {
   // Background images array - replace with your actual image URLs
   const backgroundImages = [
-    "/src/assets/background-images/groupPhoto1.jpg",
-     "/src/assets/background-images/groupPhoto1.jpg"
+      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
+      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858602/groupPhoto7_bjfam9.jpg",
+      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858601/groupPhoto3_vvwwcr.jpg",
+      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858600/groupPhoto5_ule4va.jpg"
   ];
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -19,9 +21,9 @@ export function HeroSection() {
       setTimeout(() => {
         setCurrentImageIndex((prev) => (prev + 1) % backgroundImages.length);
         setIsVisible(true);
-      }, 500); // Half second fade out before changing image
+      }, 400); // Half second fade out before changing image
 
-    }, 5000); // Change image every 5 seconds
+    }, 4000); // Change image every 5 seconds
 
     return () => clearInterval(interval);
   }, [backgroundImages.length]);
@@ -40,7 +42,7 @@ export function HeroSection() {
           <div
             key={index}
             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentImageIndex && isVisible ? 'opacity-10' : 'opacity-0'
+              index === currentImageIndex && isVisible ? 'opacity-20' : 'opacity-0'
             }`}
             style={{
               backgroundImage: `url(${image})`,

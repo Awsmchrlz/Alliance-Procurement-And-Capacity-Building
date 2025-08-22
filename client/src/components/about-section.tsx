@@ -48,7 +48,7 @@ export function AboutSection() {
 
           <div>
             <img
-              src="/src/assets/background-images/groupPhoto1.jpg"
+              src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg"
               alt="Modern office environment with professionals collaborating"
               className="rounded-2xl shadow-lg w-full"
               data-testid="about-office-image"
