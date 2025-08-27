@@ -1,43 +1,89 @@
-import { useState, useEffect } from "react";
-import { User } from "@shared/schema";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+export type UserRole = 'super_admin' | 'finance_person' | 'ordinary_user';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<
+    | null
+    | {
+        id: string;
+        email: string | null;
+        role: UserRole | null;
+        firstName?: string | null;
+        lastName?: string | null;
+        phoneNumber?: string | null;
+      }
+  >(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("auth-token");
-    const userData = localStorage.getItem("user-data");
-    
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        localStorage.removeItem("auth-token");
-        localStorage.removeItem("user-data");
+    let isMounted = true;
+
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      const sessionUser = data.session?.user ?? null;
+      if (sessionUser) {
+        const meta = (sessionUser.user_metadata as any) || {};
+        setUser({
+          id: sessionUser.id,
+          email: sessionUser.email,
+          role: meta.role || 'ordinary_user',
+          firstName: meta.first_name ?? null,
+          lastName: meta.last_name ?? null,
+          phoneNumber: meta.phone_number ?? null,
+        });
+      } else {
+        setUser(null);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    const { data: subscription } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const sessionUser = session?.user ?? null;
+      if (sessionUser) {
+        const meta = (sessionUser.user_metadata as any) || {};
+        setUser({
+          id: sessionUser.id,
+          email: sessionUser.email,
+          role: meta.role || 'ordinary_user',
+          firstName: meta.first_name ?? null,
+          lastName: meta.last_name ?? null,
+          phoneNumber: meta.phone_number ?? null,
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    init();
+
+    return () => {
+      isMounted = false;
+      subscription.subscription.unsubscribe();
+    };
   }, []);
 
-  const login = (userData: User, token: string) => {
-    localStorage.setItem("auth-token", token);
-    localStorage.setItem("user-data", JSON.stringify(userData));
-    setUser(userData);
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
-  const logout = () => {
-    localStorage.removeItem("auth-token");
-    localStorage.removeItem("user-data");
-    setUser(null);
-  };
+  const isSuperAdmin = user?.role === 'super_admin';
+  const isFinancePerson = user?.role === 'finance_person';
+  const isAdmin = isSuperAdmin || isFinancePerson;
+  const canManageUsers = isSuperAdmin;
+  const canManageFinance = isSuperAdmin || isFinancePerson;
 
   return {
     user,
     loading,
-    login,
     logout,
     isAuthenticated: !!user,
-    isAdmin: user?.role === "admin",
+    isSuperAdmin,
+    isFinancePerson,
+    isAdmin,
+    canManageUsers,
+    canManageFinance,
   };
 }

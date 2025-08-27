@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Event } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
+import { RegistrationDialog } from "./registration-dialog";
+import { useState } from "react";
 import { format } from "date-fns";
 
 interface EventCardProps {
@@ -12,10 +15,14 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onRegister, featured = false }: EventCardProps) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
   const handleRegister = () => {
-    if (onRegister) {
-      onRegister(event.id);
+    if (user) {
+      setOpen(true);
+      return;
     }
+    if (onRegister) onRegister(event.id);
   };
 
   return (
@@ -94,17 +101,19 @@ export function EventCard({ event, onRegister, featured = false }: EventCardProp
           {/* Footer Section */}
           <div className="pt-4">
             <Button
-
               onClick={handleRegister}
               className="hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider"
               data-testid={`event-register-${event.id}`}
               style={{ background: `#1C356B` }}
             >
-              READ MORE →
+              {user ? "Register for Event" : "READ MORE →"}
             </Button>
           </div>
         </div>
       </div>
+      {user && (
+        <RegistrationDialog open={open} onOpenChange={setOpen} event={event} />
+      )}
     </Card>
   );
 }

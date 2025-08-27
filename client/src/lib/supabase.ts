@@ -1,12 +1,11 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import * as schema from "@shared/schema";
+import { createClient } from "@supabase/supabase-js";
 
-const connectionString = import.meta.env.VITE_DATABASE_URL || process.env.DATABASE_URL;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL||"https://huwkexajyeacooznhadq.supabase.co";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY||"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1d2tleGFqeWVhY29vem5oYWRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTU5MDIsImV4cCI6MjA3MDkzMTkwMn0.VurhmRgvIXB5dYpTldKEXOFr4HwGeS96ojvA7PF32dY";
 
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set");
+if (!supabaseUrl || !supabaseAnonKey) {
+  // In the browser, throwing here surfaces a helpful error early during boot
+  throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env vars");
 }
 
-const client = postgres(connectionString);
-export const db = drizzle(client, { schema });
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

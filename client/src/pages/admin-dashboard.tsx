@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import { useLocation } from "wouter";
 import { Event, User, EventRegistration, NewsletterSubscription } from "@shared/schema";
 import {
   Calendar,
@@ -64,10 +66,13 @@ import {
   Star,
   Target,
   Shield,
-  UserCog
+  UserCog,
+  LogOut,
+  Eye
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
+import * as XLSX from "xlsx";
 
 interface RegistrationWithEventAndUser extends EventRegistration {
   event: Event;
@@ -75,9 +80,10 @@ interface RegistrationWithEventAndUser extends EventRegistration {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin, canManageUsers, canManageFinance, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -86,22 +92,22 @@ export default function AdminDashboard() {
   // Data queries
   const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
     queryKey: ["/api/admin/events"],
-    enabled: user?.role === "admin",
+    enabled: canManageUsers,
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    enabled: user?.role === "admin",
+    enabled: canManageUsers,
   });
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery<RegistrationWithEventAndUser[]>({
     queryKey: ["/api/admin/registrations"],
-    enabled: user?.role === "admin",
+    enabled: canManageUsers,
   });
 
   const { data: newsletterSubscriptions = [], isLoading: newsletterLoading } = useQuery<NewsletterSubscription[]>({
     queryKey: ["/api/admin/newsletter-subscriptions"],
-    enabled: user?.role === "admin",
+    enabled: canManageUsers,
   });
 
   // Mutations
@@ -127,7 +133,8 @@ export default function AdminDashboard() {
 
   const updateUserRoleMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role });
+      await apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role });
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -176,7 +183,9 @@ export default function AdminDashboard() {
 
   const pendingPayments = registrations.filter(reg => reg.paymentStatus === "pending").length;
   const completedPayments = registrations.filter(reg => reg.paymentStatus === "completed" || reg.paymentStatus === "paid").length;
-  const adminUsers = users.filter(u => u.role === "admin").length;
+  const superAdminUsers = users.filter(u => u.role === "super_admin").length;
+  const financeUsers = users.filter(u => u.role === "finance_person").length;
+  const adminUsers = superAdminUsers + financeUsers;
 
   const handleRoleChangeRequest = (userId: string, newRole: string, userName: string) => {
     setConfirmRoleChange({ userId, role: newRole, userName });
@@ -222,9 +231,66 @@ export default function AdminDashboard() {
     );
   };
 
+  const exportUsersToExcel = () => {
+    if (users.length === 0) {
+      toast({
+        title: "No Data",
+        description: "There are no users to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(
+      users.map((u) => ({
+        ID: u.id,
+        "First Name": u.firstName,
+        "Last Name": u.lastName,
+        Email: u.email,
+        "Phone Number": u.phoneNumber || "N/A",
+        Role: u.role,
+        "Created At": u.createdAt ? format(new Date(u.createdAt), "MMM dd, yyyy HH:mm") : "Unknown",
+      }))
+    );
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+    XLSX.writeFile(workbook, "users_export.xlsx");
+  };
+
+  const exportRegistrationsToExcel = () => {
+    if (registrations.length === 0) {
+      toast({
+        title: "No Data",
+        description: "There are no registrations to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(
+      registrations.map((reg) => ({
+        "Registration ID": reg.id,
+        "User ID": reg.userId,
+        "User Name": reg.user ? `${reg.user.firstName} ${reg.user.lastName}` : "Unknown",
+        "User Email": reg.user?.email || "Unknown",
+        "Event Title": reg.event?.title || "Unknown",
+        "Event Date": reg.event?.startDate ? format(new Date(reg.event.startDate), "MMM dd, yyyy") : "Unknown",
+        "Payment Status": reg.paymentStatus,
+        Amount: `K${reg.event?.price || "0"}`,
+        "Registered At": reg.registeredAt ? format(new Date(reg.registeredAt), "MMM dd, yyyy HH:mm") : "Unknown",
+        "Payment Evidence": reg.paymentEvidence || "N/A",
+      }))
+    );
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Registrations");
+    XLSX.writeFile(workbook, "registrations_export.xlsx");
+  };
+
   const isLoading = eventsLoading || usersLoading || registrationsLoading || newsletterLoading;
 
-  if (user?.role !== "admin") {
+  if (!canManageUsers) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-0 bg-white/90 backdrop-blur-sm">
@@ -243,7 +309,7 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-500 mb-4">
               Please contact your system administrator if you believe this is an error.
             </p>
-            <Button variant="outline" onClick={() => window.history.back()}>
+            <Button variant="outline" onClick={() => navigate("/")}>
               Go Back
             </Button>
           </CardContent>
@@ -270,6 +336,13 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="hidden sm:flex items-center space-x-6 text-right">
+                  <Button
+                    onClick={() => navigate("/")}
+                    variant="outline"
+                    className="border-blue-200 text-white bg-white/10 hover:bg-white/20 hover:border-white/40 transition-colors"
+                  >
+                    Home
+                  </Button>
                   <div className="text-white/90">
                     <div className="text-2xl font-bold">{users.length}</div>
                     <div className="text-sm text-blue-200">Total Users</div>
@@ -287,17 +360,30 @@ export default function AdminDashboard() {
                 <div className="flex items-center space-x-3">
                   <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
                     <AvatarFallback className="bg-[#1C356B] text-white text-lg font-semibold">
-                      {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                      {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">
-                      Welcome back, {user.firstName} {user.lastName}
+                      Welcome back, {user?.firstName} {user?.lastName}
                     </h2>
                     <p className="text-gray-600 text-sm">System Administrator • Last login: Today</p>
                   </div>
                 </div>
-                <Crown className="w-8 h-8 text-[#FDC123]" />
+                <div className="flex items-center space-x-4">
+                  <Crown className="w-8 h-8 text-[#FDC123]" />
+                  <Button
+                    onClick={async () => {
+                      await logout();
+                      navigate("/");
+                    }}
+                    variant="outline"
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -333,7 +419,7 @@ export default function AdminDashboard() {
                   <p className="text-3xl font-bold text-gray-900">{users.length}</p>
                   <div className="flex items-center mt-2">
                     <Target className="w-4 h-4 text-blue-500 mr-1" />
-                    <span className="text-sm text-blue-600 font-medium">{adminUsers} Admins</span>
+                    <span className="text-sm text-blue-600 font-medium">{superAdminUsers} Super Admins, {financeUsers} Finance</span>
                   </div>
                 </div>
                 <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -349,7 +435,7 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">Total Revenue</p>
-                  <p className="text-3xl font-bold text-gray-900">${totalRevenue.toFixed(2)}</p>
+                  <p className="text-3xl font-bold text-gray-900">K{totalRevenue.toFixed(2)}</p>
                   <div className="flex items-center mt-2">
                     <BarChart3 className="w-4 h-4 text-emerald-500 mr-1" />
                     <span className="text-sm text-emerald-600 font-medium">{completedPayments} Paid</span>
@@ -448,7 +534,7 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <p className="font-semibold text-emerald-900">Completed Payments</p>
-                          <p className="text-sm text-emerald-700">${(totalRevenue).toFixed(2)} revenue</p>
+                          <p className="text-sm text-emerald-700">K{(totalRevenue).toFixed(2)} revenue</p>
                         </div>
                       </div>
                       <Badge className="bg-emerald-500 text-white text-lg px-3 py-1">
@@ -521,11 +607,23 @@ export default function AdminDashboard() {
           <TabsContent value="users">
             <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Users className="w-6 h-6 text-[#1C356B]" />
-                  User Management
-                </CardTitle>
-                <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Users className="w-6 h-6 text-[#1C356B]" />
+                      User Management
+                    </CardTitle>
+                    <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
+                  </div>
+                  <Button
+                    onClick={exportUsersToExcel}
+                    disabled={usersLoading || users.length === 0}
+                    variant="outline"
+                    className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                  >
+                    Download Users as Excel
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border border-slate-200 overflow-hidden">
@@ -564,15 +662,20 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {userData.role === "admin" ? (
-                              <Badge className="bg-[#1C356B] text-white">
+                            {userData.role === "super_admin" ? (
+                              <Badge className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
                                 <Crown className="w-3 h-3 mr-1" />
-                                Administrator
+                                Super Admin
+                              </Badge>
+                            ) : userData.role === "finance_person" ? (
+                              <Badge className="bg-gradient-to-r from-green-600 to-green-700 text-white">
+                                <DollarSign className="w-3 h-3 mr-1" />
+                                Finance Person
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="border-gray-300">
                                 <UserCheck className="w-3 h-3 mr-1" />
-                                User
+                                Ordinary User
                               </Badge>
                             )}
                           </TableCell>
@@ -588,25 +691,40 @@ export default function AdminDashboard() {
                                   <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                {userData.role === "user" ? (
-                                  <DropdownMenuItem
-                                    onClick={() => handleRoleChangeRequest(userData.id, "admin", `${userData.firstName} ${userData.lastName}`)}
-                                    data-testid={`button-promote-${userData.id}`}
-                                    className="text-emerald-600"
-                                  >
-                                    <Crown className="w-4 h-4 mr-2" />
-                                    Promote to Admin
-                                  </DropdownMenuItem>
-                                ) : userData.id !== user.id && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleRoleChangeRequest(userData.id, "user", `${userData.firstName} ${userData.lastName}`)}
-                                    data-testid={`button-demote-${userData.id}`}
-                                    className="text-amber-600"
-                                  >
-                                    <UserCheck className="w-4 h-4 mr-2" />
-                                    Demote to User
-                                  </DropdownMenuItem>
+                              <DropdownMenuContent align="end" className="w-56 bg-white border border-slate-200 shadow-lg rounded-md">
+                                {isSuperAdmin && user && userData.id !== user.id && (
+                                  <>
+                                    {userData.role !== "super_admin" && (
+                                      <DropdownMenuItem
+                                        onClick={() => handleRoleChangeRequest(userData.id, "super_admin", `${userData.firstName} ${userData.lastName}`)}
+                                        data-testid={`button-promote-super-admin-${userData.id}`}
+                                        className="text-purple-600"
+                                      >
+                                        <Crown className="w-4 h-4 mr-2" />
+                                        Make Super Admin
+                                      </DropdownMenuItem>
+                                    )}
+                                    {userData.role !== "finance_person" && (
+                                      <DropdownMenuItem
+                                        onClick={() => handleRoleChangeRequest(userData.id, "finance_person", `${userData.firstName} ${userData.lastName}`)}
+                                        data-testid={`button-promote-finance-${userData.id}`}
+                                        className="text-green-600"
+                                      >
+                                        <DollarSign className="w-4 h-4 mr-2" />
+                                        Make Finance Person
+                                      </DropdownMenuItem>
+                                    )}
+                                    {userData.role !== "ordinary_user" && (
+                                      <DropdownMenuItem
+                                        onClick={() => handleRoleChangeRequest(userData.id, "ordinary_user", `${userData.firstName} ${userData.lastName}`)}
+                                        data-testid={`button-demote-${userData.id}`}
+                                        className="text-amber-600"
+                                      >
+                                        <UserCheck className="w-4 h-4 mr-2" />
+                                        Make Ordinary User
+                                      </DropdownMenuItem>
+                                    )}
+                                  </>
                                 )}
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -658,7 +776,7 @@ export default function AdminDashboard() {
                               <div className="text-sm font-medium">
                                 {format(new Date(event.startDate), "MMM dd, yyyy")}
                               </div>
-                              {event.endDate && event.startDate !== event.endDate && (
+                              {event.endDate && event.startDate && event.endDate !== event.startDate && (
                                 <div className="text-sm text-gray-500">
                                   to {format(new Date(event.endDate), "MMM dd, yyyy")}
                                 </div>
@@ -671,9 +789,9 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="font-semibold text-lg text-[#1C356B]">
-                              ${event.price}
-                            </div>
+                                                          <div className="font-semibold text-lg text-[#1C356B]">
+                                K{event.price}
+                              </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-center">
@@ -711,11 +829,23 @@ export default function AdminDashboard() {
           <TabsContent value="registrations">
             <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <UserCog className="w-6 h-6 text-[#1C356B]" />
-                  Registration Management
-                </CardTitle>
-                <CardDescription>Monitor and manage event registrations and payment statuses</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <UserCog className="w-6 h-6 text-[#1C356B]" />
+                      Registration Management
+                    </CardTitle>
+                    <CardDescription>Monitor and manage event registrations and payment statuses</CardDescription>
+                  </div>
+                  <Button
+                    onClick={exportRegistrationsToExcel}
+                    disabled={registrationsLoading || registrations.length === 0}
+                    variant="outline"
+                    className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                  >
+                    Download Registrations as Excel
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border border-slate-200 overflow-hidden">
@@ -727,6 +857,7 @@ export default function AdminDashboard() {
                         <TableHead className="font-semibold">Registration</TableHead>
                         <TableHead className="font-semibold">Payment</TableHead>
                         <TableHead className="font-semibold">Amount</TableHead>
+                        <TableHead className="font-semibold">Evidence</TableHead>
                         <TableHead className="font-semibold text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -756,7 +887,7 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              {format(new Date(registration.registeredAt), "MMM dd, yyyy")}
+                              {registration.registeredAt ? format(new Date(registration.registeredAt as any), "MMM dd, yyyy") : "Unknown"}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -764,8 +895,25 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="font-semibold text-lg text-[#1C356B]">
-                              ${registration.event?.price || "0"}
+                              K{registration.event?.price || "0"}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {registration.paymentEvidence ? (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => registration.paymentEvidence && window.open(registration.paymentEvidence, '_blank')}
+                                  className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                                >
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  View Evidence
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-sm">No evidence</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-center">
                             <DropdownMenu>
@@ -774,7 +922,7 @@ export default function AdminDashboard() {
                                   <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuContent align="end" className="w-56 bg-white border border-slate-200 shadow-lg rounded-md">
                                 <DropdownMenuItem
                                   onClick={() => updatePaymentStatusMutation.mutate({ registrationId: registration.id, status: "completed" })}
                                   disabled={registration.paymentStatus === "completed" || registration.paymentStatus === "paid"}
@@ -869,7 +1017,7 @@ export default function AdminDashboard() {
                             </TableCell>
                             <TableCell>
                               <div className="text-gray-900">
-                                {subscription.name || "Anonymous Subscriber"}
+                                {"name" in subscription ? (subscription as any).name : "Anonymous Subscriber"}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -1004,8 +1152,10 @@ export default function AdminDashboard() {
                 Are you sure you want to change <span className="font-semibold text-gray-900">{confirmRoleChange?.userName}</span>'s role to{' '}
                 <span className="font-semibold text-[#1C356B]">{confirmRoleChange?.role}</span>?
                 <br /><br />
-                This action will {confirmRoleChange?.role === "admin" ? (
-                  <span className="text-emerald-600 font-medium">grant administrative privileges</span>
+                This action will {confirmRoleChange?.role === "super_admin" ? (
+                  <span className="text-purple-600 font-medium">grant super admin privileges (full system access)</span>
+                ) : confirmRoleChange?.role === "finance_person" ? (
+                  <span className="text-green-600 font-medium">grant finance management privileges</span>
                 ) : (
                   <span className="text-amber-600 font-medium">remove administrative privileges</span>
                 )}.

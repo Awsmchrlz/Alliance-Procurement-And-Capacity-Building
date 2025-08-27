@@ -9,6 +9,7 @@ export function AboutSection() {
     "Accountability",
     "Professionalism",
     "Transparency",
+    "Fairness"
   ];
 
   return (
@@ -19,12 +20,13 @@ export function AboutSection() {
             <h2 className="text-4xl font-bold text-primary-blue dark:text-white mb-6" data-testid="about-title">
               WHO IS ALLIANCE
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed" data-testid="about-description-1">
-              Alliance Procurement and Capacity Building Limited (APCB Ltd) is a Zambian-owned private company established and registered under the Patents and Companies Registration Agency (PACRA) on 16th November, 2022.
-            </p>
-            <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed" data-testid="about-description-2">
-              The main objective is to enhance practitioners' and stakeholders' in procurement and supply chain management technical skills, competencies, knowledge and capabilities with a view to supplement the Government's effort in improving service delivery in the public and private sectors through training workshops and capacity building.
-            </p>
+        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed" data-testid="about-description-1">
+               We are a leading provider of training, research, and consultancy services in procurement and supply chain systems—serving both public and private sectors in Zambia, Southern Africa, and beyond.
+         </p>
+         <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed" data-testid="about-description-2">
+             Our work empowers institutions to improve efficiency, transparency, and sustainability through tailored, practical solutions grounded in global best practices and local insight.
+        </p>
+
 
             <div className="mb-8">
               <h3 className="text-xl font-semibold text-primary-blue dark:text-white mb-4" data-testid="core-values-title">

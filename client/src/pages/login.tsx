@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { supabase } from "@/lib/supabase";
+import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, Handshake, ArrowRight, Shield, Users, Target } from "lucide-react";
 
 const LoginPage = () => {
@@ -33,11 +36,33 @@ const LoginPage = () => {
     formState: { errors },
   } = useForm();
 
-  const onSubmit = async (data) => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    console.log("Login data:", data);
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+
+  const onSubmit = async (data: { email: string; password: string }) => {
+    try {
+      setIsLoading(true);
+      const { error, data: authData } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      if (error) throw error;
+      
+      // Check user role and redirect accordingly
+      const userRole = authData.user?.user_metadata?.role || 'ordinary_user';
+      
+      if (userRole === 'super_admin' || userRole === 'finance_person') {
+        toast({ title: "Welcome back!", description: "Redirecting to admin dashboard..." });
+        navigate("/admin-dashboard");
+      } else {
+        toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
+        navigate("/dashboard");
+      }
+    } catch (err: any) {
+      toast({ title: "Sign in failed", description: err.message ?? "Unable to sign in", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

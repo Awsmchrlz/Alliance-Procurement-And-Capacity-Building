@@ -20,8 +20,8 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
 export function Navigation() {
-  const [location] = useLocation();
-  const { user, logout } = useAuth();
+  const [location, navigate] = useLocation();
+  const { user, logout, isAdmin } = useAuth();
   const [activeSection, setActiveSection] = useState("home");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -133,10 +133,10 @@ export function Navigation() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    closeMobileMenu(); // Close mobile menu
-    window.location.href = "/";
+  const handleLogout = async () => {
+    await logout();
+    closeMobileMenu();
+    navigate("/");
   };
 
   return (
@@ -196,17 +196,7 @@ export function Navigation() {
             <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4 flex-shrink-0">
               {user ? (
                 <div className="hidden sm:flex items-center space-x-1 sm:space-x-2">
-                  <Link href="/dashboard">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-[#1C356B] text-[#1C356B] hover:bg-[#1C356B] hover:text-white transition-all duration-300 text-xs sm:text-sm px-2 sm:px-3"
-                      data-testid="nav-dashboard"
-                    >
-                      Dashboard
-                    </Button>
-                  </Link>
-                  {user.role === "admin" && (
+                  {(user.role === "super_admin" || user.role === "finance_person") ? (
                     <Link href="/admin-dashboard">
                       <Button
                         variant="outline"
@@ -215,6 +205,17 @@ export function Navigation() {
                         data-testid="nav-admin"
                       >
                         Admin
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link href="/dashboard">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-[#1C356B] text-[#1C356B] hover:bg-[#1C356B] hover:text-white transition-all duration-300 text-xs sm:text-sm px-2 sm:px-3"
+                        data-testid="nav-dashboard"
+                      >
+                        Dashboard
                       </Button>
                     </Link>
                   )}
@@ -350,7 +351,7 @@ export function Navigation() {
                     </div>
                     <div>
                       <div className="text-xs text-gray-500 mb-1">Welcome back</div>
-                      <div className="font-semibold text-[#1C356B] text-sm">{user.name}</div>
+                      <div className="font-semibold text-[#1C356B] text-sm">{user.firstName} {user.lastName}</div>
                     </div>
                   </div>
 

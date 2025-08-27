@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, User, Phone, Handshake, ArrowRight, Shield, CheckCircle, Star, Award } from "lucide-react";
 
 const RegisterPage = () => {
@@ -69,13 +72,44 @@ const RegisterPage = () => {
     }
   };
 
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    console.log("Registration data:", formData);
+    try {
+      setIsLoading(true);
+
+      const { error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone_number: formData.phoneNumber,
+            role: 'ordinary_user',
+          },
+        },
+      });
+      
+      if (error) throw error;
+      
+      toast({ 
+        title: "Account Created", 
+        description: "Your account has been created successfully. You can now sign in." 
+      });
+      navigate("/login");
+    } catch (err: any) {
+      toast({ 
+        title: "Registration Failed", 
+        description: err.message ?? "Unable to create account", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const passwordStrength = (password) => {

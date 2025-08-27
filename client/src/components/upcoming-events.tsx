@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Event } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 export function UpcomingEventsSection() {
   const { user } = useAuth();
@@ -24,18 +25,7 @@ export function UpcomingEventsSection() {
     }
 
     try {
-      const response = await fetch("/api/events/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ eventId, userId: user.id }),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Registration failed");
-      }
+      await apiRequest("POST", "/api/events/register", { eventId, userId: user.id });
 
       toast({
         title: "Registration Successful",

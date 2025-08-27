@@ -1,10 +1,13 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { EventRegistration, Event } from "@shared/schema";
-import { Calendar, MapPin, DollarSign, Users, TrendingUp,CheckCircle,Clock } from "lucide-react"; // Changed User to Users for total registrations
+import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { Calendar, MapPin, DollarSign, Users, TrendingUp,CheckCircle,Clock, LogOut, Building2, User } from "lucide-react"; // Changed User to Users for total registrations
 import { format } from "date-fns";
 
 interface RegistrationWithEvent extends EventRegistration {
@@ -12,10 +15,21 @@ interface RegistrationWithEvent extends EventRegistration {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading, isAuthenticated, logout } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [loading, isAuthenticated, navigate]);
 
   const { data: registrations, isLoading } = useQuery<RegistrationWithEvent[]>({
     queryKey: ["/api/users", user?.id, "registrations"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/users/${user?.id}/registrations`);
+      return response.json();
+    },
     enabled: !!user,
   });
 
@@ -46,7 +60,7 @@ export default function Dashboard() {
     }
   };
 
-  if (isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-12 transition-all duration-300">
         <div className="container mx-auto px-4 max-w-7xl">
@@ -88,6 +102,17 @@ export default function Dashboard() {
                     <p className="text-gray-600 text-sm" data-testid="dashboard-description">Your personal event management hub</p>
                   </div>
                 </div>
+                <Button
+                  onClick={async () => {
+                    await logout();
+                    navigate("/");
+                  }}
+                  variant="outline"
+                  className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
               </div>
             </div>
           </div>
@@ -202,9 +227,21 @@ export default function Dashboard() {
                           <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
                             <DollarSign className="w-4 h-4 mr-2 text-primary-blue" />
                             <span data-testid={`registration-price-${registration.id}`}>
-                              ${registration.event.price.toFixed(2)}
+                              K{Number(registration.event.price).toFixed(2)}
                             </span>
                           </div>
+                          {registration.organization && (
+                            <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
+                              <Building2 className="w-4 h-4 mr-2 text-primary-blue" />
+                              <span>{registration.organization}</span>
+                            </div>
+                          )}
+                          {registration.position && (
+                            <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
+                              <User className="w-4 h-4 mr-2 text-primary-blue" />
+                              <span>{registration.position}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col items-end space-y-3">
                           <Badge
@@ -217,12 +254,32 @@ export default function Dashboard() {
                           {registration.paymentStatus === "pending" && (
                             <Button
                               size="sm"
-                              className="bg-primary-yellow text-primary-blue hover:bg-yellow-400 transition-colors duration-300 font-semibold shadow-sm hover:shadow"
+                              className="bg-primary-yellow text-primary-blue hover:bg-yellow-400 transition-colors duration-300 font-semibold shadow-sm hover:shadow mr-2"
                               data-testid={`registration-pay-${registration.id}`}
                             >
                               Pay Now
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors duration-300"
+                            onClick={async () => {
+                              if (confirm("Are you sure you want to cancel this registration?")) {
+                                try {
+                                  await apiRequest("DELETE", `/api/users/${user?.id}/registrations/${registration.id}`);
+                                  // Refresh the data
+                                  window.location.reload();
+                                } catch (error) {
+                                  console.error("Failed to cancel registration:", error);
+                                  alert("Failed to cancel registration. Please try again.");
+                                }
+                              }
+                            }}
+                            data-testid={`registration-cancel-${registration.id}`}
+                          >
+                            Cancel
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -238,6 +295,7 @@ export default function Dashboard() {
                 <Button
                   className="bg-gradient-to-r from-primary-blue to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-primary-blue text-white px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                   data-testid="dashboard-browse-events"
+                  onClick={() => navigate("/")}
                 >
                   Back to home
                 </Button>

@@ -42,7 +42,7 @@ export function HeroSection() {
           <div
             key={index}
             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentImageIndex && isVisible ? 'opacity-20' : 'opacity-0'
+              index === currentImageIndex && isVisible ? 'opacity-40' : 'opacity-0'
             }`}
             style={{
               backgroundImage: `url(${image})`,

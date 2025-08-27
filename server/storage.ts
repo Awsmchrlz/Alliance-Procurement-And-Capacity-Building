@@ -1,532 +1,633 @@
-import { type User, type InsertUser, type Event, type InsertEvent, type EventRegistration, type InsertEventRegistration, type NewsletterSubscription, type InsertNewsletterSubscription, users, events, eventRegistrations, newsletterSubscriptions } from "@shared/schema";
-import { randomUUID } from "crypto";
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
-import { eq, sql } from "drizzle-orm";
+import { createClient } from "@supabase/supabase-js";
+import { User, InsertUser, Event, InsertEvent, EventRegistration, InsertEventRegistration, NewsletterSubscription, InsertNewsletterSubscription } from "@shared/schema";
 
-export interface IStorage {
-  // Users
-  getUser(id: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  getAllUsers(): Promise<User[]>;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  // Events
-  getEvent(id: string): Promise<Event | undefined>;
-  getAllEvents(): Promise<Event[]>;
-  createEvent(event: InsertEvent): Promise<Event>;
-  updateEvent(id: string, updates: Partial<Event>): Promise<Event | undefined>;
-  deleteEvent(id: string): Promise<boolean>;
-
-  // Event Registrations
-  getEventRegistration(id: string): Promise<EventRegistration | undefined>;
-  getEventRegistrationsByUser(userId: string): Promise<EventRegistration[]>;
-  getEventRegistrationsByEvent(eventId: string): Promise<EventRegistration[]>;
-  getAllEventRegistrations(): Promise<EventRegistration[]>;
-  createEventRegistration(registration: InsertEventRegistration): Promise<EventRegistration>;
-  updateEventRegistration(id: string, updates: Partial<EventRegistration>): Promise<EventRegistration | undefined>;
-
-  // Newsletter
-  createNewsletterSubscription(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
-  getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined>;
-  getAllNewsletterSubscriptions(): Promise<NewsletterSubscription[]>;
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Supabase URL and service role key must be provided");
 }
 
-// Database storage implementation
-export class DatabaseStorage implements IStorage {
-  private db: any;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-  constructor() {
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL environment variable is required");
-    }
-    
-    const sql = neon(process.env.DATABASE_URL);
-    this.db = drizzle(sql);
-    
-    // Initialize with sample data if needed
-    this.initializeSampleData();
-  }
+interface UserRow {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone_number: string | null;
+  created_at: string;
+}
 
-  private async initializeSampleData() {
-    try {
-      // Check if events exist, if not create sample events
-      const existingEvents = await this.db.select().from(events).limit(1);
-      if (existingEvents.length === 0) {
-        await this.createSampleEvents();
-      }
-    } catch (error) {
-      console.error("Error initializing sample data:", error);
-    }
-  }
-
-  private async createSampleEvents() {
-    const sampleEvents: InsertEvent[] = [
-      {
-        title: "International Procurement & Financial Management Summit",
-        description: "A comprehensive 3-day summit bringing together procurement professionals, financial managers, and supply chain experts from across Southern Africa. Features keynote speakers, workshops, and networking opportunities.",
-        startDate: new Date("2024-03-15"),
-        endDate: new Date("2024-03-17"),
-        location: "Lusaka, Zambia",
-        price: "299.00",
-        maxAttendees: 100,
-        imageUrl: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858601/groupPhoto3_vvwwcr.jpg",
-        tags: ["Procurement", "Supply Chain", "Financial Management"],
-        featured: true,
-      },
-      {
-        title: "Compliance & Audit Workshop",
-        description: "Advanced training on procurement compliance and audit procedures.",
-        startDate: new Date("2024-03-22"),
-        endDate: new Date("2024-03-22"),
-        location: "Lusaka, Zambia",
-        price: "150.00",
-        maxAttendees: 50,
-        tags: ["Compliance", "Audit"],
-      },
-      {
-        title: "Tender Management Masterclass",
-        description: "Comprehensive guide to tender evaluation and management processes.",
-        startDate: new Date("2024-04-05"),
-        endDate: new Date("2024-04-05"),
-        location: "Lusaka, Zambia",
-        price: "200.00",
-        maxAttendees: 75,
-        tags: ["Tender Management", "Evaluation"],
-      },
-    ];
-
-    for (const eventData of sampleEvents) {
-      await this.createEvent(eventData);
-    }
-  }
-
-  // Users
+export const storage = {
   async getUser(id: string): Promise<User | undefined> {
     try {
-      const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
-      return result[0];
-    } catch (error) {
-      console.error("Error getting user:", error);
+      // Fetch from public.users
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, phone_number, created_at')
+        .eq('id', id)
+        .single();
+      if (userError || !userData) {
+        console.error("Error fetching user from users table:", userError?.message);
+        return undefined;
+      }
+
+      // Fetch email and role from auth.users
+      const { data: authData, error: authError } = await supabase.auth.admin.getUserById(id);
+      if (authError || !authData.user) {
+        console.error("Error fetching auth user:", authError?.message);
+        return undefined;
+      }
+
+      return {
+        id: userData.id,
+        email: authData.user.email || '',
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        phoneNumber: userData.phone_number,
+        role: authData.user.user_metadata?.role || 'ordinary_user',
+        createdAt: userData.created_at,
+      };
+    } catch (error: any) {
+      console.error("Error in getUser:", error.message);
       return undefined;
     }
-  }
+  },
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
-      const result = await this.db.select().from(users).where(eq(users.email, email)).limit(1);
-      return result[0];
-    } catch (error) {
-      console.error("Error getting user by email:", error);
+      // Fetch auth user by email
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      if (authError) {
+        console.error("Error fetching auth users:", authError.message);
+        return undefined;
+      }
+      const authUser = authUsers.users.find(u => u.email === email);
+      if (!authUser) {
+        return undefined;
+      }
+
+      // Fetch from public.users
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, phone_number, created_at')
+        .eq('id', authUser.id)
+        .single();
+      if (userError || !userData) {
+        console.error("Error fetching user by email from users table:", userError?.message);
+        return undefined;
+      }
+
+      return {
+        id: userData.id,
+        email: authUser.email || '',
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        phoneNumber: userData.phone_number,
+        role: authUser.user_metadata?.role || 'ordinary_user',
+        createdAt: userData.created_at,
+      };
+    } catch (error: any) {
+      console.error("Error in getUserByEmail:", error.message);
       return undefined;
     }
-  }
+  },
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(user: InsertUser): Promise<User> {
     try {
-      const result = await this.db.insert(users).values(insertUser).returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error creating user:", error);
-      throw error;
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: user.email,
+        password: user.password,
+        user_metadata: { role: user.role || 'ordinary_user', first_name: user.firstName, last_name: user.lastName, phone_number: user.phoneNumber }
+      });
+      if (authError) {
+        console.error("Error creating auth user:", authError.message);
+        throw new Error(`Failed to create auth user: ${authError.message}`);
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          phone_number: user.phoneNumber
+        })
+        .select('id, first_name, last_name, phone_number, created_at')
+        .single();
+      if (error) {
+        console.error("Error creating user in users table:", error.message);
+        throw new Error(`Failed to create user: ${error.message}`);
+      }
+
+      return {
+        id: data.id,
+        email: user.email,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        phoneNumber: data.phone_number,
+        role: user.role || 'ordinary_user',
+        createdAt: data.created_at,
+      };
+    } catch (error: any) {
+      console.error("Error in createUser:", error.message);
+      throw new Error(`Failed to create user: ${error.message}`);
     }
-  }
+  },
 
   async getAllUsers(): Promise<User[]> {
     try {
-      return await this.db.select().from(users);
-    } catch (error) {
-      console.error("Error getting all users:", error);
-      return [];
-    }
-  }
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, phone_number, created_at');
+      if (userError) {
+        console.error("Error fetching all users:", userError.message);
+        throw new Error(`Failed to fetch users: ${userError.message}`);
+      }
 
-  async updateUserRole(userId: string, role: string): Promise<User | undefined> {
-    try {
-      const result = await this.db
-        .update(users)
-        .set({ role })
-        .where(eq(users.id, userId))
-        .returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      return undefined;
-    }
-  }
+      const users = await Promise.all(
+        userData.map(async (u: UserRow) => {
+          const { data: authData, error: authError } = await supabase.auth.admin.getUserById(u.id);
+          if (authError) {
+            console.error(`Error fetching auth user ${u.id}:`, authError.message);
+            return undefined;
+          }
+          return {
+            id: u.id,
+            email: authData.user.email || '',
+            firstName: u.first_name,
+            lastName: u.last_name,
+            phoneNumber: u.phone_number,
+            role: authData.user.user_metadata?.role || 'ordinary_user',
+            createdAt: u.created_at,
+          };
+        })
+      );
 
-  // Events
+      return users.filter((u): u is User => u !== undefined);
+    } catch (error: any) {
+      console.error("Error in getAllUsers:", error.message);
+      throw new Error(`Failed to fetch users: ${error.message}`);
+    }
+  },
+
   async getEvent(id: string): Promise<Event | undefined> {
     try {
-      const result = await this.db.select().from(events).where(eq(events.id, id)).limit(1);
-      return result[0];
-    } catch (error) {
-      console.error("Error getting event:", error);
+      const { data, error } = await supabase.from('events').select('*').eq('id', id).single();
+      if (error) {
+        console.error("Error fetching event:", error.message);
+        return undefined;
+      }
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        startDate: data.start_date,
+        endDate: data.end_date,
+        location: data.location,
+        price: data.price,
+        maxAttendees: data.max_attendees,
+        currentAttendees: data.current_attendees,
+        imageUrl: data.image_url,
+        tags: data.tags,
+        featured: data.featured,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in getEvent:", error.message);
       return undefined;
     }
-  }
+  },
 
   async getAllEvents(): Promise<Event[]> {
     try {
-      return await this.db.select().from(events).orderBy(events.startDate);
-    } catch (error) {
-      console.error("Error getting all events:", error);
-      return [];
+      const { data, error } = await supabase.from('events').select('*').order('start_date');
+      if (error) {
+        console.error("Error fetching all events:", error.message);
+        throw new Error(`Failed to fetch events: ${error.message}`);
+      }
+      return data.map(e => ({
+        id: e.id,
+        title: e.title,
+        description: e.description,
+        startDate: e.start_date,
+        endDate: e.end_date,
+        location: e.location,
+        price: e.price,
+        maxAttendees: e.max_attendees,
+        currentAttendees: e.current_attendees,
+        imageUrl: e.image_url,
+        tags: e.tags,
+        featured: e.featured,
+        createdAt: e.created_at,
+        updatedAt: e.updated_at,
+      }));
+    } catch (error: any) {
+      console.error("Error in getAllEvents:", error.message);
+      throw new Error(`Failed to fetch events: ${error.message}`);
     }
-  }
+  },
 
-  async createEvent(insertEvent: InsertEvent): Promise<Event> {
+  async createEvent(event: InsertEvent): Promise<Event> {
     try {
-      const result = await this.db.insert(events).values(insertEvent).returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error creating event:", error);
-      throw error;
+      const { data, error } = await supabase.from('events').insert({
+        title: event.title,
+        description: event.description,
+        start_date: event.startDate,
+        end_date: event.endDate,
+        location: event.location,
+        price: event.price,
+        max_attendees: event.maxAttendees,
+        image_url: event.imageUrl,
+        tags: event.tags,
+        featured: event.featured,
+      }).select().single();
+      if (error) {
+        console.error("Error creating event:", error.message);
+        throw new Error(`Failed to create event: ${error.message}`);
+      }
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        startDate: data.start_date,
+        endDate: data.end_date,
+        location: data.location,
+        price: data.price,
+        maxAttendees: data.max_attendees,
+        currentAttendees: data.current_attendees,
+        imageUrl: data.image_url,
+        tags: data.tags,
+        featured: data.featured,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in createEvent:", error.message);
+      throw new Error(`Failed to create event: ${error.message}`);
     }
-  }
+  },
 
   async updateEvent(id: string, updates: Partial<Event>): Promise<Event | undefined> {
     try {
-      const result = await this.db
-        .update(events)
-        .set(updates)
-        .where(eq(events.id, id))
-        .returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error updating event:", error);
+      const { data, error } = await supabase.from('events').update({
+        title: updates.title,
+        description: updates.description,
+        start_date: updates.startDate,
+        end_date: updates.endDate,
+        location: updates.location,
+        price: updates.price,
+        max_attendees: updates.maxAttendees,
+        current_attendees: updates.currentAttendees,
+        image_url: updates.imageUrl,
+        tags: updates.tags,
+        featured: updates.featured,
+      }).eq('id', id).select().single();
+      if (error) {
+        console.error("Error updating event:", error.message);
+        return undefined;
+      }
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        startDate: data.start_date,
+        endDate: data.end_date,
+        location: data.location,
+        price: data.price,
+        maxAttendees: data.max_attendees,
+        currentAttendees: data.current_attendees,
+        imageUrl: data.image_url,
+        tags: data.tags,
+        featured: data.featured,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in updateEvent:", error.message);
       return undefined;
     }
-  }
+  },
 
   async deleteEvent(id: string): Promise<boolean> {
     try {
-      await this.db.delete(events).where(eq(events.id, id));
+      const { error } = await supabase.from('events').delete().eq('id', id);
+      if (error) {
+        console.error("Error deleting event:", error.message);
+        return false;
+      }
       return true;
-    } catch (error) {
-      console.error("Error deleting event:", error);
+    } catch (error: any) {
+      console.error("Error in deleteEvent:", error.message);
       return false;
     }
-  }
+  },
 
-  // Event Registrations
   async getEventRegistration(id: string): Promise<EventRegistration | undefined> {
     try {
-      const result = await this.db.select().from(eventRegistrations).where(eq(eventRegistrations.id, id)).limit(1);
-      return result[0];
-    } catch (error) {
-      console.error("Error getting event registration:", error);
+      const { data, error } = await supabase.from('event_registrations').select('*').eq('id', id).single();
+      if (error) {
+        console.error("Error fetching event registration:", error.message);
+        return undefined;
+      }
+      return {
+        id: data.id,
+        eventId: data.event_id,
+        userId: data.user_id,
+        paymentStatus: data.payment_status,
+        title: data.title,
+        gender: data.gender,
+        country: data.country,
+        organization: data.organization,
+        organizationType: data.organization_type,
+        position: data.position,
+        notes: data.notes,
+        hasPaid: data.has_paid,
+        paymentEvidence: data.payment_evidence,
+        registeredAt: data.registered_at,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in getEventRegistration:", error.message);
       return undefined;
     }
-  }
+  },
 
   async getEventRegistrationsByUser(userId: string): Promise<EventRegistration[]> {
     try {
-      return await this.db.select().from(eventRegistrations).where(eq(eventRegistrations.userId, userId));
-    } catch (error) {
-      console.error("Error getting registrations by user:", error);
-      return [];
+      const { data, error } = await supabase.from('event_registrations').select('*').eq('user_id', userId);
+      if (error) {
+        console.error("Error fetching user registrations:", error.message);
+        throw new Error(`Failed to fetch registrations: ${error.message}`);
+      }
+      return data.map(r => ({
+        id: r.id,
+        eventId: r.event_id,
+        userId: r.user_id,
+        paymentStatus: r.payment_status,
+        title: r.title,
+        gender: r.gender,
+        country: r.country,
+        organization: r.organization,
+        organizationType: r.organization_type,
+        position: r.position,
+        notes: r.notes,
+        hasPaid: r.has_paid,
+        paymentEvidence: r.payment_evidence,
+        registeredAt: r.registered_at,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+    } catch (error: any) {
+      console.error("Error in getEventRegistrationsByUser:", error.message);
+      throw new Error(`Failed to fetch registrations: ${error.message}`);
     }
-  }
+  },
 
   async getEventRegistrationsByEvent(eventId: string): Promise<EventRegistration[]> {
     try {
-      return await this.db.select().from(eventRegistrations).where(eq(eventRegistrations.eventId, eventId));
-    } catch (error) {
-      console.error("Error getting registrations by event:", error);
-      return [];
+      const { data, error } = await supabase.from('event_registrations').select('*').eq('event_id', eventId);
+      if (error) {
+        console.error("Error fetching event registrations:", error.message);
+        throw new Error(`Failed to fetch registrations: ${error.message}`);
+      }
+      return data.map(r => ({
+        id: r.id,
+        eventId: r.event_id,
+        userId: r.user_id,
+        paymentStatus: r.payment_status,
+        title: r.title,
+        gender: r.gender,
+        country: r.country,
+        organization: r.organization,
+        organizationType: r.organization_type,
+        position: r.position,
+        notes: r.notes,
+        hasPaid: r.has_paid,
+        paymentEvidence: r.payment_evidence,
+        registeredAt: r.registered_at,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+    } catch (error: any) {
+      console.error("Error in getEventRegistrationsByEvent:", error.message);
+      throw new Error(`Failed to fetch registrations: ${error.message}`);
     }
-  }
+  },
 
   async getAllEventRegistrations(): Promise<EventRegistration[]> {
     try {
-      return await this.db.select().from(eventRegistrations);
-    } catch (error) {
-      console.error("Error getting all registrations:", error);
-      return [];
+      const { data, error } = await supabase.from('event_registrations').select('*');
+      if (error) {
+        console.error("Error fetching all registrations:", error.message);
+        throw new Error(`Failed to fetch registrations: ${error.message}`);
+      }
+      return data.map(r => ({
+        id: r.id,
+        eventId: r.event_id,
+        userId: r.user_id,
+        paymentStatus: r.payment_status,
+        title: r.title,
+        gender: r.gender,
+        country: r.country,
+        organization: r.organization,
+        organizationType: r.organization_type,
+        position: r.position,
+        notes: r.notes,
+        hasPaid: r.has_paid,
+        paymentEvidence: r.payment_evidence,
+        registeredAt: r.registered_at,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+    } catch (error: any) {
+      console.error("Error in getAllEventRegistrations:", error.message);
+      throw new Error(`Failed to fetch registrations: ${error.message}`);
     }
-  }
+  },
 
-  async createEventRegistration(insertRegistration: InsertEventRegistration): Promise<EventRegistration> {
+  async createEventRegistration(registration: InsertEventRegistration): Promise<EventRegistration> {
     try {
-      const result = await this.db.insert(eventRegistrations).values(insertRegistration).returning();
-      
-      // Update event attendee count
-      await this.db
-        .update(events)
-        .set({ currentAttendees: sql`${events.currentAttendees} + 1` })
-        .where(eq(events.id, insertRegistration.eventId));
-      
-      return result[0];
-    } catch (error) {
-      console.error("Error creating event registration:", error);
-      throw error;
+      const { data, error } = await supabase.from('event_registrations').insert({
+        event_id: registration.eventId,
+        user_id: registration.userId,
+        payment_status: registration.paymentStatus || 'pending',
+        title: registration.title,
+        gender: registration.gender,
+        country: registration.country,
+        organization: registration.organization,
+        organization_type: registration.organizationType,
+        position: registration.position,
+        notes: registration.notes,
+        has_paid: registration.hasPaid || false,
+        payment_evidence: registration.paymentEvidence,
+      }).select().single();
+      if (error) {
+        console.error("Error creating event registration:", error.message);
+        throw new Error(`Failed to create registration: ${error.message}`);
+      }
+      await supabase.rpc('increment_attendees', { event_id: registration.eventId }).then(({ error: rpcError }) => {
+        if (rpcError) console.error("Error incrementing attendees:", rpcError.message);
+      });
+      return {
+        id: data.id,
+        eventId: data.event_id,
+        userId: data.user_id,
+        paymentStatus: data.payment_status,
+        title: data.title,
+        gender: data.gender,
+        country: data.country,
+        organization: data.organization,
+        organizationType: data.organization_type,
+        position: data.position,
+        notes: data.notes,
+        hasPaid: data.has_paid,
+        paymentEvidence: data.payment_evidence,
+        registeredAt: data.registered_at,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in createEventRegistration:", error.message);
+      throw new Error(`Failed to create registration: ${error.message}`);
     }
-  }
+  },
 
   async updateEventRegistration(id: string, updates: Partial<EventRegistration>): Promise<EventRegistration | undefined> {
     try {
-      const result = await this.db
-        .update(eventRegistrations)
-        .set(updates)
-        .where(eq(eventRegistrations.id, id))
-        .returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error updating event registration:", error);
+      const { data, error } = await supabase.from('event_registrations').update({
+        payment_status: updates.paymentStatus,
+        title: updates.title,
+        gender: updates.gender,
+        country: updates.country,
+        organization: updates.organization,
+        organization_type: updates.organizationType,
+        position: updates.position,
+        notes: updates.notes,
+        has_paid: updates.hasPaid,
+        payment_evidence: updates.paymentEvidence,
+      }).eq('id', id).select().single();
+      if (error) {
+        console.error("Error updating event registration:", error.message);
+        return undefined;
+      }
+      return {
+        id: data.id,
+        eventId: data.event_id,
+        userId: data.user_id,
+        paymentStatus: data.payment_status,
+        title: data.title,
+        gender: data.gender,
+        country: data.country,
+        organization: data.organization,
+        organizationType: data.organization_type,
+        position: data.position,
+        notes: data.notes,
+        hasPaid: data.has_paid,
+        paymentEvidence: data.payment_evidence,
+        registeredAt: data.registered_at,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in updateEventRegistration:", error.message);
       return undefined;
     }
-  }
+  },
 
-  // Newsletter
-  async createNewsletterSubscription(insertSubscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
+  async deleteEventRegistration(id: string): Promise<void> {
     try {
-      const result = await this.db.insert(newsletterSubscriptions).values(insertSubscription).returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error creating newsletter subscription:", error);
-      throw error;
+      const { data: regData, error: regError } = await supabase.from('event_registrations').select('event_id, payment_evidence').eq('id', id).single();
+      if (regError) {
+        console.error("Error fetching registration for deletion:", regError.message);
+        throw new Error(`Failed to fetch registration: ${regError.message}`);
+      }
+
+      if (regData.payment_evidence) {
+        const { error: storageError } = await supabase.storage.from('registrations').remove([regData.payment_evidence]);
+        if (storageError) {
+          console.error("Error deleting payment evidence:", storageError.message);
+          throw new Error(`Failed to delete payment evidence: ${storageError.message}`);
+        }
+      }
+
+      const { error: deleteError } = await supabase.from('event_registrations').delete().eq('id', id);
+      if (deleteError) {
+        console.error("Error deleting event registration:", deleteError.message);
+        throw new Error(`Failed to delete registration: ${deleteError.message}`);
+      }
+
+      await supabase.rpc('decrement_attendees', { event_id: regData.event_id }).then(({ error }) => {
+        if (error) console.error("Error decrementing attendees:", error.message);
+      });
+    } catch (error: any) {
+      console.error("Error in deleteEventRegistration:", error.message);
+      throw new Error(`Failed to delete registration: ${error.message}`);
     }
-  }
+  },
+
+  async createNewsletterSubscription(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
+    try {
+      const { data, error } = await supabase.from('newsletter_subscriptions').insert({
+        email: subscription.email,
+        name: subscription.name,
+      }).select().single();
+      if (error) {
+        console.error("Error creating newsletter subscription:", error.message);
+        throw new Error(`Failed to create subscription: ${error.message}`);
+      }
+      return {
+        id: data.id,
+        email: data.email,
+        name: data.name,
+        subscribedAt: data.subscribed_at,
+        createdAt: data.created_at,
+      };
+    } catch (error: any) {
+      console.error("Error in createNewsletterSubscription:", error.message);
+      throw new Error(`Failed to create subscription: ${error.message}`);
+    }
+  },
 
   async getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined> {
     try {
-      const result = await this.db.select().from(newsletterSubscriptions).where(eq(newsletterSubscriptions.email, email)).limit(1);
-      return result[0];
-    } catch (error) {
-      console.error("Error getting newsletter subscription:", error);
+      const { data, error } = await supabase.from('newsletter_subscriptions').select('*').eq('email', email).single();
+      if (error) {
+        console.error("Error fetching newsletter subscription:", error.message);
+        return undefined;
+      }
+      return {
+        id: data.id,
+        email: data.email,
+        name: data.name,
+        subscribedAt: data.subscribed_at,
+        createdAt: data.created_at,
+      };
+    } catch (error: any) {
+      console.error("Error in getNewsletterSubscriptionByEmail:", error.message);
       return undefined;
     }
-  }
+  },
 
   async getAllNewsletterSubscriptions(): Promise<NewsletterSubscription[]> {
     try {
-      return await this.db.select().from(newsletterSubscriptions);
-    } catch (error) {
-      console.error("Error getting all newsletter subscriptions:", error);
-      return [];
+      const { data, error } = await supabase.from('newsletter_subscriptions').select('*');
+      if (error) {
+        console.error("Error fetching all newsletter subscriptions:", error.message);
+        throw new Error(`Failed to fetch subscriptions: ${error.message}`);
+      }
+      return data.map(s => ({
+        id: s.id,
+        email: s.email,
+        name: s.name,
+        subscribedAt: s.subscribed_at,
+        createdAt: s.created_at,
+      }));
+    } catch (error: any) {
+      console.error("Error in getAllNewsletterSubscriptions:", error.message);
+      throw new Error(`Failed to fetch subscriptions: ${error.message}`);
     }
-  }
-}
-
-// Use MemStorage for now, but keep DatabaseStorage ready for when database is properly configured
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private events: Map<string, Event>;
-  private eventRegistrations: Map<string, EventRegistration>;
-  private newsletterSubscriptions: Map<string, NewsletterSubscription>;
-
-  constructor() {
-    this.users = new Map();
-    this.events = new Map();
-    this.eventRegistrations = new Map();
-    this.newsletterSubscriptions = new Map();
-    this.createSampleEvents();
-    this.createSampleSubscriptions();
-  }
-
-  async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
-  }
-
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { 
-      ...insertUser, 
-      id,
-      role: insertUser.role || "user",
-      phoneNumber: insertUser.phoneNumber || null,
-      createdAt: new Date(),
-    };
-    this.users.set(id, user);
-    return user;
-  }
-
-  async updateUserRole(userId: string, role: string): Promise<User | undefined> {
-    const user = this.users.get(userId);
-    if (!user) return undefined;
-    const updatedUser = { ...user, role };
-    this.users.set(userId, updatedUser);
-    return updatedUser;
-  }
-
-  async getAllEvents(): Promise<Event[]> {
-    return Array.from(this.events.values());
-  }
-
-  async getEvent(id: string): Promise<Event | undefined> {
-    return this.events.get(id);
-  }
-
-  async createEvent(insertEvent: InsertEvent): Promise<Event> {
-    const id = randomUUID();
-    const event: Event = {
-      ...insertEvent,
-      id,
-      location: insertEvent.location || null,
-      maxAttendees: insertEvent.maxAttendees || null,
-      imageUrl: insertEvent.imageUrl || null,
-      tags: insertEvent.tags || null,
-      featured: insertEvent.featured || null,
-      currentAttendees: 0,
-      createdAt: new Date(),
-    };
-    this.events.set(id, event);
-    return event;
-  }
-
-  async updateEvent(id: string, updates: Partial<Event>): Promise<Event | undefined> {
-    const event = this.events.get(id);
-    if (!event) return undefined;
-    const updatedEvent = { ...event, ...updates };
-    this.events.set(id, updatedEvent);
-    return updatedEvent;
-  }
-
-  async deleteEvent(id: string): Promise<boolean> {
-    return this.events.delete(id);
-  }
-
-  async getAllEventRegistrations(): Promise<EventRegistration[]> {
-    return Array.from(this.eventRegistrations.values());
-  }
-
-  async getEventRegistration(id: string): Promise<EventRegistration | undefined> {
-    return this.eventRegistrations.get(id);
-  }
-
-  async getEventRegistrationsByUser(userId: string): Promise<EventRegistration[]> {
-    return Array.from(this.eventRegistrations.values()).filter(reg => reg.userId === userId);
-  }
-
-  async getEventRegistrationsByEvent(eventId: string): Promise<EventRegistration[]> {
-    return Array.from(this.eventRegistrations.values()).filter(reg => reg.eventId === eventId);
-  }
-
-  async createEventRegistration(insertRegistration: InsertEventRegistration): Promise<EventRegistration> {
-    const id = randomUUID();
-    const registration: EventRegistration = {
-      ...insertRegistration,
-      id,
-      paymentStatus: insertRegistration.paymentStatus || "pending",
-      registeredAt: new Date(),
-    };
-    this.eventRegistrations.set(id, registration);
-    
-    const event = await this.getEvent(insertRegistration.eventId);
-    if (event) {
-      await this.updateEvent(event.id, { currentAttendees: (event.currentAttendees || 0) + 1 });
-    }
-    
-    return registration;
-  }
-
-  async updateEventRegistration(id: string, updates: Partial<EventRegistration>): Promise<EventRegistration | undefined> {
-    const registration = this.eventRegistrations.get(id);
-    if (!registration) return undefined;
-    const updatedRegistration = { ...registration, ...updates };
-    this.eventRegistrations.set(id, updatedRegistration);
-    return updatedRegistration;
-  }
-
-  async createNewsletterSubscription(insertSubscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
-    const id = randomUUID();
-    const subscription: NewsletterSubscription = {
-      ...insertSubscription,
-      id,
-      subscribedAt: new Date(),
-    };
-    this.newsletterSubscriptions.set(id, subscription);
-    return subscription;
-  }
-
-  async getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined> {
-    return Array.from(this.newsletterSubscriptions.values()).find(sub => sub.email === email);
-  }
-
-  async getAllNewsletterSubscriptions(): Promise<NewsletterSubscription[]> {
-    return Array.from(this.newsletterSubscriptions.values());
-  }
-
-  private createSampleEvents() {
-    const sampleEvents: InsertEvent[] = [
-      {
-        title: "International Procurement & Financial Management Summit",
-        description: "A comprehensive 3-day summit bringing together procurement professionals, financial managers, and supply chain experts from across Southern Africa. Features keynote speakers, workshops, and networking opportunities.",
-        startDate: new Date("2024-03-15"),
-        endDate: new Date("2024-03-17"),
-        location: "Lusaka, Zambia",
-        price: "299.00",
-        maxAttendees: 100,
-        imageUrl: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858601/groupPhoto3_vvwwcr.jpg",
-        tags: ["Procurement", "Supply Chain", "Financial Management"],
-        featured: true,
-      },
-      {
-        title: "Compliance & Audit Workshop",
-        description: "Advanced training on procurement compliance and audit procedures.",
-        startDate: new Date("2024-04-10"),
-        endDate: new Date("2024-04-12"),
-        location: "Cape Town, South Africa",
-        price: "199.00",
-        maxAttendees: 50,
-        tags: ["Compliance", "Audit"],
-      },
-      {
-        title: "Tender Management Masterclass",
-        description: "Learn advanced tender management and evaluation techniques.",
-        startDate: new Date("2024-05-20"),
-        endDate: new Date("2024-05-21"),
-        location: "Harare, Zimbabwe",
-        price: "249.00",
-        maxAttendees: 75,
-        tags: ["Tender Management", "Evaluation"],
-      },
-    ];
-
-    sampleEvents.forEach(eventData => {
-      this.createEvent(eventData);
-    });
-  }
-
-  private createSampleSubscriptions() {
-    const sampleSubscriptions: InsertNewsletterSubscription[] = [
-      {
-        email: "john.smith@example.com",
-        name: "John Smith",
-      },
-      {
-        email: "sarah.johnson@company.com",
-        name: "Sarah Johnson",
-      },
-      {
-        email: "michael.brown@procurement.org",
-        name: "Michael Brown",
-      },
-      {
-        email: "lisa.wilson@training.co.za",
-        name: "Lisa Wilson",
-      },
-      {
-        email: "david.lee@supply.zm",
-        name: "David Lee",
-      },
-    ];
-
-    sampleSubscriptions.forEach(subscriptionData => {
-      this.createNewsletterSubscription(subscriptionData);
-    });
-  }
-}
-
-// Comment out database storage until Supabase is properly connected
-// export const storage = new DatabaseStorage();
-export const storage = new MemStorage();
+  },
+};

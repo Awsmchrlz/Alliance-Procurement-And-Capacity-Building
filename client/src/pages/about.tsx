@@ -334,8 +334,7 @@ export default function About() {
                 Meet Our Expert Team
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                Our team combines decades of experience in procurement, supply chain management, and capacity building to deliver exceptional results.
-              </p>
+        Behind our leadership is a highly skilled and dedicated team of trainers, researchers, consultants, and technical professionals. Together, we bring a multidisciplinary, collaborative approach that turns strategic vision into measurable results across training, advisory, and research engagements.     </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 mb-16">
@@ -414,7 +413,7 @@ export default function About() {
                 Our Journey
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                From our establishment in 2022 to becoming a trusted partner across Southern Africa, here's our story of growth and impact.
+                    In striving to achieve our vision, APCB ltd embarked on training through seminars and workshops to public and private institution employees in procurement/ Electronic Government Procurement Systems (e-GP) supply chain management, financial management, operations, Stores and logistics management, since its inception.
               </p>
             </div>
 
@@ -457,8 +456,8 @@ export default function About() {
             >
               <h3 className="text-3xl font-bold mb-6">Looking Forward</h3>
               <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto leading-relaxed">
-                As we continue to grow, our focus remains on expanding our impact across Africa, developing innovative solutions, and building lasting partnerships that drive meaningful change in procurement and supply chain management.
-              </p>
+                    To be a leading provider of training, research, and consultancy services for procurement, supply chain systems and processes in the public and private sectors in Zambia, Southern Africa and beyond.
+               </p>
               <div className="grid sm:grid-cols-3 gap-6 text-center">
                 <div>
                   <div className="text-3xl font-bold text-[#FDC123] mb-2">2025</div>

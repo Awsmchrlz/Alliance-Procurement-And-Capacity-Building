@@ -36,6 +36,16 @@ export const eventRegistrations = pgTable("event_registrations", {
   eventId: varchar("event_id").notNull().references(() => events.id),
   paymentStatus: text("payment_status").notNull().default("pending"), // pending, paid, cancelled
   registeredAt: timestamp("registered_at").defaultNow(),
+  // Additional registration fields
+  title: text("title"), // mr, dr, etc.
+  gender: text("gender"),
+  country: text("country"),
+  organization: text("organization"),
+  organizationType: text("organization_type"),
+  position: text("position"),
+  notes: text("notes"),
+  hasPaid: boolean("has_paid").default(false),
+  paymentEvidence: text("payment_evidence"), // URL to uploaded file
 });
 
 export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
