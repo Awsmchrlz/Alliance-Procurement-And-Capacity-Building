@@ -64,6 +64,7 @@ import {
   LogOut,
   Eye
 } from "lucide-react";
+
 import { EvidenceViewer } from "@/components/evidence-viewer";
 
 // Mock data for demonstration
