@@ -476,6 +476,280 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+  // Optional: Direct file serving route (keeping your existing implementation)
+  app.get("/evidence/:userId/:eventId/:fileName", authenticateSupabase, async (req: any, res) => {
+    try {
+      const { userId, eventId, fileName } = req.params;
+      const filePath = `evidence/${userId}/${eventId}/${fileName}`;
+
+      // Check if user can access this file (own file or admin)
+      const canAccess =
+        req.supabaseUser.id === userId ||
+        req.supabaseRole === "super_admin" ||
+        req.supabaseRole === "finance_person";
+
+      if (!canAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !serviceRoleKey) {
+        return res.status(500).json({ message: "Supabase server credentials not configured" });
+      }
+
+      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+      const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
+
+      // Get the file from Supabase storage
+      const { data, error } = await supabaseAdmin.storage
+        .from(bucket)
+        .download(filePath);
+
+      if (error) {
+        console.error('File download error:', error);
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      if (!data) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      // Convert blob to buffer
+      const buffer = Buffer.from(await data.arrayBuffer());
+
+      // Set appropriate content type based on file extension
+      const ext = fileName.toLowerCase().split('.').pop();
+      let contentType = 'application/octet-stream';
+
+      switch (ext) {
+        case 'pdf':
+          contentType = 'application/pdf';
+          break;
+        case 'jpg':
+        case 'jpeg':
+          contentType = 'image/jpeg';
+          break;
+        case 'png':
+          contentType = 'image/png';
+          break;
+        case 'doc':
+          contentType = 'application/msword';
+          break;
+        case 'docx':
+          contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          break;
+      }
+
+      // Set headers for inline viewing (browser will try to display the file)
+      res.set({
+        'Content-Type': contentType,
+        'Content-Disposition': `inline; filename="${fileName}"`,
+        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+      });
+
+      res.send(buffer);
+    } catch (error) {
+      console.error('Error serving evidence file:', error);
+      res.status(500).json({ message: "Failed to serve file" });
+    }
+  });
+
+// PAYMENT EVIDENCE ROUTE - Enhanced with better error handling
+app.get("/api/admin/payment-evidence/:evidencePath", authenticateSupabase, requireSupabaseAdmin, async (req: any, res) => {
+  try {
+    const { evidencePath } = req.params;
+    const decodedPath = decodeURIComponent(evidencePath);
+    
+    console.log(`🔍 Fetching evidence from path: ${decodedPath}`);
+
+    if (!decodedPath) {
+      console.log(`❌ No evidence path provided`);
+      return res.status(400).json({ message: "Evidence path is required" });
+    }
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('❌ Missing Supabase credentials');
+      return res.status(500).json({ message: "Server configuration error" });
+    }
+
+    const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+    const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
+    
+    console.log(`🪣 Using bucket: ${bucket}`);
+    console.log(`📂 File path: ${decodedPath}`);
+
+    // Try to download the file directly using the provided path
+    const { data, error } = await supabaseAdmin.storage
+      .from(bucket)
+      .download(decodedPath);
+
+    if (error) {
+      console.error(`❌ Storage download error:`, error);
+      
+      // Try alternative path formats if the direct path fails
+      const alternativePaths = [
+        decodedPath.replace('/storage/v1/object/', ''),
+        decodedPath.split('/').slice(-3).join('/'), // Last 3 parts
+        `evidence/${decodedPath.split('/').slice(-3).join('/')}` // Ensure evidence prefix
+      ];
+      
+      console.log(`🔄 Trying alternative paths:`, alternativePaths);
+      
+      for (const altPath of alternativePaths) {
+        try {
+          console.log(`🔄 Attempting: ${altPath}`);
+          const { data: altData, error: altError } = await supabaseAdmin.storage
+            .from(bucket)
+            .download(altPath);
+          
+          if (!altError && altData) {
+            console.log(`✅ Success with alternative path: ${altPath}`);
+            const buffer = Buffer.from(await altData.arrayBuffer());
+            const filename = altPath.split('/').pop() || 'evidence';
+            const ext = filename.toLowerCase().split('.').pop();
+            
+            let contentType = 'application/octet-stream';
+            if (ext === 'pdf') contentType = 'application/pdf';
+            else if (['jpg', 'jpeg'].includes(ext)) contentType = 'image/jpeg';
+            else if (ext === 'png') contentType = 'image/png';
+            
+            res.set({
+              'Content-Type': contentType,
+              'Content-Disposition': `inline; filename="${filename}"`,
+              'Cache-Control': 'private, max-age=3600',
+            });
+            
+            return res.send(buffer);
+          }
+        } catch (altErr) {
+          console.log(`❌ Alternative path failed: ${altPath}`, altErr);
+        }
+      }
+      
+      return res.status(404).json({ 
+        message: "Evidence file not found in storage",
+        details: error.message,
+        attemptedPaths: alternativePaths
+      });
+    }
+
+    if (!data) {
+      console.log(`❌ No data returned from storage`);
+      return res.status(404).json({ message: "Evidence file not found" });
+    }
+
+    console.log(`✅ File downloaded successfully`);
+    const buffer = Buffer.from(await data.arrayBuffer());
+    const filename = decodedPath.split('/').pop() || 'evidence';
+    const ext = filename.toLowerCase().split('.').pop();
+
+    let contentType = 'application/octet-stream';
+    if (ext === 'pdf') contentType = 'application/pdf';
+    else if (['jpg', 'jpeg'].includes(ext)) contentType = 'image/jpeg';
+    else if (ext === 'png') contentType = 'image/png';
+
+    res.set({
+      'Content-Type': contentType,
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Cache-Control': 'private, max-age=3600',
+    });
+
+    res.send(buffer);
+  } catch (error: any) {
+    console.error('❌ Evidence error:', error);
+    res.status(500).json({ 
+      message: "Server error while fetching evidence",
+      details: error.message 
+    });
+  }
+});
+  // Route to update payment evidence for admins
+  app.put("/api/admin/payment-evidence/:registrationId", authenticateSupabase, requireSupabaseAdmin, async (req: any, res) => {
+    try {
+      const { registrationId } = req.params;
+      const { evidenceFile } = req.body;
+
+      if (!evidenceFile) {
+        return res.status(400).json({ message: "Evidence file is required" });
+      }
+
+      console.log(`🔄 Updating evidence for registration: ${registrationId}`);
+
+      const registration = await storage.getEventRegistration(registrationId);
+      if (!registration) {
+        return res.status(404).json({ message: "Registration not found" });
+      }
+
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !serviceRoleKey) {
+        return res.status(500).json({ message: "Server configuration error" });
+      }
+
+      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+      const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
+
+      // Generate new file path
+      const fileExtension = evidenceFile.name.split('.').pop();
+      const newFileName = `evidence_${Date.now()}.${fileExtension}`;
+      const newFilePath = `evidence/${registration.userId}/${registration.eventId}/${newFileName}`;
+
+      // Upload new evidence file
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from(bucket)
+        .upload(newFilePath, evidenceFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: evidenceFile.type || 'application/octet-stream',
+        });
+
+      if (uploadError) {
+        console.error(`❌ Upload error:`, uploadError);
+        return res.status(500).json({ message: "Failed to upload new evidence file" });
+      }
+
+      // Delete old evidence file if it exists
+      if (registration.paymentEvidence) {
+        try {
+          await supabaseAdmin.storage
+            .from(bucket)
+            .remove([registration.paymentEvidence]);
+          console.log(`🗑️ Deleted old evidence: ${registration.paymentEvidence}`);
+        } catch (deleteError) {
+          console.warn(`⚠️ Failed to delete old evidence:`, deleteError);
+          // Don't fail the update if deletion fails
+        }
+      }
+
+      // Update registration with new evidence path
+      const updatedRegistration = await storage.updateEventRegistration(registrationId, {
+        paymentEvidence: newFilePath,
+      });
+
+      if (!updatedRegistration) {
+        return res.status(500).json({ message: "Failed to update registration" });
+      }
+
+      console.log(`✅ Evidence updated successfully: ${newFilePath}`);
+      res.json({
+        message: "Evidence updated successfully",
+        registration: updatedRegistration,
+        newEvidencePath: newFilePath
+      });
+
+    } catch (error: any) {
+      console.error('❌ Evidence update error:', error);
+      res.status(500).json({ 
+        message: "Server error while updating evidence",
+        details: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
