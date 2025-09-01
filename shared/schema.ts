@@ -32,6 +32,7 @@ export const events = pgTable("events", {
 
 export const eventRegistrations = pgTable("event_registrations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  registrationNumber: text("registration_number").notNull().unique(), // Auto-incrementing registration number
   userId: varchar("user_id").notNull().references(() => users.id),
   eventId: varchar("event_id").notNull().references(() => events.id),
   paymentStatus: text("payment_status").notNull().default("pending"), // pending, paid, cancelled
@@ -51,6 +52,7 @@ export const eventRegistrations = pgTable("event_registrations", {
 export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
+  name: text("name"),
   subscribedAt: timestamp("subscribed_at").defaultNow(),
 });
 

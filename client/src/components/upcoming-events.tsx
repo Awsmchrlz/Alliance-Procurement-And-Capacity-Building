@@ -79,6 +79,13 @@ export function UpcomingEventsSection() {
                 e.currentTarget.style.transform = 'scale(1)';
               }}
               data-testid="events-read-more"
+              onClick={() => {
+                // Scroll to the events display section
+                const eventsSection = document.querySelector('#events .space-y-8');
+                if (eventsSection) {
+                  eventsSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
             >
               SEE UPCOMING EVENTS →
             </button>
@@ -101,6 +108,16 @@ export function UpcomingEventsSection() {
                 e.currentTarget.style.transform = 'scale(1)';
               }}
               data-testid="projects-read-more"
+              onClick={() => {
+                // Navigate to projects page or scroll to projects section
+                const projectsSection = document.getElementById('projects');
+                if (projectsSection) {
+                  projectsSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  // If no projects section, show a toast or alert
+                  alert('Projects section coming soon!');
+                }
+              }}
             >
               READ MORE →
             </button>
@@ -123,6 +140,16 @@ export function UpcomingEventsSection() {
                 e.currentTarget.style.transform = 'scale(1)';
               }}
               data-testid="indaba-read-more"
+              onClick={() => {
+                // Navigate to indaba page or show indaba information
+                const indabaSection = document.getElementById('indaba');
+                if (indabaSection) {
+                  indabaSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  // If no indaba section, show information about the indaba
+                  alert('International Indaba - A premier procurement and capacity building conference. Details coming soon!');
+                }
+              }}
             >
               LEARN MORE →
             </button>
@@ -162,6 +189,13 @@ export function UpcomingEventsSection() {
                 className="font-bold py-4 px-12 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 uppercase tracking-wider"
                 style={{ backgroundColor: '#1C356B', color: '#FDC123' }}
                 data-testid="view-all-events"
+                onClick={() => {
+                  // Scroll to top of events section to show all events
+                  const eventsSection = document.getElementById('events');
+                  if (eventsSection) {
+                    eventsSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
               >
                 View All Events →
               </Button>

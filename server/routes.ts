@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage"; // Assumes storage.ts from my previous response
 import { insertUserSchema, insertEventRegistrationSchema, insertNewsletterSubscriptionSchema } from "@shared/schema";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import fileUpload from "express-fileupload";
 
 // Middleware: Verify Supabase access token and attach user
 const authenticateSupabase = async (req: any, res: any, next: any) => {
@@ -43,6 +44,15 @@ const requireSupabaseAdmin = (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add file upload middleware
+  app.use(fileUpload({
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    abortOnLimit: true,
+    useTempFiles: true,
+    tempFileDir: '/tmp/',
+    debug: false,
+  }));
+
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -68,6 +78,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Registration error:", error);
       res.status(400).json({ message: "Invalid user data" });
+    }
+  });
+
+  // Admin user registration endpoint
+  app.post("/api/admin/users/register", authenticateSupabase, requireSupabaseAdmin, async (req: any, res) => {
+    try {
+      const { firstName, lastName, email, phoneNumber, password, role } = req.body;
+
+      // Validate required fields
+      if (!firstName || !lastName || !email || !password || !role) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !serviceRoleKey) {
+        return res.status(500).json({ message: "Server configuration error" });
+      }
+
+      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+
+      // Create user in Supabase Auth
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: {
+          first_name: firstName,
+          last_name: lastName,
+          phone_number: phoneNumber,
+          role: role,
+        },
+      });
+
+      if (authError) {
+        console.error("Supabase auth error:", authError);
+        return res.status(500).json({ message: "Failed to create user account" });
+      }
+
+      if (!authData.user) {
+        return res.status(500).json({ message: "Failed to create user" });
+      }
+
+      // Create user in public.users table
+      const user = await storage.createUser({
+        id: authData.user.id,
+        firstName,
+        lastName,
+        email,
+        phoneNumber: phoneNumber || null,
+        role,
+      });
+
+      console.log(`✅ Admin created user: ${email} with role: ${role}`);
+      res.status(201).json({ 
+        message: "User created successfully",
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          role: user.role,
+          createdAt: user.createdAt,
+        }
+      });
+
+    } catch (error: any) {
+      console.error("Admin user registration error:", error);
+      res.status(500).json({ 
+        message: "Failed to create user",
+        details: error.message 
+      });
     }
   });
 
@@ -134,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
-      if (event.maxAttendees && event.currentAttendees >= event.maxAttendees) {
+      if (event.maxAttendees && event.currentAttendees && event.currentAttendees >= event.maxAttendees) {
         return res.status(400).json({ message: "Event is full" });
       }
 
@@ -143,6 +232,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Registration error:", error);
       res.status(400).json({ message: "Registration failed" });
+    }
+  });
+
+  // Admin event registration endpoint
+  app.post("/api/admin/events/register", authenticateSupabase, requireSupabaseAdmin, async (req: any, res) => {
+    try {
+      const { userId, eventId, title, gender, country, organization, organizationType, position, notes, hasPaid, paymentStatus } = req.body;
+
+      // Validate required fields
+      if (!userId || !eventId || !title || !gender || !country || !organization || !position) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if event exists
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      // Check if user is already registered for this event
+      const existingRegistrations = await storage.getEventRegistrationsByUser(userId);
+      const alreadyRegistered = existingRegistrations.some(reg => reg.eventId === eventId);
+      if (alreadyRegistered) {
+        return res.status(400).json({ message: "User is already registered for this event" });
+      }
+
+      // Check if event has capacity
+      if (event.maxAttendees && event.currentAttendees && event.currentAttendees >= event.maxAttendees) {
+        return res.status(400).json({ message: "Event is full" });
+      }
+
+      // Create registration
+      const registration = await storage.createEventRegistration({
+        eventId,
+        userId,
+        title,
+        gender,
+        country,
+        organization,
+        organizationType: organizationType || "Other",
+        position,
+        notes: notes || null,
+        hasPaid: hasPaid || false,
+        paymentStatus: paymentStatus || "pending",
+        paymentEvidence: null,
+      });
+
+      console.log(`✅ Admin registered user ${userId} for event ${eventId}`);
+      res.status(201).json({ 
+        message: "Registration created successfully",
+        registration: {
+          id: registration.id,
+          eventId: registration.eventId,
+          userId: registration.userId,
+          paymentStatus: registration.paymentStatus,
+          registeredAt: registration.registeredAt,
+        }
+      });
+
+    } catch (error: any) {
+      console.error("Admin event registration error:", error);
+      res.status(500).json({ 
+        message: "Failed to create registration",
+        details: error.message 
+      });
     }
   });
 
@@ -266,7 +426,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if email is already subscribed
       const existingSubscription = await storage.getNewsletterSubscriptionByEmail(subscriptionData.email);
       if (existingSubscription) {
-        return res.status(400).json({ message: "Email already subscribed" });
+        // If already subscribed, just return success (don't fail the registration)
+        return res.status(200).json({ message: "Already subscribed", subscription: existingSubscription });
       }
 
       const subscription = await storage.createNewsletterSubscription(subscriptionData);
@@ -481,7 +642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/evidence/:userId/:eventId/:fileName", authenticateSupabase, async (req: any, res) => {
     try {
       const { userId, eventId, fileName } = req.params;
-      const filePath = `evidence/${userId}/${eventId}/${fileName}`;
+      const filePath = `evidence/${userId || ''}/${eventId || ''}/${fileName || ''}`;
 
       // Check if user can access this file (own file or admin)
       const canAccess =
@@ -582,10 +743,10 @@ app.get("/api/admin/payment-evidence/:evidencePath", authenticateSupabase, requi
     console.log(`🪣 Using bucket: ${bucket}`);
     console.log(`📂 File path: ${decodedPath}`);
 
-    // Try to download the file directly using the provided path
-    const { data, error } = await supabaseAdmin.storage
-      .from(bucket)
-      .download(decodedPath);
+          // Try to download the file directly using the provided path
+      const { data, error } = await supabaseAdmin.storage
+        .from(bucket)
+        .download(decodedPath || '');
 
     if (error) {
       console.error(`❌ Storage download error:`, error);
@@ -667,6 +828,198 @@ app.get("/api/admin/payment-evidence/:evidencePath", authenticateSupabase, requi
     });
   }
 });
+  // Route to get payment evidence for users (their own evidence only)
+  app.get("/api/users/payment-evidence/:evidencePath", authenticateSupabase, async (req: any, res) => {
+    try {
+      const { evidencePath } = req.params;
+      const decodedPath = decodeURIComponent(evidencePath);
+      const userId = req.supabaseUser.id;
+      
+      console.log(`🔍 User ${userId} fetching evidence from path: ${decodedPath}`);
+
+      if (!decodedPath) {
+        console.log(`❌ No evidence path provided`);
+        return res.status(400).json({ message: "Evidence path is required" });
+      }
+
+      // Verify the user owns this evidence by checking if it contains their user ID
+      if (!decodedPath.includes(userId)) {
+        console.log(`❌ User ${userId} trying to access evidence not owned by them`);
+        return res.status(403).json({ message: "Access denied to this evidence" });
+      }
+
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !serviceRoleKey) {
+        console.error('❌ Missing Supabase credentials');
+        return res.status(500).json({ message: "Server configuration error" });
+      }
+
+      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+    const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
+      
+      console.log(`🪣 Using bucket: ${bucket}`);
+      console.log(`📂 File path: ${decodedPath}`);
+
+      // Try to download the file directly using the provided path
+      const { data, error } = await supabaseAdmin.storage
+        .from(bucket)
+        .download(decodedPath || '');
+
+      if (error) {
+        console.error(`❌ Storage download error:`, error);
+        return res.status(404).json({ 
+          message: "Evidence file not found in storage",
+          details: error.message
+        });
+      }
+
+      if (!data) {
+        console.log(`❌ No data returned from storage`);
+        return res.status(404).json({ message: "Evidence file not found" });
+      }
+
+      console.log(`✅ File downloaded successfully for user ${userId}`);
+    const buffer = Buffer.from(await data.arrayBuffer());
+      const filename = decodedPath.split('/').pop() || 'evidence';
+    const ext = filename.toLowerCase().split('.').pop();
+
+    let contentType = 'application/octet-stream';
+    if (ext === 'pdf') contentType = 'application/pdf';
+    else if (['jpg', 'jpeg'].includes(ext)) contentType = 'image/jpeg';
+    else if (ext === 'png') contentType = 'image/png';
+
+    res.set({
+      'Content-Type': contentType,
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Cache-Control': 'private, max-age=3600',
+    });
+
+    res.send(buffer);
+    } catch (error: any) {
+      console.error('❌ User evidence error:', error);
+      res.status(500).json({ 
+        message: "Server error while fetching evidence",
+        details: error.message 
+      });
+    }
+  });
+
+        // Route to update payment evidence for users (their own evidence only)
+  app.put("/api/users/payment-evidence/:registrationId", authenticateSupabase, async (req: any, res) => {
+    try {
+      const { registrationId } = req.params;
+      const userId = req.supabaseUser.id;
+      
+      console.log('🔄 User evidence update request:');
+      console.log('Registration ID:', registrationId);
+      console.log('User ID:', userId);
+      console.log('Request body:', req.body);
+      console.log('Request files:', req.files);
+      
+      if (!req.files || !req.files.evidence) {
+        console.log('❌ No evidence file provided');
+        return res.status(400).json({ message: "Evidence file is required" });
+      }
+
+      const evidenceFile = req.files.evidence as any;
+      console.log(`🔄 User ${userId} updating evidence for registration: ${registrationId}`);
+      console.log('File details:', {
+        name: evidenceFile.name,
+        size: evidenceFile.size,
+        mimetype: evidenceFile.mimetype
+      });
+
+      const registration = await storage.getEventRegistration(registrationId);
+      if (!registration) {
+        console.log('❌ Registration not found:', registrationId);
+        return res.status(404).json({ message: "Registration not found" });
+      }
+
+      // Verify the user owns this registration
+      if (registration.userId !== userId) {
+        console.log(`❌ User ${userId} trying to update evidence for registration owned by ${registration.userId}`);
+        return res.status(403).json({ message: "Access denied to this registration" });
+      }
+
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !serviceRoleKey) {
+        console.error('❌ Missing Supabase credentials');
+        return res.status(500).json({ message: "Server configuration error" });
+      }
+
+      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+      const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
+      
+      console.log('🪣 Using bucket:', bucket);
+
+      // Generate new file path
+      const fileExtension = evidenceFile.name.split('.').pop();
+      const newFileName = `evidence_${Date.now()}.${fileExtension}`;
+      const newFilePath = `evidence/${userId}/${registration.eventId}/${newFileName}`;
+      
+      console.log('📁 New file path:', newFilePath);
+
+      // Upload new evidence file
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from(bucket)
+        .upload(newFilePath, evidenceFile.data, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: evidenceFile.mimetype || 'application/octet-stream',
+        });
+
+      if (uploadError) {
+        console.error(`❌ Upload error:`, uploadError);
+        return res.status(500).json({ message: "Failed to upload new evidence file" });
+      }
+
+      console.log('✅ File uploaded successfully');
+
+      // Delete old evidence file if it exists
+      if (registration.paymentEvidence) {
+        try {
+          console.log('🗑️ Attempting to delete old evidence:', registration.paymentEvidence);
+          await supabaseAdmin.storage
+            .from(bucket)
+            .remove([registration.paymentEvidence]);
+          console.log(`🗑️ Deleted old evidence: ${registration.paymentEvidence}`);
+        } catch (deleteError) {
+          console.warn(`⚠️ Failed to delete old evidence:`, deleteError);
+          // Don't fail the update if deletion fails
+        }
+      }
+
+      // Update registration with new evidence path
+      console.log('📝 Updating registration with new evidence path:', newFilePath);
+      const updatedRegistration = await storage.updateEventRegistration(registrationId, {
+        paymentEvidence: newFilePath,
+      });
+
+      if (!updatedRegistration) {
+        console.error('❌ Failed to update registration in database');
+        return res.status(500).json({ message: "Failed to update registration" });
+      }
+
+      console.log(`✅ Evidence updated successfully by user ${userId}: ${newFilePath}`);
+      console.log('📤 Sending response with new evidence path:', newFilePath);
+      
+      res.json({
+        message: "Evidence updated successfully",
+        registration: updatedRegistration,
+        newEvidencePath: newFilePath
+      });
+
+    } catch (error: any) {
+      console.error('❌ User evidence update error:', error);
+      res.status(500).json({ 
+        message: "Server error while updating evidence",
+        details: error.message 
+      });
+    }
+  });
+
   // Route to update payment evidence for admins
   app.put("/api/admin/payment-evidence/:registrationId", authenticateSupabase, requireSupabaseAdmin, async (req: any, res) => {
     try {

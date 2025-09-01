@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   GraduationCap,
   Handshake,
@@ -22,6 +22,18 @@ import { Button } from "@/components/ui/button";
 
 export default function Services() {
   const [selectedService, setSelectedService] = useState(0);
+
+  // Handle service selection from URL parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const serviceParam = urlParams.get('service');
+    if (serviceParam) {
+      const serviceIndex = parseInt(serviceParam);
+      if (serviceIndex >= 0 && serviceIndex < services.length) {
+        setSelectedService(serviceIndex);
+      }
+    }
+  }, []);
 
   const services = [
     {

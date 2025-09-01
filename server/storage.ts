@@ -19,6 +19,26 @@ interface UserRow {
 }
 
 export const storage = {
+  async generateRegistrationNumber(): Promise<string> {
+    try {
+      // Get the count of existing registrations
+      const { count, error } = await supabase
+        .from('event_registrations')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        console.error("Error getting registration count:", error);
+        throw error;
+      }
+      
+      // Generate next registration number (0001, 0002, etc.)
+      const nextNumber = (count || 0) + 1;
+      return nextNumber.toString().padStart(4, '0');
+    } catch (error: any) {
+      console.error("Error generating registration number:", error);
+      throw error;
+    }
+  },
   async getUser(id: string): Promise<User | undefined> {
     try {
       // Fetch from public.users
@@ -450,7 +470,11 @@ export const storage = {
 
   async createEventRegistration(registration: InsertEventRegistration): Promise<EventRegistration> {
     try {
+      // Generate registration number
+      const registrationNumber = await this.generateRegistrationNumber();
+      
       const { data, error } = await supabase.from('event_registrations').insert({
+        registration_number: registrationNumber,
         event_id: registration.eventId,
         user_id: registration.userId,
         payment_status: registration.paymentStatus || 'pending',
@@ -473,6 +497,7 @@ export const storage = {
       });
       return {
         id: data.id,
+        registrationNumber: data.registration_number,
         eventId: data.event_id,
         userId: data.user_id,
         paymentStatus: data.payment_status,

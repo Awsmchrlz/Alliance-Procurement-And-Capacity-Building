@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Calendar,
   Users,
   DollarSign,
@@ -62,138 +70,286 @@ import {
   Shield,
   UserCog,
   LogOut,
-  Eye
+  Eye,
+  UserPlus,
+  Plus,
+  CalendarPlus,
+  FileText,
+  Phone,
+  MapPin,
+  CreditCard
 } from "lucide-react";
+
 
 import { EvidenceViewer } from "@/components/evidence-viewer";
 
-// Mock data for demonstration
-const mockEvents = [
-  {
-    id: "1",
-    title: "Advanced Project Management Training",
-    description: "Comprehensive training on modern project management methodologies including Agile and Scrum frameworks.",
-    startDate: "2025-09-15",
-    endDate: "2025-09-17",
-    location: "Lusaka Conference Center",
-    price: "1500",
-    currentAttendees: 45,
-    maxAttendees: 60,
-    featured: true
-  },
-  {
-    id: "2",
-    title: "Digital Procurement Systems Workshop",
-    description: "Learn to implement and manage digital procurement systems for modern organizations.",
-    startDate: "2025-09-22",
-    endDate: "2025-09-24",
-    location: "Ndola Business Hub",
-    price: "1200",
-    currentAttendees: 32,
-    maxAttendees: 40,
-    featured: false
-  }
-];
+// Real data interfaces
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  price: string;
+  currentAttendees: number;
+  maxAttendees: number;
+  featured: boolean;
+}
 
-const mockUsers = [
-  {
-    id: "user1",
-    firstName: "John",
-    lastName: "Mwansa",
-    email: "john.mwansa@example.com",
-    phoneNumber: "+260977123456",
-    role: "super_admin",
-    createdAt: "2025-01-15T10:00:00Z"
-  },
-  {
-    id: "user2",
-    firstName: "Mary",
-    lastName: "Banda",
-    email: "mary.banda@example.com",
-    phoneNumber: "+260966789012",
-    role: "finance_person",
-    createdAt: "2025-02-01T14:30:00Z"
-  },
-  {
-    id: "user3",
-    firstName: "Peter",
-    lastName: "Phiri",
-    email: "peter.phiri@example.com",
-    phoneNumber: "+260955456789",
-    role: "ordinary_user",
-    createdAt: "2025-02-10T09:15:00Z"
-  }
-];
+interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  role: string;
+  createdAt: string;
+}
 
-const mockRegistrations = [
-  {
-    id: "reg1",
-    userId: "user3",
-    eventId: "1",
-    paymentStatus: "completed",
-    paymentEvidence: "evidence1.pdf",
-    registeredAt: "2025-08-20T12:00:00Z",
-    event: mockEvents[0],
-    user: mockUsers[2]
-  },
-  {
-    id: "reg2",
-    userId: "user2",
-    eventId: "2",
-    paymentStatus: "pending",
-    paymentEvidence: "evidence2.jpg",
-    registeredAt: "2025-08-25T15:30:00Z",
-    event: mockEvents[1],
-    user: mockUsers[1]
-  }
-];
+interface Registration {
+  id: string;
+  registrationNumber: string;
+  userId: string;
+  eventId: string;
+  paymentStatus: string;
+  paymentEvidence: string | null;
+  registeredAt: string;
+  event?: Event;
+  user?: User;
+}
 
-const mockNewsletterSubscriptions = [
-  {
-    id: "sub1",
-    email: "subscriber1@example.com",
-    subscribedAt: "2025-08-01T10:00:00Z"
-  },
-  {
-    id: "sub2",
-    email: "subscriber2@example.com",
-    subscribedAt: "2025-08-15T14:00:00Z"
-  },
-  {
-    id: "sub3",
-    email: "subscriber3@example.com",
-    subscribedAt: "2025-08-20T09:00:00Z"
-  }
-];
-
-const mockUser = {
-  id: "user1",
-  firstName: "John",
-  lastName: "Mwansa",
-  email: "john.mwansa@example.com",
-  role: "super_admin"
-};
+interface NewsletterSubscription {
+  id: string;
+  email: string;
+  subscribedAt: string;
+}
 
 export default function AdminDashboard() {
-  const [user] = useState(mockUser);
-  const [events] = useState(mockEvents);
-  const [users] = useState(mockUsers);
-  const [registrations] = useState(mockRegistrations);
-  const [newsletterSubscriptions] = useState(mockNewsletterSubscriptions);
+  const [user, setUser] = useState<User | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [newsletterSubscriptions, setNewsletterSubscriptions] = useState<NewsletterSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Email functionality
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [showEmailDialog, setShowEmailDialog] = useState(false);
-  const [confirmRoleChange, setConfirmRoleChange] = useState(null);
+  
+  // Role change functionality
+  const [confirmRoleChange, setConfirmRoleChange] = useState<{
+    userId: string;
+    role: string;
+    userName: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Evidence viewer
   const [evidenceViewer, setEvidenceViewer] = useState<{
     open: boolean;
     evidencePath: string;
     fileName?: string;
+    registrationId?: string;
   }>({
     open: false,
     evidencePath: "",
   });
+
+  // Admin user registration functionality
+  const [showUserRegistrationDialog, setShowUserRegistrationDialog] = useState(false);
+  const [userRegistrationData, setUserRegistrationData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    password: "",
+    role: "ordinary_user"
+  });
+  const [userRegistrationLoading, setUserRegistrationLoading] = useState(false);
+
+  // Admin event registration functionality
+  const [showEventRegistrationDialog, setShowEventRegistrationDialog] = useState(false);
+  const [eventRegistrationData, setEventRegistrationData] = useState({
+    userId: "",
+    eventId: "",
+    title: "Mr",
+    gender: "Male",
+    country: "",
+    organization: "",
+    organizationType: "Government",
+    position: "",
+    notes: "",
+    hasPaid: false,
+    paymentStatus: "pending"
+  });
+  const [eventRegistrationLoading, setEventRegistrationLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+  // Search functionality
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [filteredRegistrations, setFilteredRegistrations] = useState<Registration[]>([]);
+  const [filteredNewsletter, setFilteredNewsletter] = useState<NewsletterSubscription[]>([]);
+
+  // Fetch real data from Supabase
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Search and filter functionality
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredUsers(users);
+      setFilteredEvents(events);
+      setFilteredRegistrations(registrations);
+      setFilteredNewsletter(newsletterSubscriptions);
+    } else {
+      const term = searchTerm.toLowerCase();
+      
+      // Filter users
+      setFilteredUsers(users.filter(user => 
+        user.firstName.toLowerCase().includes(term) ||
+        user.lastName.toLowerCase().includes(term) ||
+        user.email.toLowerCase().includes(term) ||
+        user.role.toLowerCase().includes(term)
+      ));
+      
+      // Filter events
+      setFilteredEvents(events.filter(event => 
+        event.title.toLowerCase().includes(term) ||
+        event.description.toLowerCase().includes(term) ||
+        event.location.toLowerCase().includes(term)
+      ));
+      
+      // Filter registrations
+      setFilteredRegistrations(registrations.filter(registration => 
+        registration.user?.firstName.toLowerCase().includes(term) ||
+        registration.user?.lastName.toLowerCase().includes(term) ||
+        registration.user?.email.toLowerCase().includes(term) ||
+        registration.event?.title.toLowerCase().includes(term) ||
+        registration.paymentStatus.toLowerCase().includes(term)
+      ));
+      
+      // Filter newsletter subscriptions
+      setFilteredNewsletter(newsletterSubscriptions.filter(subscription => 
+        subscription.email.toLowerCase().includes(term)
+      ));
+    }
+  }, [searchTerm, users, events, registrations, newsletterSubscriptions]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setError("No active session found");
+        return;
+      }
+
+      // Get current user's role from Supabase metadata
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
+        setError("Failed to get user information");
+        return;
+      }
+
+      // Set user role from metadata
+      const userRole = currentUser.user_metadata?.role || 'ordinary_user';
+      console.log('Current user role:', userRole);
+      console.log('Current user metadata:', currentUser.user_metadata);
+      
+      const tempUser = {
+        id: currentUser.id,
+        firstName: currentUser.user_metadata?.first_name || '',
+        lastName: currentUser.user_metadata?.last_name || '',
+        email: currentUser.email || '',
+        phoneNumber: currentUser.user_metadata?.phone_number || '',
+        role: userRole,
+        createdAt: currentUser.created_at || new Date().toISOString()
+      };
+      setUser(tempUser);
+
+      // Fetch events (public endpoint)
+      try {
+        const eventsResponse = await fetch('/api/events');
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+          setEvents(eventsData);
+        }
+      } catch (err) {
+        console.error('Error fetching events:', err);
+      }
+
+      // Only fetch admin data if user has admin role
+      if (userRole === 'super_admin' || userRole === 'finance_person') {
+        // Fetch users
+        try {
+          const usersResponse = await fetch(`/api/admin/users`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+          });
+          if (usersResponse.ok) {
+            const usersData = await usersResponse.json();
+            setUsers(usersData);
+          } else {
+            console.error('Failed to fetch users:', usersResponse.status, usersResponse.statusText);
+          }
+        } catch (err) {
+          console.error('Error fetching users:', err);
+        }
+
+        // Fetch registrations
+        try {
+          const registrationsResponse = await fetch(`/api/admin/registrations`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+          });
+          if (registrationsResponse.ok) {
+            const registrationsData = await registrationsResponse.json();
+            console.log('Fetched registrations:', registrationsData);
+            setRegistrations(registrationsData);
+          } else {
+            console.error('Failed to fetch registrations:', registrationsResponse.status, registrationsResponse.statusText);
+          }
+        } catch (err) {
+          console.error('Error fetching registrations:', err);
+        }
+
+        // Fetch newsletter subscriptions
+        try {
+          const newsletterResponse = await fetch(`/api/admin/newsletter-subscriptions`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+          });
+          if (newsletterResponse.ok) {
+            const newsletterData = await newsletterResponse.json();
+            setNewsletterSubscriptions(newsletterData);
+          } else {
+            console.error('Failed to fetch newsletter subscriptions:', newsletterResponse.status, newsletterResponse.statusText);
+          }
+        } catch (err) {
+          console.error('Error fetching newsletter subscriptions:', err);
+        }
+      }
+
+    } catch (err: any) {
+      console.error('Error fetching data:', err);
+      setError(err.message || 'Failed to fetch data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Permission checks
   const isSuperAdmin = user?.role === "super_admin";
@@ -265,9 +421,116 @@ export default function AdminDashboard() {
     });
   };
 
-  const exportToExcel = (type) => {
-    // Simulate export
-    console.log(`Exporting ${type} to Excel...`);
+  const exportToExcel = (type: string) => {
+    try {
+      let data: any[] = [];
+      let filename = '';
+      let headers: string[] = [];
+
+      switch (type) {
+        case 'users':
+          data = users.map(user => ({
+            'User ID': user.id,
+            'First Name': user.firstName,
+            'Last Name': user.lastName,
+            'Email': user.email,
+            'Phone Number': user.phoneNumber || 'N/A',
+            'Role': user.role,
+            'Created At': formatDateTime(user.createdAt)
+          }));
+          filename = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+          headers = ['User ID', 'First Name', 'Last Name', 'Email', 'Phone Number', 'Role', 'Created At'];
+          break;
+
+        case 'registrations':
+          data = registrations.map(registration => ({
+            'Registration ID': registration.id,
+            'User Name': registration.user ? `${registration.user.firstName} ${registration.user.lastName}` : 'Unknown User',
+            'User Email': registration.user?.email || 'N/A',
+            'Event Title': registration.event?.title || 'Unknown Event',
+            'Event Location': registration.event?.location || 'N/A',
+            'Event Date': registration.event?.startDate ? formatDate(registration.event.startDate) : 'N/A',
+            'Payment Status': registration.paymentStatus,
+            'Payment Amount': registration.event?.price ? `K${registration.event.price}` : 'N/A',
+            'Registered At': formatDateTime(registration.registeredAt),
+            'Has Evidence': registration.paymentEvidence ? 'Yes' : 'No'
+          }));
+          filename = `registrations_export_${new Date().toISOString().split('T')[0]}.csv`;
+          headers = ['Registration ID', 'User Name', 'User Email', 'Event Title', 'Event Location', 'Event Date', 'Payment Status', 'Payment Amount', 'Registered At', 'Has Evidence'];
+          break;
+
+        case 'events':
+          data = events.map(event => ({
+            'Event ID': event.id,
+            'Title': event.title,
+            'Description': event.description || 'N/A',
+            'Start Date': formatDate(event.startDate),
+            'End Date': event.endDate ? formatDate(event.endDate) : 'N/A',
+            'Location': event.location,
+            'Price': `K${event.price}`,
+            'Current Attendees': event.currentAttendees,
+            'Max Attendees': event.maxAttendees || 'Unlimited',
+            'Featured': event.featured ? 'Yes' : 'No'
+          }));
+          filename = `events_export_${new Date().toISOString().split('T')[0]}.csv`;
+          headers = ['Event ID', 'Title', 'Description', 'Start Date', 'End Date', 'Location', 'Price', 'Current Attendees', 'Max Attendees', 'Featured'];
+          break;
+
+        case 'newsletter':
+          data = newsletterSubscriptions.map(subscription => ({
+            'Subscription ID': subscription.id,
+            'Email': subscription.email,
+            'Subscribed At': formatDateTime(subscription.subscribedAt)
+          }));
+          filename = `newsletter_subscriptions_export_${new Date().toISOString().split('T')[0]}.csv`;
+          headers = ['Subscription ID', 'Email', 'Subscribed At'];
+          break;
+
+        default:
+          console.error('Unknown export type:', type);
+          return;
+      }
+
+      // Create CSV content
+      const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+          headers.map(header => {
+            const value = row[header];
+            // Escape commas and quotes in CSV
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Show success message
+        alert(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully!\n\nFile: ${filename}`);
+      } else {
+        // Fallback for older browsers
+        window.open('data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
+      }
+
+    } catch (error) {
+      console.error('Export error:', error);
+      alert(`❌ Failed to export ${type}. Please try again.`);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -288,7 +551,58 @@ export default function AdminDashboard() {
     });
   };
 
-  if (!canManageUsers) {
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="text-center space-y-4 pb-8">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+              <Loader2 className="w-10 h-10 text-white animate-spin" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold text-gray-900">Loading Dashboard</CardTitle>
+              <CardDescription className="text-gray-600 mt-2">
+                Fetching data from database...
+              </CardDescription>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="text-center space-y-4 pb-8">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
+              <Shield className="w-10 h-10 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold text-gray-900">Error Loading Dashboard</CardTitle>
+              <CardDescription className="text-gray-600 mt-2">
+                {error}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button onClick={fetchData} variant="outline" className="mr-2">
+              Retry
+            </Button>
+            <Button onClick={() => window.location.href = '/'} variant="default">
+              Go Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check if user can access admin dashboard
+  if (!user || (user.role !== 'super_admin' && user.role !== 'finance_person')) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-0 bg-white/90 backdrop-blur-sm">
@@ -307,8 +621,8 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-500 mb-4">
               Please contact your system administrator if you believe this is an error.
             </p>
-            <Button variant="outline">
-              Go Back
+            <Button onClick={() => window.location.href = '/'} variant="outline">
+              Go Home
             </Button>
           </CardContent>
         </Card>
@@ -335,6 +649,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="hidden sm:flex items-center space-x-6 text-right">
                   <Button
+                    onClick={() => window.location.href = '/'}
                     variant="outline"
                     className="border-blue-200 text-white bg-white/10 hover:bg-white/20 hover:border-white/40 transition-colors"
                   >
@@ -370,6 +685,17 @@ export default function AdminDashboard() {
                 <div className="flex items-center space-x-4">
                   <Crown className="w-8 h-8 text-[#FDC123]" />
                   <Button
+                    onClick={() => window.location.href = '/'}
+                    variant="outline"
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors mr-2"
+                  >
+                    Home
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      window.location.href = '/';
+                    }}
                     variant="outline"
                     className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
                   >
@@ -377,6 +703,39 @@ export default function AdminDashboard() {
                     Logout
                   </Button>
                 </div>
+              </div>
+              
+              {/* Global Search Bar */}
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+            </div>
+                  <Input
+                    type="text"
+                    placeholder="Search users, events, registrations, or newsletter subscribers..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-3 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] rounded-xl shadow-sm"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {searchTerm && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Found {filteredUsers.length} users, {filteredEvents.length} events, {filteredRegistrations.length} registrations, {filteredNewsletter.length} newsletter subscribers
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -602,6 +961,21 @@ export default function AdminDashboard() {
                     </CardTitle>
                     <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
                   </div>
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      onClick={() => setShowUserRegistrationDialog(true)}
+                      className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Register New User
+                    </Button>
+                    <Button
+                      onClick={() => setShowEventRegistrationDialog(true)}
+                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      <CalendarPlus className="w-4 h-4 mr-2" />
+                      Register for Event
+                    </Button>
                   <Button
                     onClick={() => exportToExcel('users')}
                     variant="outline"
@@ -609,6 +983,7 @@ export default function AdminDashboard() {
                   >
                     Download Users as Excel
                   </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -624,7 +999,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((userData, index) => (
+                      {filteredUsers.map((userData, index) => (
                         <TableRow key={userData.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
                           <TableCell>
                             <div className="flex items-center gap-3">
@@ -724,11 +1099,22 @@ export default function AdminDashboard() {
           <TabsContent value="events">
             <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
               <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Calendar className="w-6 h-6 text-[#1C356B]" />
                   Event Management
                 </CardTitle>
                 <CardDescription>Overview and management of all training events</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => exportToExcel('events')}
+                    variant="outline"
+                    className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                  >
+                    Download Events as Excel
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border border-slate-200 overflow-hidden">
@@ -744,7 +1130,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {events.map((event, index) => (
+                      {filteredEvents.map((event, index) => (
                         <TableRow key={event.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
                           <TableCell>
                             <div className="space-y-2">
@@ -820,6 +1206,14 @@ export default function AdminDashboard() {
                     </CardTitle>
                     <CardDescription>Monitor and manage event registrations and payment statuses</CardDescription>
                   </div>
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      onClick={() => setShowEventRegistrationDialog(true)}
+                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      <CalendarPlus className="w-4 h-4 mr-2" />
+                      Register User for Event
+                    </Button>
                   <Button
                     onClick={() => exportToExcel('registrations')}
                     variant="outline"
@@ -827,6 +1221,7 @@ export default function AdminDashboard() {
                   >
                     Download Registrations as Excel
                   </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -834,6 +1229,7 @@ export default function AdminDashboard() {
                   <Table>
                     <TableHeader className="bg-slate-50">
                       <TableRow>
+                        <TableHead className="font-semibold">Reg. #</TableHead>
                         <TableHead className="font-semibold">Participant</TableHead>
                         <TableHead className="font-semibold">Event</TableHead>
                         <TableHead className="font-semibold">Registration</TableHead>
@@ -844,8 +1240,13 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {registrations.map((registration, index) => (
+                      {filteredRegistrations.map((registration, index) => (
                         <TableRow key={registration.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
+                          <TableCell>
+                            <div className="font-mono font-bold text-[#1C356B] text-lg">
+                              #{registration.registrationNumber || 'N/A'}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="border-2 border-slate-200">
@@ -942,11 +1343,22 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
                 <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
                   <CardTitle className="flex items-center gap-2 text-xl">
                     <Mail className="w-6 h-6 text-[#1C356B]" />
                     Newsletter Management
                   </CardTitle>
                   <CardDescription>Manage subscribers and send targeted email campaigns</CardDescription>
+                    </div>
+                    <Button
+                      onClick={() => exportToExcel('newsletter')}
+                      variant="outline"
+                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                    >
+                      Download Newsletter as Excel
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-100">
@@ -985,7 +1397,7 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {newsletterSubscriptions.map((subscription, index) => (
+                        {filteredNewsletter.map((subscription, index) => (
                           <TableRow key={subscription.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
                             <TableCell className="font-medium text-gray-900">
                               {subscription.email}
@@ -1156,6 +1568,480 @@ export default function AdminDashboard() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Enhanced User Registration Dialog */}
+        <Dialog open={showUserRegistrationDialog} onOpenChange={setShowUserRegistrationDialog}>
+          <DialogContent className="sm:max-w-md bg-white border-0 shadow-2xl">
+            <DialogHeader className="space-y-4 pb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
+                  <UserPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-gray-900">Register New User</DialogTitle>
+                  <DialogDescription className="text-gray-600">
+                    Create a new user account with administrative privileges.
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="user-role" className="text-sm font-semibold text-gray-700">
+                    Role *
+                  </Label>
+                  <Select onValueChange={(value) => setUserRegistrationData(prev => ({ ...prev, role: value }))} value={userRegistrationData.role}>
+                    <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                      <SelectItem value="finance_person">Finance Person</SelectItem>
+                      <SelectItem value="ordinary_user">Ordinary User</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="user-firstName" className="text-sm font-semibold text-gray-700">
+                      First Name *
+                    </Label>
+                    <Input
+                      id="user-firstName"
+                      placeholder="Enter first name"
+                      value={userRegistrationData.firstName}
+                      onChange={(e) => setUserRegistrationData(prev => ({ ...prev, firstName: e.target.value }))}
+                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="user-lastName" className="text-sm font-semibold text-gray-700">
+                      Last Name *
+                    </Label>
+                    <Input
+                      id="user-lastName"
+                      placeholder="Enter last name"
+                      value={userRegistrationData.lastName}
+                      onChange={(e) => setUserRegistrationData(prev => ({ ...prev, lastName: e.target.value }))}
+                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="user-email" className="text-sm font-semibold text-gray-700">
+                    Email *
+                  </Label>
+                  <Input
+                    id="user-email"
+                    placeholder="Enter email address"
+                    value={userRegistrationData.email}
+                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, email: e.target.value }))}
+                    className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="user-phone" className="text-sm font-semibold text-gray-700">
+                    Phone Number
+                  </Label>
+                  <Input
+                    id="user-phone"
+                    placeholder="Enter phone number (optional)"
+                    value={userRegistrationData.phoneNumber}
+                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                    className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="user-password" className="text-sm font-semibold text-gray-700">
+                    Password *
+                  </Label>
+                  <Input
+                    id="user-password"
+                    type="password"
+                    placeholder="Enter password"
+                    value={userRegistrationData.password}
+                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, password: e.target.value }))}
+                    className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="flex items-center justify-between pt-6 border-t border-slate-200">
+              <Button
+                variant="outline"
+                onClick={() => setShowUserRegistrationDialog(false)}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  setUserRegistrationLoading(true);
+                  try {
+                    // Get current session
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session?.access_token) {
+                      throw new Error('No active session found');
+                    }
+
+                    const response = await fetch('/api/admin/users/register', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify(userRegistrationData),
+                    });
+
+                    if (!response.ok) {
+                      const errorData = await response.json();
+                      throw new Error(errorData.message || 'Failed to register user');
+                    }
+
+                    const result = await response.json();
+                    alert(`User registered successfully! ${result.message}`);
+                    setShowUserRegistrationDialog(false);
+                    setUserRegistrationData({
+                      firstName: "",
+                      lastName: "",
+                      email: "",
+                      phoneNumber: "",
+                      password: "",
+                      role: "ordinary_user"
+                    });
+                    fetchData(); // Refresh users list
+                  } catch (err: any) {
+                    alert(`Registration failed: ${err.message}`);
+                    console.error('Registration error:', err);
+                  } finally {
+                    setUserRegistrationLoading(false);
+                  }
+                }}
+                disabled={userRegistrationLoading || !userRegistrationData.firstName || !userRegistrationData.lastName || !userRegistrationData.email || !userRegistrationData.password}
+                className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                {userRegistrationLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Registering...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Register User
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Enhanced Event Registration Dialog */}
+        <Dialog open={showEventRegistrationDialog} onOpenChange={setShowEventRegistrationDialog}>
+          <DialogContent className="sm:max-w-2xl bg-white border-0 shadow-2xl">
+            <DialogHeader className="space-y-4 pb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
+                  <CalendarPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-gray-900">Register for Event</DialogTitle>
+                  <DialogDescription className="text-gray-600">
+                    Register a user for an upcoming training event.
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-4">
+                                 <div className="space-y-2">
+                   <Label htmlFor="event-user" className="text-sm font-semibold text-gray-700">
+                     User *
+                   </Label>
+                   <div className="relative">
+                     <Input
+                       placeholder="Search users by name or email..."
+                       value={searchTerm}
+                       onChange={(e) => setSearchTerm(e.target.value)}
+                       className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] mb-2"
+                     />
+                     <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
+                       {filteredUsers.map(user => (
+                         <div
+                           key={user.id}
+                           onClick={() => {
+                             setSelectedUser(user);
+                             setSearchTerm('');
+                           }}
+                           className={`p-3 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0 ${
+                             selectedUser?.id === user.id ? 'bg-blue-50 border-blue-200' : ''
+                           }`}
+                         >
+                           <div className="font-medium text-gray-900">
+                             {user.firstName} {user.lastName}
+                           </div>
+                           <div className="text-sm text-gray-600">{user.email}</div>
+                           <div className="text-xs text-gray-500 capitalize">{user.role}</div>
+                         </div>
+                       ))}
+                       {filteredUsers.length === 0 && (
+                         <div className="p-3 text-gray-500 text-center">
+                           No users found
+                         </div>
+                       )}
+                     </div>
+                     {selectedUser && (
+                       <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                         <div className="text-sm font-medium text-green-800">
+                           Selected: {selectedUser.firstName} {selectedUser.lastName}
+                         </div>
+                         <div className="text-xs text-green-600">{selectedUser.email}</div>
+                       </div>
+                     )}
+                   </div>
+                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="event-event" className="text-sm font-semibold text-gray-700">
+                    Event *
+                  </Label>
+                  <Select onValueChange={(value) => setSelectedEvent(events.find(e => e.id === value) || null)} value={selectedEvent?.id || ""}>
+                    <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Select an event" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {events.map(event => (
+                        <SelectItem key={event.id} value={event.id}>
+                          {event.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="event-title" className="text-sm font-semibold text-gray-700">
+                      Title *
+                    </Label>
+                    <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, title: value }))} value={eventRegistrationData.title}>
+                      <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                        <SelectValue placeholder="Select title" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Mr">Mr</SelectItem>
+                        <SelectItem value="Mrs">Mrs</SelectItem>
+                        <SelectItem value="Miss">Miss</SelectItem>
+                        <SelectItem value="Dr">Dr</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="event-gender" className="text-sm font-semibold text-gray-700">
+                      Gender *
+                    </Label>
+                    <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, gender: value }))} value={eventRegistrationData.gender}>
+                      <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="event-country" className="text-sm font-semibold text-gray-700">
+                      Country *
+                    </Label>
+                    <Input
+                      id="event-country"
+                      placeholder="Enter country"
+                      value={eventRegistrationData.country}
+                      onChange={(e) => setEventRegistrationData(prev => ({ ...prev, country: e.target.value }))}
+                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="event-organization" className="text-sm font-semibold text-gray-700">
+                      Organization *
+                    </Label>
+                    <Input
+                      id="event-organization"
+                      placeholder="Enter organization name"
+                      value={eventRegistrationData.organization}
+                      onChange={(e) => setEventRegistrationData(prev => ({ ...prev, organization: e.target.value }))}
+                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="event-organizationType" className="text-sm font-semibold text-gray-700">
+                      Organization Type *
+                    </Label>
+                    <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, organizationType: value }))} value={eventRegistrationData.organizationType}>
+                      <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                        <SelectValue placeholder="Select organization type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Government">Government</SelectItem>
+                        <SelectItem value="Private">Private</SelectItem>
+                        <SelectItem value="NGO">NGO</SelectItem>
+                        <SelectItem value="Academic">Academic</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="event-position" className="text-sm font-semibold text-gray-700">
+                      Position *
+                    </Label>
+                    <Input
+                      id="event-position"
+                      placeholder="Enter position"
+                      value={eventRegistrationData.position}
+                      onChange={(e) => setEventRegistrationData(prev => ({ ...prev, position: e.target.value }))}
+                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="event-notes" className="text-sm font-semibold text-gray-700">
+                    Notes (optional)
+                  </Label>
+                  <Textarea
+                    id="event-notes"
+                    placeholder="Any specific notes for the registration?"
+                    value={eventRegistrationData.notes}
+                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, notes: e.target.value }))}
+                    className="min-h-[100px] text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] resize-none"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="event-hasPaid"
+                    checked={eventRegistrationData.hasPaid}
+                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, hasPaid: e.target.checked }))}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <Label htmlFor="event-hasPaid" className="text-sm text-gray-700">
+                    User has paid for the registration
+                  </Label>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="event-paymentStatus" className="text-sm font-semibold text-gray-700">
+                    Payment Status *
+                  </Label>
+                  <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, paymentStatus: value }))} value={eventRegistrationData.paymentStatus}>
+                    <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Select payment status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="failed">Failed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="flex items-center justify-between pt-6 border-t border-slate-200">
+              <Button
+                variant="outline"
+                onClick={() => setShowEventRegistrationDialog(false)}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  setEventRegistrationLoading(true);
+                  try {
+                    // Get current session
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session?.access_token) {
+                      throw new Error('No active session found');
+                    }
+
+                    const response = await fetch('/api/admin/events/register', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify({
+                        userId: selectedUser?.id,
+                        eventId: selectedEvent?.id,
+                        title: eventRegistrationData.title,
+                        gender: eventRegistrationData.gender,
+                        country: eventRegistrationData.country,
+                        organization: eventRegistrationData.organization,
+                        organizationType: eventRegistrationData.organizationType,
+                        position: eventRegistrationData.position,
+                        notes: eventRegistrationData.notes,
+                        hasPaid: eventRegistrationData.hasPaid,
+                        paymentStatus: eventRegistrationData.paymentStatus,
+                      }),
+                    });
+
+                    if (!response.ok) {
+                      const errorData = await response.json();
+                      throw new Error(errorData.message || 'Failed to register user for event');
+                    }
+
+                    const result = await response.json();
+                    alert(`Registration successful! ${result.message}`);
+                    setShowEventRegistrationDialog(false);
+                    setEventRegistrationData({
+                      userId: "",
+                      eventId: "",
+                      title: "Mr",
+                      gender: "Male",
+                      country: "",
+                      organization: "",
+                      organizationType: "Government",
+                      position: "",
+                      notes: "",
+                      hasPaid: false,
+                      paymentStatus: "pending"
+                    });
+                    setSelectedUser(null);
+                    setSelectedEvent(null);
+                    fetchData(); // Refresh registrations list
+                  } catch (err: any) {
+                    alert(`Registration failed: ${err.message}`);
+                    console.error('Registration error:', err);
+                  } finally {
+                    setEventRegistrationLoading(false);
+                  }
+                }}
+                disabled={eventRegistrationLoading || !selectedUser || !selectedEvent}
+                className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                {eventRegistrationLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Registering...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Register User for Event
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Evidence Viewer */}
         <EvidenceViewer

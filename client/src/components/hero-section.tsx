@@ -1,6 +1,9 @@
 import { Calendar, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Event } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 export function HeroSection() {
   // Background images array - replace with your actual image URLs
@@ -13,6 +16,13 @@ export function HeroSection() {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+
+  // Fetch events to get the latest featured event
+  const { data: events } = useQuery<Event[]>({
+    queryKey: ["/api/events"],
+  });
+
+  const latestEvent = events?.find(event => event.featured) || events?.[0];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -99,9 +109,24 @@ export function HeroSection() {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e6ae1f'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FDC123'}
                 data-testid="hero-events-button"
+                onClick={() => {
+                  if (latestEvent) {
+                    // Scroll to events section and trigger registration
+                    const eventsSection = document.getElementById('events');
+                    if (eventsSection) {
+                      eventsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  } else {
+                    // If no events, scroll to events section anyway
+                    const eventsSection = document.getElementById('events');
+                    if (eventsSection) {
+                      eventsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }
+                }}
               >
                 <Calendar className="w-5 h-5 mr-2" />
-                DISCOVER MORE
+                {latestEvent ? 'REGISTER FOR INDABA' : 'VIEW EVENTS'}
               </Button>
               <Button
                 size="lg"
@@ -117,6 +142,16 @@ export function HeroSection() {
                   e.currentTarget.style.color = 'white';
                 }}
                 data-testid="hero-learn-more-button"
+                onClick={() => {
+                  // Scroll to contact section or open contact modal
+                  const contactSection = document.getElementById('contact');
+                  if (contactSection) {
+                    contactSection.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    // If no contact section, scroll to footer
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                  }
+                }}
               >
                 CONTACT US
                 <ArrowRight className="w-5 h-5 ml-2" />

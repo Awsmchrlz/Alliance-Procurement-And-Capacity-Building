@@ -242,29 +242,29 @@ const RegisterPage = () => {
       </div>
 
       {/* Right Side - Registration Form */}
-      <div className="w-full lg:w-1/2 relative z-10 flex items-start justify-center px-4 lg:px-6 py-4 min-h-screen overflow-y-auto">
-        <div className="w-full max-w-md lg:my-auto">
+      <div className="w-full lg:w-1/2 relative z-10 flex items-center justify-center px-4 lg:px-6 py-6 min-h-screen">
+        <div className="w-full max-w-sm lg:max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center mb-4 pt-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-2xl">
-              <Handshake className="w-9 h-9 text-white" />
+          <div className="lg:hidden flex items-center justify-center mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-2xl">
+              <Handshake className="w-6 h-6 text-white" />
             </div>
           </div>
 
           {/* Enhanced Registration Card */}
-          <div className="bg-white/[0.02] backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+          <div className="bg-white/[0.02] backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 w-full">
             {/* Card Header with Gradient */}
-            <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 p-8 rounded-t-3xl border-b border-white/10">
+            <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 p-6 rounded-t-2xl border-b border-white/10">
               <div className="text-center">
-                <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
-                <p className="text-gray-300">Join APCB for professional development</p>
+                <h2 className="text-2xl font-bold text-white mb-1">Create Account</h2>
+                <p className="text-gray-300 text-sm">Join APCB for professional development</p>
               </div>
             </div>
 
             {/* Form Content */}
-            <div className="p-8 space-y-5">
+            <div className="p-6 space-y-4">
               {/* Name Fields */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-semibold text-gray-200 mb-2">
                     First Name
@@ -378,12 +378,12 @@ const RegisterPage = () => {
                   </button>
                 </div>
 
-                {/* Enhanced Password Strength Indicator */}
+                {/* Compact Password Strength Indicator */}
                 {formData.password && (
-                  <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-300">Password strength</span>
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                  <div className="mt-2 p-2 bg-white/5 rounded-lg border border-white/10">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-300">Strength</span>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                         passwordStrength(formData.password) === 4 ? 'bg-green-500/20 text-green-400' :
                         passwordStrength(formData.password) === 3 ? 'bg-blue-500/20 text-blue-400' :
                         passwordStrength(formData.password) === 2 ? 'bg-yellow-500/20 text-yellow-400' :
@@ -396,7 +396,7 @@ const RegisterPage = () => {
                       {[1, 2, 3, 4].map((level) => (
                         <div
                           key={level}
-                          className={`h-2 flex-1 rounded-full transition-all duration-300 ${
+                          className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
                             level <= passwordStrength(formData.password)
                               ? getStrengthColor(passwordStrength(formData.password))
                               : 'bg-gray-700'
@@ -445,13 +445,13 @@ const RegisterPage = () => {
               </div>
 
               {/* Terms */}
-              <div className="flex items-start space-x-3 p-4 bg-white/5 rounded-lg border border-white/10">
+              <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
                 <input
                   type="checkbox"
                   id="terms"
                   className="w-4 h-4 mt-0.5 text-blue-600 bg-transparent border-gray-400 rounded focus:ring-blue-500 focus:ring-2"
                 />
-                <label htmlFor="terms" className="text-sm text-gray-300 leading-relaxed">
+                <label htmlFor="terms" className="text-xs text-gray-300 leading-relaxed">
                   I agree to the{" "}
                   <a href="#" className="text-blue-400 hover:text-blue-300 font-medium underline underline-offset-2">
                     Terms of Service
@@ -468,7 +468,7 @@ const RegisterPage = () => {
                 onClick={handleSubmit}
                 disabled={isLoading}
                 style={{ background: `#1C356B` }}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 focus:ring-4 focus:ring-blue-500/50 disabled:opacity-70 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-2xl border border-blue-500/20"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 focus:ring-4 focus:ring-blue-500/50 disabled:opacity-70 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-2xl border border-blue-500/20"
               >
                 {isLoading ? (
                   <>
@@ -485,7 +485,7 @@ const RegisterPage = () => {
             </div>
 
             {/* Login Link */}
-            <div className="p-8 pt-0 border-t border-white/10">
+            <div className="p-6 pt-0 border-t border-white/10">
               <p className="text-center text-sm text-gray-300">
                 Already have an account?{" "}
                 <a href="/login" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-2">
@@ -496,15 +496,15 @@ const RegisterPage = () => {
           </div>
 
           {/* Mobile Trust Indicator */}
-          <div className="lg:hidden mt-4 mb-4 text-center">
-            <p className="text-white/60 text-sm">
+          <div className="lg:hidden mt-4 text-center">
+            <p className="text-white/60 text-xs">
               <Shield className="w-4 h-4 inline mr-1" />
               Join 5,000+ professionals across Africa
             </p>
           </div>
 
           {/* Background Image Indicators */}
-          <div className="lg:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
+          <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
             {backgroundImages.map((_, index) => (
               <button
                 key={index}

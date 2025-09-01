@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,6 +69,19 @@ export function RegistrationDialog({ open, onOpenChange, event, onSuccess }: Reg
     evidenceFileName: "",
     evidenceFile: null
   });
+
+  // Update form data when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
+      }));
+    }
+  }, [user]);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -185,6 +198,15 @@ export function RegistrationDialog({ open, onOpenChange, event, onSuccess }: Reg
 
       await apiRequest("POST", "/api/events/register", registrationPayload);
 
+      // Automatically subscribe to newsletter (fire-and-forget)
+      await apiRequest("POST", "/api/newsletter/subscribe", {
+        email: formData.email,
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+      }).catch((newsletterError) => {
+        console.error('Newsletter subscription failed:', newsletterError);
+        // Don't fail the registration if newsletter subscription fails
+      });
+
       // Send confirmation email (fire-and-forget)
       await apiRequest("POST", "/api/notifications/registration-confirmation", {
         email: formData.email,
@@ -227,13 +249,21 @@ export function RegistrationDialog({ open, onOpenChange, event, onSuccess }: Reg
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : close())}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden bg-white border-0 shadow-2xl rounded-2xl flex flex-col">
         {!submitted ? (
           <>
             <DialogHeader className="relative overflow-hidden shrink-0">
               <div className="absolute inset-0 bg-gradient-to-r from-[#1C356B] via-[#1C356B] to-[#2d4a7a] opacity-95" />
               <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22m36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-10" />
+              
+              {/* Close Button */}
+              <button
+                onClick={() => onOpenChange(false)}
+                className="absolute top-4 right-4 z-10 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+              >
+                <span className="text-white text-xl font-bold">×</span>
+              </button>
               
               <div className="relative px-4 sm:px-8 py-6 text-center">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-4">
@@ -312,11 +342,13 @@ export function RegistrationDialog({ open, onOpenChange, event, onSuccess }: Reg
                         First Name <span className="text-red-500">*</span>
                       </Label>
                       <Input 
-                        className="h-12 border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]" 
+                        className="h-12 border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] bg-gray-50" 
                         value={formData.firstName} 
                         onChange={(e) => updateField("firstName", e.target.value)}
                         placeholder="Enter first name"
+                        readOnly
                       />
+                      <p className="text-xs text-gray-500">Pre-filled from your profile</p>
                     </div>
 
                     <div className="space-y-2">
@@ -324,11 +356,13 @@ export function RegistrationDialog({ open, onOpenChange, event, onSuccess }: Reg
                         Last Name <span className="text-red-500">*</span>
                       </Label>
                       <Input 
-                        className="h-12 border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]" 
+                        className="h-12 border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] bg-gray-50" 
                         value={formData.lastName} 
                         onChange={(e) => updateField("lastName", e.target.value)}
                         placeholder="Enter last name"
+                        readOnly
                       />
+                      <p className="text-xs text-gray-500">Pre-filled from your profile</p>
                     </div>
                   </div>
 
@@ -485,6 +519,15 @@ export function RegistrationDialog({ open, onOpenChange, event, onSuccess }: Reg
                       </Label>
                     </div>
 
+                    {/* Newsletter Subscription Notice */}
+                    <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                      <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-blue-800">
+                        <p className="font-medium mb-1">Newsletter Subscription</p>
+                        <p>By registering for this event, you'll automatically be subscribed to our newsletter for future updates, training opportunities, and industry insights.</p>
+                      </div>
+                    </div>
+
                     {formData.hasPaid && (
                       <div className="space-y-2 pl-4 border-l-4 border-[#1C356B] bg-blue-50 p-4 rounded-r-xl">
                         <Label className="text-sm font-semibold text-gray-700">
@@ -559,7 +602,7 @@ export function RegistrationDialog({ open, onOpenChange, event, onSuccess }: Reg
                   Registration Successful!
                 </DialogTitle>
                 <DialogDescription className="text-green-100 text-base sm:text-lg">
-                  Welcome aboard! We've sent a confirmation email to {formData.email}
+                  Welcome aboard! We've sent a confirmation email to {formData.email} and subscribed you to our newsletter for updates.
                 </DialogDescription>
               </div>
             </DialogHeader>
@@ -611,6 +654,7 @@ export function RegistrationDialog({ open, onOpenChange, event, onSuccess }: Reg
                       <p className="font-semibold text-blue-900 mb-1">What's Next?</p>
                       <ul className="text-blue-800 text-sm space-y-1">
                         <li>• Check your email for detailed event information</li>
+                        <li>• You've been subscribed to our newsletter for future updates</li>
                         <li>• Add the event to your calendar</li>
                         <li>• Prepare any required materials mentioned in the confirmation</li>
                       </ul>

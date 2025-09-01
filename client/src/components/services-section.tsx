@@ -64,7 +64,10 @@ export function ServicesSection() {
               </p>
               <button className="text-primary-blue dark:text-primary-yellow hover:underline font-medium"
                data-testid={`service-learn-more-${index}`}
-               onClick={() => window.location.href = "/services"}>
+               onClick={() => {
+                 // Navigate to services page with the specific service selected
+                 window.location.href = `/services?service=${index}`;
+               }}>
                 Learn More →
               </button>
             </div>
