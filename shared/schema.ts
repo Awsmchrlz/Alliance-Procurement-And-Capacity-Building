@@ -1,10 +1,20 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean, decimal, integer } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  varchar,
+  timestamp,
+  boolean,
+  decimal,
+  integer,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
@@ -15,7 +25,9 @@ export const users = pgTable("users", {
 });
 
 export const events = pgTable("events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description").notNull(),
   startDate: timestamp("start_date").notNull(),
@@ -31,10 +43,16 @@ export const events = pgTable("events", {
 });
 
 export const eventRegistrations = pgTable("event_registrations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   registrationNumber: text("registration_number").notNull().unique(), // Auto-incrementing registration number
-  userId: varchar("user_id").notNull().references(() => users.id),
-  eventId: varchar("event_id").notNull().references(() => events.id),
+  userId: varchar("user_id")
+    .notNull()
+    .references(() => users.id),
+  eventId: varchar("event_id")
+    .notNull()
+    .references(() => events.id),
   paymentStatus: text("payment_status").notNull().default("pending"), // pending, paid, cancelled
   registeredAt: timestamp("registered_at").defaultNow(),
   // Additional registration fields
@@ -50,7 +68,9 @@ export const eventRegistrations = pgTable("event_registrations", {
 });
 
 export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
   name: text("name"),
   subscribedAt: timestamp("subscribed_at").defaultNow(),
@@ -78,7 +98,10 @@ export const insertEventRegistrationSchema = z.object({
   position: z.string(),
   notes: z.string().optional().nullable(),
   hasPaid: z.boolean().optional().default(false),
-  paymentStatus: z.enum(["pending", "paid", "cancelled"]).optional().default("pending"),
+  paymentStatus: z
+    .enum(["pending", "paid", "cancelled"])
+    .optional()
+    .default("pending"),
   paymentMethod: z.string().optional().nullable(),
   currency: z.string().optional().nullable(),
   pricePaid: z.number().optional().nullable(),
@@ -104,9 +127,15 @@ export const insertEvidenceHistorySchema = z.object({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type UserResponse = Omit<User, "password">;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof events.$inferSelect;
-export type InsertEventRegistration = z.infer<typeof insertEventRegistrationSchema>;
+export type InsertEventRegistration = z.infer<
+  typeof insertEventRegistrationSchema
+>;
 export type EventRegistration = typeof eventRegistrations.$inferSelect;
-export type InsertNewsletterSubscription = z.infer<typeof insertNewsletterSubscriptionSchema>;
-export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
+export type InsertNewsletterSubscription = z.infer<
+  typeof insertNewsletterSubscriptionSchema
+>;
+export type NewsletterSubscription =
+  typeof newsletterSubscriptions.$inferSelect;

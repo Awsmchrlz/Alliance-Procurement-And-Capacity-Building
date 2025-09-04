@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,12 +83,13 @@ import {
   FileText,
   Phone,
   MapPin,
-  CreditCard
+  CreditCard,
+  RefreshCw,
 } from "lucide-react";
-
 
 import { EvidenceViewer } from "@/components/evidence-viewer";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 // Real data interfaces
 interface Event {
@@ -128,11 +135,19 @@ interface NewsletterSubscription {
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const {
+    user: authUser,
+    isSuperAdmin,
+    canManageFinance,
+    canManageUsers,
+  } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [newsletterSubscriptions, setNewsletterSubscriptions] = useState<NewsletterSubscription[]>([]);
+  const [newsletterSubscriptions, setNewsletterSubscriptions] = useState<
+    NewsletterSubscription[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -140,7 +155,7 @@ export default function AdminDashboard() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [showEmailDialog, setShowEmailDialog] = useState(false);
-  
+
   // Role change functionality
   const [confirmRoleChange, setConfirmRoleChange] = useState<{
     userId: string;
@@ -148,32 +163,35 @@ export default function AdminDashboard() {
     userName: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Evidence viewer
   const [evidenceViewer, setEvidenceViewer] = useState<{
     open: boolean;
     evidencePath: string;
     fileName?: string;
     registrationId?: string;
+    paymentStatus?: string;
   }>({
     open: false,
     evidencePath: "",
   });
 
   // Admin user registration functionality
-  const [showUserRegistrationDialog, setShowUserRegistrationDialog] = useState(false);
+  const [showUserRegistrationDialog, setShowUserRegistrationDialog] =
+    useState(false);
   const [userRegistrationData, setUserRegistrationData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phoneNumber: "",
     password: "",
-    role: "ordinary_user"
+    role: "ordinary_user",
   });
   const [userRegistrationLoading, setUserRegistrationLoading] = useState(false);
 
   // Admin event registration functionality
-  const [showEventRegistrationDialog, setShowEventRegistrationDialog] = useState(false);
+  const [showEventRegistrationDialog, setShowEventRegistrationDialog] =
+    useState(false);
   const [eventRegistrationData, setEventRegistrationData] = useState({
     userId: "",
     eventId: "",
@@ -185,18 +203,24 @@ export default function AdminDashboard() {
     position: "",
     notes: "",
     hasPaid: false,
-    paymentStatus: "pending"
+    paymentStatus: "pending",
   });
-  const [eventRegistrationLoading, setEventRegistrationLoading] = useState(false);
+  const [eventRegistrationLoading, setEventRegistrationLoading] =
+    useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   // Search functionality
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [filteredRegistrations, setFilteredRegistrations] = useState<Registration[]>([]);
-  const [filteredNewsletter, setFilteredNewsletter] = useState<NewsletterSubscription[]>([]);
+  const [filteredRegistrations, setFilteredRegistrations] = useState<
+    Registration[]
+  >([]);
+  const [filteredNewsletter, setFilteredNewsletter] = useState<
+    NewsletterSubscription[]
+  >([]);
 
   // Fetch real data from Supabase
   useEffect(() => {
@@ -205,44 +229,69 @@ export default function AdminDashboard() {
 
   // Search and filter functionality
   useEffect(() => {
-    if (searchTerm.trim() === '') {
+    if (searchTerm.trim() === "") {
       setFilteredUsers(users);
       setFilteredEvents(events);
-      setFilteredRegistrations(registrations);
+      // Apply status filter even when search is empty
+      const statusFilteredRegistrations =
+        statusFilter === "all"
+          ? registrations
+          : registrations.filter((reg) => reg.paymentStatus === statusFilter);
+      setFilteredRegistrations(statusFilteredRegistrations);
       setFilteredNewsletter(newsletterSubscriptions);
     } else {
       const term = searchTerm.toLowerCase();
-      
+
       // Filter users
-      setFilteredUsers(users.filter(user => 
-        user.firstName.toLowerCase().includes(term) ||
-        user.lastName.toLowerCase().includes(term) ||
-        user.email.toLowerCase().includes(term) ||
-        user.role.toLowerCase().includes(term)
-      ));
-      
+      setFilteredUsers(
+        users.filter(
+          (user) =>
+            user.firstName.toLowerCase().includes(term) ||
+            user.lastName.toLowerCase().includes(term) ||
+            user.email.toLowerCase().includes(term) ||
+            user.role.toLowerCase().includes(term),
+        ),
+      );
+
       // Filter events
-      setFilteredEvents(events.filter(event => 
-        event.title.toLowerCase().includes(term) ||
-        event.description.toLowerCase().includes(term) ||
-        event.location.toLowerCase().includes(term)
-      ));
-      
+      setFilteredEvents(
+        events.filter(
+          (event) =>
+            event.title.toLowerCase().includes(term) ||
+            event.description.toLowerCase().includes(term) ||
+            event.location.toLowerCase().includes(term),
+        ),
+      );
+
       // Filter registrations
-      setFilteredRegistrations(registrations.filter(registration => 
-        registration.user?.firstName.toLowerCase().includes(term) ||
-        registration.user?.lastName.toLowerCase().includes(term) ||
-        registration.user?.email.toLowerCase().includes(term) ||
-        registration.event?.title.toLowerCase().includes(term) ||
-        registration.paymentStatus.toLowerCase().includes(term)
-      ));
-      
+      setFilteredRegistrations(
+        registrations.filter(
+          (registration) =>
+            (registration.user?.firstName.toLowerCase().includes(term) ||
+              registration.user?.lastName.toLowerCase().includes(term) ||
+              registration.user?.email.toLowerCase().includes(term) ||
+              registration.event?.title.toLowerCase().includes(term) ||
+              registration.paymentStatus.toLowerCase().includes(term)) &&
+            (statusFilter === "all" ||
+              registration.paymentStatus === statusFilter),
+        ),
+      );
+
       // Filter newsletter subscriptions
-      setFilteredNewsletter(newsletterSubscriptions.filter(subscription => 
-        subscription.email.toLowerCase().includes(term)
-      ));
+      setFilteredNewsletter(
+        newsletterSubscriptions.filter((subscription) =>
+          subscription.email.toLowerCase().includes(term),
+        ),
+      );
     }
-  }, [searchTerm, users, events, registrations, newsletterSubscriptions]);
+  }, [
+    searchTerm,
+    statusFilter,
+    users,
+    events,
+    registrations,
+    newsletterSubscriptions,
+  ]);
 
   const fetchData = async () => {
     try {
@@ -250,136 +299,313 @@ export default function AdminDashboard() {
       setError(null);
 
       // Get current user session
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.user) {
         setError("No active session found");
         return;
       }
 
       // Get current user's role from Supabase metadata
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
       if (!currentUser) {
         setError("Failed to get user information");
         return;
       }
 
       // Set user role from metadata
-      const userRole = currentUser.user_metadata?.role || 'ordinary_user';
-      console.log('Current user role:', userRole);
-      console.log('Current user metadata:', currentUser.user_metadata);
-      
+      const userRole = currentUser.user_metadata?.role || "ordinary_user";
+      console.log("Current user role:", userRole);
+      console.log("Current user metadata:", currentUser.user_metadata);
+
       const tempUser = {
         id: currentUser.id,
-        firstName: currentUser.user_metadata?.first_name || '',
-        lastName: currentUser.user_metadata?.last_name || '',
-        email: currentUser.email || '',
-        phoneNumber: currentUser.user_metadata?.phone_number || '',
+        firstName: currentUser.user_metadata?.first_name || "",
+        lastName: currentUser.user_metadata?.last_name || "",
+        email: currentUser.email || "",
+        phoneNumber: currentUser.user_metadata?.phone_number || "",
         role: userRole,
-        createdAt: currentUser.created_at || new Date().toISOString()
+        createdAt: currentUser.created_at || new Date().toISOString(),
       };
       setUser(tempUser);
 
       // Fetch events (public endpoint)
       try {
-        const eventsResponse = await fetch('/api/events');
+        const eventsResponse = await fetch("/api/events");
         if (eventsResponse.ok) {
           const eventsData = await eventsResponse.json();
           setEvents(eventsData);
         }
       } catch (err) {
-        console.error('Error fetching events:', err);
+        console.error("Error fetching events:", err);
       }
 
       // Only fetch admin data if user has admin role
-      if (userRole === 'super_admin' || userRole === 'finance_person') {
+      if (userRole === "super_admin" || userRole === "finance_person") {
         // Fetch users
         try {
           const usersResponse = await fetch(`/api/admin/users`, {
             headers: {
-              'Authorization': `Bearer ${session.access_token}`,
+              Authorization: `Bearer ${session.access_token}`,
             },
           });
           if (usersResponse.ok) {
             const usersData = await usersResponse.json();
             setUsers(usersData);
           } else {
-            console.error('Failed to fetch users:', usersResponse.status, usersResponse.statusText);
+            console.error(
+              "Failed to fetch users:",
+              usersResponse.status,
+              usersResponse.statusText,
+            );
           }
         } catch (err) {
-          console.error('Error fetching users:', err);
+          console.error("Error fetching users:", err);
         }
 
         // Fetch registrations
         try {
-          const registrationsResponse = await fetch(`/api/admin/registrations`, {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
+          const registrationsResponse = await fetch(
+            `/api/admin/registrations`,
+            {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
             },
-          });
+          );
           if (registrationsResponse.ok) {
             const registrationsData = await registrationsResponse.json();
-            console.log('Fetched registrations:', registrationsData);
+            console.log("Fetched registrations:", registrationsData);
             setRegistrations(registrationsData);
           } else {
-            console.error('Failed to fetch registrations:', registrationsResponse.status, registrationsResponse.statusText);
+            console.error(
+              "Failed to fetch registrations:",
+              registrationsResponse.status,
+              registrationsResponse.statusText,
+            );
           }
         } catch (err) {
-          console.error('Error fetching registrations:', err);
+          console.error("Error fetching registrations:", err);
         }
 
         // Fetch newsletter subscriptions
         try {
-          const newsletterResponse = await fetch(`/api/admin/newsletter-subscriptions`, {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
+          const newsletterResponse = await fetch(
+            `/api/admin/newsletter-subscriptions`,
+            {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
             },
-          });
+          );
           if (newsletterResponse.ok) {
             const newsletterData = await newsletterResponse.json();
             setNewsletterSubscriptions(newsletterData);
           } else {
-            console.error('Failed to fetch newsletter subscriptions:', newsletterResponse.status, newsletterResponse.statusText);
+            console.error(
+              "Failed to fetch newsletter subscriptions:",
+              newsletterResponse.status,
+              newsletterResponse.statusText,
+            );
           }
         } catch (err) {
-          console.error('Error fetching newsletter subscriptions:', err);
+          console.error("Error fetching newsletter subscriptions:", err);
         }
       }
-
     } catch (err: any) {
-      console.error('Error fetching data:', err);
-      setError(err.message || 'Failed to fetch data');
+      console.error("Error fetching data:", err);
+      setError(err.message || "Failed to fetch data");
     } finally {
       setLoading(false);
     }
   };
 
-  // Permission checks
-  const isSuperAdmin = user?.role === "super_admin";
-  const canManageUsers = isSuperAdmin || user?.role === "finance_person";
-  const canManageFinance = isSuperAdmin || user?.role === "finance_person";
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Payment status update handler
+  const handlePaymentStatusUpdate = async (
+    registrationId: string,
+    newStatus: string,
+  ) => {
+    if (!canManageFinance) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to update payment status.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("No active session");
+      }
+
+      const response = await fetch(
+        `/api/admin/registrations/${registrationId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            paymentStatus: newStatus,
+            hasPaid: newStatus === "paid" || newStatus === "completed",
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update payment status");
+      }
+
+      // Refresh registrations
+      await fetchData();
+
+      toast({
+        title: "Status Updated",
+        description: `Payment status updated to ${newStatus}.`,
+      });
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast({
+        title: "Update Failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update payment status.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Reactivate cancelled registration (super admin only)
+  const handleReactivateRegistration = async (registrationId: string) => {
+    if (!isSuperAdmin) {
+      toast({
+        title: "Access Denied",
+        description:
+          "Only super admins can reactivate cancelled registrations.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await handlePaymentStatusUpdate(registrationId, "pending");
+
+      toast({
+        title: "Registration Reactivated",
+        description: "The registration has been reactivated successfully.",
+      });
+    } catch (error) {
+      console.error("Error reactivating registration:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Calculate analytics
   const totalRevenue = registrations
-    .filter(reg => reg.paymentStatus === "completed" || reg.paymentStatus === "paid")
+    .filter(
+      (reg) =>
+        reg.paymentStatus === "completed" || reg.paymentStatus === "paid",
+    )
     .reduce((sum, reg) => sum + parseFloat(reg.event?.price || "0"), 0);
 
-  const pendingPayments = registrations.filter(reg => reg.paymentStatus === "pending").length;
-  const completedPayments = registrations.filter(reg => reg.paymentStatus === "completed" || reg.paymentStatus === "paid").length;
-  const superAdminUsers = users.filter(u => u.role === "super_admin").length;
-  const financeUsers = users.filter(u => u.role === "finance_person").length;
+  const pendingPayments = registrations.filter(
+    (reg) => reg.paymentStatus === "pending",
+  ).length;
+  const completedPayments = registrations.filter(
+    (reg) => reg.paymentStatus === "completed" || reg.paymentStatus === "paid",
+  ).length;
+  const superAdminUsers = users.filter((u) => u.role === "super_admin").length;
+  const financeUsers = users.filter((u) => u.role === "finance_person").length;
 
-  const handleRoleChangeRequest = (userId, newRole, userName) => {
+  const handleRoleChange = (
+    userId: string,
+    newRole: string,
+    userName: string,
+  ) => {
     setConfirmRoleChange({ userId, role: newRole, userName });
   };
 
-  const confirmRoleChangeAction = () => {
+  const confirmRoleChangeAction = async () => {
+    if (!confirmRoleChange) return;
+
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("No authentication session");
+      }
+
+      const response = await fetch(
+        `/api/admin/users/${confirmRoleChange.userId}/role`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            role: confirmRoleChange.role,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update user role");
+      }
+
+      // Update the users array locally
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === confirmRoleChange.userId
+            ? { ...user, role: confirmRoleChange.role }
+            : user,
+        ),
+      );
+
+      toast({
+        title: "Role Updated",
+        description: `Successfully updated ${confirmRoleChange.userName}'s role to ${confirmRoleChange.role.replace("_", " ")}`,
+      });
+
       setConfirmRoleChange(null);
-      // In real implementation, update the users array
-    }, 2000);
+
+      // Refresh all data to ensure UI reflects changes
+      await fetchData();
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to update user role",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSendEmailBlast = () => {
@@ -396,15 +622,43 @@ export default function AdminDashboard() {
     }, 2000);
   };
 
-  const getPaymentStatusBadge = (status) => {
+  const getPaymentStatusBadge = (status: string) => {
     const statusConfig = {
-      completed: { variant: "default", color: "bg-emerald-500 text-white", icon: CheckCircle, label: "Completed" },
-      paid: { variant: "default", color: "bg-emerald-500 text-white", icon: CheckCircle, label: "Paid" },
-      pending: { variant: "secondary", color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300", icon: Clock, label: "Pending" },
-      failed: { variant: "destructive", color: "bg-red-500 text-white", icon: XCircle, label: "Failed" }
+      completed: {
+        variant: "default" as const,
+        color: "bg-emerald-500 text-white",
+        icon: CheckCircle,
+        label: "Completed",
+      },
+      paid: {
+        variant: "default" as const,
+        color: "bg-emerald-500 text-white",
+        icon: CheckCircle,
+        label: "Paid",
+      },
+      pending: {
+        variant: "secondary" as const,
+        color:
+          "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+        icon: Clock,
+        label: "Pending",
+      },
+      cancelled: {
+        variant: "destructive" as const,
+        color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+        icon: XCircle,
+        label: "Cancelled",
+      },
+      failed: {
+        variant: "destructive" as const,
+        color: "bg-red-500 text-white",
+        icon: XCircle,
+        label: "Failed",
+      },
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     const IconComponent = config.icon;
 
     return (
@@ -415,132 +669,185 @@ export default function AdminDashboard() {
     );
   };
 
-  const handleViewPaymentEvidence = (evidencePath: string, fileName?: string, registrationId?: string) => {
+  const handleViewPaymentEvidence = (
+    evidencePath: string,
+    fileName?: string,
+    registrationId?: string,
+    paymentStatus?: string,
+  ) => {
     setEvidenceViewer({
       open: true,
       evidencePath,
       fileName,
       registrationId,
+      paymentStatus,
     });
   };
 
   const handleEvidenceUpdate = (newEvidencePath: string) => {
     // Update the registrations list with the new evidence path
-    setRegistrations(prev => prev.map(reg => 
-      reg.id === evidenceViewer.registrationId 
-        ? { ...reg, paymentEvidence: newEvidencePath }
-        : reg
-    ));
-    
+    setRegistrations((prev) =>
+      prev.map((reg) =>
+        reg.id === evidenceViewer.registrationId
+          ? { ...reg, paymentEvidence: newEvidencePath }
+          : reg,
+      ),
+    );
+
     // Update filtered registrations as well
-    setFilteredRegistrations(prev => prev.map(reg => 
-      reg.id === evidenceViewer.registrationId 
-        ? { ...reg, paymentEvidence: newEvidencePath }
-        : reg
-    ));
-    
-    console.log('✅ Evidence updated in admin dashboard:', newEvidencePath);
+    setFilteredRegistrations((prev) =>
+      prev.map((reg) =>
+        reg.id === evidenceViewer.registrationId
+          ? { ...reg, paymentEvidence: newEvidencePath }
+          : reg,
+      ),
+    );
+
+    console.log("✅ Evidence updated in admin dashboard:", newEvidencePath);
   };
 
   const exportToExcel = (type: string) => {
     try {
       let data: any[] = [];
-      let filename = '';
+      let filename = "";
       let headers: string[] = [];
 
       switch (type) {
-        case 'users':
-          data = users.map(user => ({
-            'User ID': user.id,
-            'First Name': user.firstName,
-            'Last Name': user.lastName,
-            'Email': user.email,
-            'Phone Number': user.phoneNumber || 'N/A',
-            'Role': user.role,
-            'Created At': formatDateTime(user.createdAt)
+        case "users":
+          data = users.map((user) => ({
+            "User ID": user.id,
+            "First Name": user.firstName,
+            "Last Name": user.lastName,
+            Email: user.email,
+            "Phone Number": user.phoneNumber || "N/A",
+            Role: user.role,
+            "Created At": formatDateTime(user.createdAt),
           }));
-          filename = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
-          headers = ['User ID', 'First Name', 'Last Name', 'Email', 'Phone Number', 'Role', 'Created At'];
+          filename = `users_export_${new Date().toISOString().split("T")[0]}.csv`;
+          headers = [
+            "User ID",
+            "First Name",
+            "Last Name",
+            "Email",
+            "Phone Number",
+            "Role",
+            "Created At",
+          ];
           break;
 
-        case 'registrations':
-          data = registrations.map(registration => ({
-            'Registration ID': registration.id,
-            'User Name': registration.user ? `${registration.user.firstName} ${registration.user.lastName}` : 'Unknown User',
-            'User Email': registration.user?.email || 'N/A',
-            'Event Title': registration.event?.title || 'Unknown Event',
-            'Event Location': registration.event?.location || 'N/A',
-            'Event Date': registration.event?.startDate ? formatDate(registration.event.startDate) : 'N/A',
-            'Payment Status': registration.paymentStatus,
-            'Payment Amount': registration.event?.price ? `K${registration.event.price}` : 'N/A',
-            'Registered At': formatDateTime(registration.registeredAt),
-            'Has Evidence': registration.paymentEvidence ? 'Yes' : 'No'
+        case "registrations":
+          data = registrations.map((registration) => ({
+            "Registration ID": registration.id,
+            "User Name": registration.user
+              ? `${registration.user.firstName} ${registration.user.lastName}`
+              : "Unknown User",
+            "User Email": registration.user?.email || "N/A",
+            "Event Title": registration.event?.title || "Unknown Event",
+            "Event Location": registration.event?.location || "N/A",
+            "Event Date": registration.event?.startDate
+              ? formatDate(registration.event.startDate)
+              : "N/A",
+            "Payment Status": registration.paymentStatus,
+            "Payment Amount": registration.event?.price
+              ? `K${registration.event.price}`
+              : "N/A",
+            "Registered At": formatDateTime(registration.registeredAt),
+            "Has Evidence": registration.paymentEvidence ? "Yes" : "No",
           }));
-          filename = `registrations_export_${new Date().toISOString().split('T')[0]}.csv`;
-          headers = ['Registration ID', 'User Name', 'User Email', 'Event Title', 'Event Location', 'Event Date', 'Payment Status', 'Payment Amount', 'Registered At', 'Has Evidence'];
+          filename = `registrations_export_${new Date().toISOString().split("T")[0]}.csv`;
+          headers = [
+            "Registration ID",
+            "User Name",
+            "User Email",
+            "Event Title",
+            "Event Location",
+            "Event Date",
+            "Payment Status",
+            "Payment Amount",
+            "Registered At",
+            "Has Evidence",
+          ];
           break;
 
-        case 'events':
-          data = events.map(event => ({
-            'Event ID': event.id,
-            'Title': event.title,
-            'Description': event.description || 'N/A',
-            'Start Date': formatDate(event.startDate),
-            'End Date': event.endDate ? formatDate(event.endDate) : 'N/A',
-            'Location': event.location,
-            'Price': `K${event.price}`,
-            'Current Attendees': event.currentAttendees,
-            'Max Attendees': event.maxAttendees || 'Unlimited',
-            'Featured': event.featured ? 'Yes' : 'No'
+        case "events":
+          data = events.map((event) => ({
+            "Event ID": event.id,
+            Title: event.title,
+            Description: event.description || "N/A",
+            "Start Date": formatDate(event.startDate),
+            "End Date": event.endDate ? formatDate(event.endDate) : "N/A",
+            Location: event.location,
+            Price: `K${event.price}`,
+            "Current Attendees": event.currentAttendees,
+            "Max Attendees": event.maxAttendees || "Unlimited",
+            Featured: event.featured ? "Yes" : "No",
           }));
-          filename = `events_export_${new Date().toISOString().split('T')[0]}.csv`;
-          headers = ['Event ID', 'Title', 'Description', 'Start Date', 'End Date', 'Location', 'Price', 'Current Attendees', 'Max Attendees', 'Featured'];
+          filename = `events_export_${new Date().toISOString().split("T")[0]}.csv`;
+          headers = [
+            "Event ID",
+            "Title",
+            "Description",
+            "Start Date",
+            "End Date",
+            "Location",
+            "Price",
+            "Current Attendees",
+            "Max Attendees",
+            "Featured",
+          ];
           break;
 
-        case 'newsletter':
-          data = newsletterSubscriptions.map(subscription => ({
-            'Subscription ID': subscription.id,
-            'Email': subscription.email,
-            'Subscribed At': formatDateTime(subscription.subscribedAt)
+        case "newsletter":
+          data = newsletterSubscriptions.map((subscription) => ({
+            "Subscription ID": subscription.id,
+            Email: subscription.email,
+            "Subscribed At": formatDateTime(subscription.subscribedAt),
           }));
-          filename = `newsletter_subscriptions_export_${new Date().toISOString().split('T')[0]}.csv`;
-          headers = ['Subscription ID', 'Email', 'Subscribed At'];
+          filename = `newsletter_subscriptions_export_${new Date().toISOString().split("T")[0]}.csv`;
+          headers = ["Subscription ID", "Email", "Subscribed At"];
           break;
 
         default:
-          console.error('Unknown export type:', type);
+          console.error("Unknown export type:", type);
           return;
       }
 
       // Create CSV content
       const csvContent = [
-        headers.join(','),
-        ...data.map(row => 
-          headers.map(header => {
-            const value = row[header];
-            // Escape commas and quotes in CSV
-            if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
-              return `"${value.replace(/"/g, '""')}"`;
-            }
-            return value;
-          }).join(',')
-        )
-      ].join('\n');
+        headers.join(","),
+        ...data.map((row) =>
+          headers
+            .map((header) => {
+              const value = row[header];
+              // Escape commas and quotes in CSV
+              if (
+                typeof value === "string" &&
+                (value.includes(",") ||
+                  value.includes('"') ||
+                  value.includes("\n"))
+              ) {
+                return `"${value.replace(/"/g, '""')}"`;
+              }
+              return value;
+            })
+            .join(","),
+        ),
+      ].join("\n");
 
       // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+
       if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        
+
         // Show success message
         toast({
           title: "Export Successful",
@@ -548,11 +855,12 @@ export default function AdminDashboard() {
         });
       } else {
         // Fallback for older browsers
-        window.open('data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
+        window.open(
+          "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent),
+        );
       }
-
     } catch (error) {
-      console.error('Export error:', error);
+      console.error("Export error:", error);
       toast({
         variant: "destructive",
         title: "Export Failed",
@@ -561,21 +869,21 @@ export default function AdminDashboard() {
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
-  const formatDateTime = (dateString) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -589,7 +897,9 @@ export default function AdminDashboard() {
               <Loader2 className="w-10 h-10 text-white animate-spin" />
             </div>
             <div>
-              <CardTitle className="text-2xl font-bold text-gray-900">Loading Dashboard</CardTitle>
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                Loading Dashboard
+              </CardTitle>
               <CardDescription className="text-gray-600 mt-2">
                 Fetching data from database...
               </CardDescription>
@@ -610,7 +920,9 @@ export default function AdminDashboard() {
               <Shield className="w-10 h-10 text-white" />
             </div>
             <div>
-              <CardTitle className="text-2xl font-bold text-gray-900">Error Loading Dashboard</CardTitle>
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                Error Loading Dashboard
+              </CardTitle>
               <CardDescription className="text-gray-600 mt-2">
                 {error}
               </CardDescription>
@@ -620,7 +932,10 @@ export default function AdminDashboard() {
             <Button onClick={fetchData} variant="outline" className="mr-2">
               Retry
             </Button>
-            <Button onClick={() => window.location.href = '/'} variant="default">
+            <Button
+              onClick={() => (window.location.href = "/")}
+              variant="default"
+            >
               Go Home
             </Button>
           </CardContent>
@@ -630,7 +945,10 @@ export default function AdminDashboard() {
   }
 
   // Check if user can access admin dashboard
-  if (!user || (user.role !== 'super_admin' && user.role !== 'finance_person')) {
+  if (
+    !user ||
+    (user.role !== "super_admin" && user.role !== "finance_person")
+  ) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-0 bg-white/90 backdrop-blur-sm">
@@ -639,7 +957,9 @@ export default function AdminDashboard() {
               <Shield className="w-10 h-10 text-white" />
             </div>
             <div>
-              <CardTitle className="text-2xl font-bold text-gray-900">Access Restricted</CardTitle>
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                Access Restricted
+              </CardTitle>
               <CardDescription className="text-gray-600 mt-2">
                 Administrator privileges are required to access this dashboard.
               </CardDescription>
@@ -647,9 +967,13 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-sm text-gray-500 mb-4">
-              Please contact your system administrator if you believe this is an error.
+              Please contact your system administrator if you believe this is an
+              error.
             </p>
-            <Button onClick={() => window.location.href = '/'} variant="outline">
+            <Button
+              onClick={() => (window.location.href = "/")}
+              variant="outline"
+            >
               Go Home
             </Button>
           </CardContent>
@@ -671,13 +995,17 @@ export default function AdminDashboard() {
                     <Building2 className="w-8 h-8 text-[#FDC123]" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-white mb-1">Admin Dashboard</h1>
-                    <p className="text-blue-100 text-lg">Alliance Procurement & Capacity Building Ltd</p>
+                    <h1 className="text-3xl font-bold text-white mb-1">
+                      Admin Dashboard
+                    </h1>
+                    <p className="text-blue-100 text-lg">
+                      Alliance Procurement & Capacity Building Ltd
+                    </p>
                   </div>
                 </div>
                 <div className="hidden sm:flex items-center space-x-6 text-right">
                   <Button
-                    onClick={() => window.location.href = '/'}
+                    onClick={() => (window.location.href = "/")}
                     variant="outline"
                     className="border-blue-200 text-white bg-white/10 hover:bg-white/20 hover:border-white/40 transition-colors"
                   >
@@ -700,20 +1028,23 @@ export default function AdminDashboard() {
                 <div className="flex items-center space-x-3">
                   <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
                     <AvatarFallback className="bg-[#1C356B] text-white text-lg font-semibold">
-                      {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                      {user?.firstName?.charAt(0)}
+                      {user?.lastName?.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">
                       Welcome back, {user?.firstName} {user?.lastName}
                     </h2>
-                    <p className="text-gray-600 text-sm">System Administrator • Last login: Today</p>
+                    <p className="text-gray-600 text-sm">
+                      System Administrator • Last login: Today
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
                   <Crown className="w-8 h-8 text-[#FDC123]" />
                   <Button
-                    onClick={() => window.location.href = '/'}
+                    onClick={() => (window.location.href = "/")}
                     variant="outline"
                     className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors mr-2"
                   >
@@ -722,7 +1053,7 @@ export default function AdminDashboard() {
                   <Button
                     onClick={async () => {
                       await supabase.auth.signOut();
-                      window.location.href = '/';
+                      window.location.href = "/";
                     }}
                     variant="outline"
                     className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
@@ -732,15 +1063,25 @@ export default function AdminDashboard() {
                   </Button>
                 </div>
               </div>
-              
+
               {/* Global Search Bar */}
               <div className="mt-6">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
                     </svg>
-            </div>
+                  </div>
                   <Input
                     type="text"
                     placeholder="Search users, events, registrations, or newsletter subscribers..."
@@ -750,18 +1091,30 @@ export default function AdminDashboard() {
                   />
                   {searchTerm && (
                     <button
-                      onClick={() => setSearchTerm('')}
+                      onClick={() => setSearchTerm("")}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                     >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   )}
                 </div>
                 {searchTerm && (
                   <div className="mt-2 text-sm text-gray-600">
-                    Found {filteredUsers.length} users, {filteredEvents.length} events, {filteredRegistrations.length} registrations, {filteredNewsletter.length} newsletter subscribers
+                    Found {filteredUsers.length} users, {filteredEvents.length}{" "}
+                    events, {filteredRegistrations.length} registrations,{" "}
+                    {filteredNewsletter.length} newsletter subscribers
                   </div>
                 )}
               </div>
@@ -776,11 +1129,17 @@ export default function AdminDashboard() {
             <CardContent className="p-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Total Events</p>
-                  <p className="text-3xl font-bold text-gray-900">{events.length}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Total Events
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {events.length}
+                  </p>
                   <div className="flex items-center mt-2">
                     <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
-                    <span className="text-sm text-emerald-600 font-medium">Active</span>
+                    <span className="text-sm text-emerald-600 font-medium">
+                      Active
+                    </span>
                   </div>
                 </div>
                 <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -795,11 +1154,17 @@ export default function AdminDashboard() {
             <CardContent className="p-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Total Users</p>
-                  <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Total Users
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {users.length}
+                  </p>
                   <div className="flex items-center mt-2">
                     <Target className="w-4 h-4 text-blue-500 mr-1" />
-                    <span className="text-sm text-blue-600 font-medium">{superAdminUsers} Super Admins, {financeUsers} Finance</span>
+                    <span className="text-sm text-blue-600 font-medium">
+                      {superAdminUsers} Super Admins, {financeUsers} Finance
+                    </span>
                   </div>
                 </div>
                 <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -814,11 +1179,17 @@ export default function AdminDashboard() {
             <CardContent className="p-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Total Revenue</p>
-                  <p className="text-3xl font-bold text-gray-900">K{totalRevenue.toFixed(2)}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Total Revenue
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    K{totalRevenue.toFixed(2)}
+                  </p>
                   <div className="flex items-center mt-2">
                     <BarChart3 className="w-4 h-4 text-emerald-500 mr-1" />
-                    <span className="text-sm text-emerald-600 font-medium">{completedPayments} Paid</span>
+                    <span className="text-sm text-emerald-600 font-medium">
+                      {completedPayments} Paid
+                    </span>
                   </div>
                 </div>
                 <div className="w-14 h-14 bg-gradient-to-br from-[#FDC123] to-amber-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -833,11 +1204,17 @@ export default function AdminDashboard() {
             <CardContent className="p-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Newsletter</p>
-                  <p className="text-3xl font-bold text-gray-900">{newsletterSubscriptions.length}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Newsletter
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {newsletterSubscriptions.length}
+                  </p>
                   <div className="flex items-center mt-2">
                     <Activity className="w-4 h-4 text-purple-500 mr-1" />
-                    <span className="text-sm text-purple-600 font-medium">Subscribers</span>
+                    <span className="text-sm text-purple-600 font-medium">
+                      Subscribers
+                    </span>
                   </div>
                 </div>
                 <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -898,7 +1275,9 @@ export default function AdminDashboard() {
                     <TrendingUp className="w-5 h-5 text-emerald-500" />
                     Payment Analytics
                   </CardTitle>
-                  <CardDescription>Overview of payment statuses and revenue</CardDescription>
+                  <CardDescription>
+                    Overview of payment statuses and revenue
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -908,8 +1287,12 @@ export default function AdminDashboard() {
                           <CheckCircle className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-semibold text-emerald-900">Completed Payments</p>
-                          <p className="text-sm text-emerald-700">K{(totalRevenue).toFixed(2)} revenue</p>
+                          <p className="font-semibold text-emerald-900">
+                            Completed Payments
+                          </p>
+                          <p className="text-sm text-emerald-700">
+                            K{totalRevenue.toFixed(2)} revenue
+                          </p>
                         </div>
                       </div>
                       <Badge className="bg-emerald-500 text-white text-lg px-3 py-1">
@@ -923,11 +1306,18 @@ export default function AdminDashboard() {
                           <Clock className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-semibold text-amber-900">Pending Payments</p>
-                          <p className="text-sm text-amber-700">Awaiting confirmation</p>
+                          <p className="font-semibold text-amber-900">
+                            Pending Payments
+                          </p>
+                          <p className="text-sm text-amber-700">
+                            Awaiting confirmation
+                          </p>
                         </div>
                       </div>
-                      <Badge variant="secondary" className="bg-amber-200 text-amber-800 text-lg px-3 py-1">
+                      <Badge
+                        variant="secondary"
+                        className="bg-amber-200 text-amber-800 text-lg px-3 py-1"
+                      >
                         {pendingPayments}
                       </Badge>
                     </div>
@@ -938,11 +1328,18 @@ export default function AdminDashboard() {
                           <Activity className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-semibold text-blue-900">Total Registrations</p>
-                          <p className="text-sm text-blue-700">All event registrations</p>
+                          <p className="font-semibold text-blue-900">
+                            Total Registrations
+                          </p>
+                          <p className="text-sm text-blue-700">
+                            All event registrations
+                          </p>
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-lg px-3 py-1 border-blue-200 text-blue-800">
+                      <Badge
+                        variant="outline"
+                        className="text-lg px-3 py-1 border-blue-200 text-blue-800"
+                      >
                         {registrations.length}
                       </Badge>
                     </div>
@@ -956,14 +1353,19 @@ export default function AdminDashboard() {
                     <MessageCircle className="w-5 h-5 text-purple-500" />
                     Communication Center
                   </CardTitle>
-                  <CardDescription>Manage newsletters and email campaigns</CardDescription>
+                  <CardDescription>
+                    Manage newsletters and email campaigns
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
                     <Mail className="w-12 h-12 text-purple-500 mx-auto mb-3" />
-                    <h3 className="font-semibold text-purple-900 mb-1">Ready to Send</h3>
+                    <h3 className="font-semibold text-purple-900 mb-1">
+                      Ready to Send
+                    </h3>
                     <p className="text-purple-700 text-sm mb-4">
-                      {newsletterSubscriptions.length} active subscribers waiting for your updates
+                      {newsletterSubscriptions.length} active subscribers
+                      waiting for your updates
                     </p>
                     <Button
                       onClick={() => setShowEmailDialog(true)}
@@ -987,7 +1389,9 @@ export default function AdminDashboard() {
                       <Users className="w-6 h-6 text-[#1C356B]" />
                       User Management
                     </CardTitle>
-                    <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
+                    <CardDescription>
+                      Manage user accounts, roles, and permissions
+                    </CardDescription>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Button
@@ -1004,13 +1408,13 @@ export default function AdminDashboard() {
                       <CalendarPlus className="w-4 h-4 mr-2" />
                       Register for Event
                     </Button>
-                  <Button
-                    onClick={() => exportToExcel('users')}
-                    variant="outline"
-                    className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
-                  >
-                    Download Users as Excel
-                  </Button>
+                    <Button
+                      onClick={() => exportToExcel("users")}
+                      variant="outline"
+                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                    >
+                      Download Users as Excel
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -1019,35 +1423,57 @@ export default function AdminDashboard() {
                   <Table>
                     <TableHeader className="bg-slate-50">
                       <TableRow>
-                        <TableHead className="font-semibold">User Details</TableHead>
-                        <TableHead className="font-semibold">Contact Info</TableHead>
-                        <TableHead className="font-semibold">Role & Status</TableHead>
-                        <TableHead className="font-semibold">Join Date</TableHead>
-                        <TableHead className="font-semibold text-center">Actions</TableHead>
+                        <TableHead className="font-semibold">
+                          User Details
+                        </TableHead>
+                        <TableHead className="font-semibold">
+                          Contact Info
+                        </TableHead>
+                        <TableHead className="font-semibold">
+                          Role & Status
+                        </TableHead>
+                        <TableHead className="font-semibold">
+                          Join Date
+                        </TableHead>
+                        <TableHead className="font-semibold text-center">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.map((userData, index) => (
-                        <TableRow key={userData.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
+                        <TableRow
+                          key={userData.id}
+                          className={
+                            index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                          }
+                        >
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="border-2 border-slate-200">
                                 <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
-                                  {userData.firstName?.charAt(0)?.toUpperCase()}{userData.lastName?.charAt(0)?.toUpperCase()}
+                                  {userData.firstName?.charAt(0)?.toUpperCase()}
+                                  {userData.lastName?.charAt(0)?.toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
                                 <div className="font-semibold text-gray-900">
                                   {userData.firstName} {userData.lastName}
                                 </div>
-                                <div className="text-sm text-gray-500">ID: {userData.id.slice(0, 8)}</div>
+                                <div className="text-sm text-gray-500">
+                                  ID: {userData.id.slice(0, 8)}
+                                </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <div className="text-sm text-gray-900">{userData.email}</div>
-                              <div className="text-sm text-gray-500">{userData.phoneNumber || "No phone"}</div>
+                              <div className="text-sm text-gray-900">
+                                {userData.email}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {userData.phoneNumber || "No phone"}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -1062,7 +1488,10 @@ export default function AdminDashboard() {
                                 Finance Person
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="border-gray-300">
+                              <Badge
+                                variant="outline"
+                                className="border-gray-300"
+                              >
                                 <UserCheck className="w-3 h-3 mr-1" />
                                 Ordinary User
                               </Badge>
@@ -1070,48 +1499,77 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              {userData.createdAt ? formatDate(userData.createdAt) : "Unknown"}
+                              {userData.createdAt
+                                ? formatDate(userData.createdAt)
+                                : "Unknown"}
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="hover:bg-slate-100">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="hover:bg-slate-100"
+                                >
                                   <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-56 bg-white border border-slate-200 shadow-lg rounded-md">
-                                {isSuperAdmin && user && userData.id !== user.id && (
-                                  <>
-                                    {userData.role !== "super_admin" && (
-                                      <DropdownMenuItem
-                                        onClick={() => handleRoleChangeRequest(userData.id, "super_admin", `${userData.firstName} ${userData.lastName}`)}
-                                        className="text-purple-600"
-                                      >
-                                        <Crown className="w-4 h-4 mr-2" />
-                                        Make Super Admin
-                                      </DropdownMenuItem>
-                                    )}
-                                    {userData.role !== "finance_person" && (
-                                      <DropdownMenuItem
-                                        onClick={() => handleRoleChangeRequest(userData.id, "finance_person", `${userData.firstName} ${userData.lastName}`)}
-                                        className="text-green-600"
-                                      >
-                                        <DollarSign className="w-4 h-4 mr-2" />
-                                        Make Finance Person
-                                      </DropdownMenuItem>
-                                    )}
-                                    {userData.role !== "ordinary_user" && (
-                                      <DropdownMenuItem
-                                        onClick={() => handleRoleChangeRequest(userData.id, "ordinary_user", `${userData.firstName} ${userData.lastName}`)}
-                                        className="text-amber-600"
-                                      >
-                                        <UserCheck className="w-4 h-4 mr-2" />
-                                        Make Ordinary User
-                                      </DropdownMenuItem>
-                                    )}
-                                  </>
-                                )}
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
+                              >
+                                {canManageUsers &&
+                                  authUser &&
+                                  userData.id !== authUser.id && (
+                                    <>
+                                      {userData.role !== "super_admin" && (
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleRoleChange(
+                                              userData.id,
+                                              "super_admin",
+                                              `${userData.firstName} ${userData.lastName}`,
+                                            )
+                                          }
+                                          className="text-purple-600"
+                                        >
+                                          <Crown className="w-4 h-4 mr-2" />
+                                          Make Super Admin
+                                        </DropdownMenuItem>
+                                      )}
+                                      {userData.role !== "finance_person" && (
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleRoleChange(
+                                              userData.id,
+                                              "finance_person",
+                                              `${userData.firstName} ${userData.lastName}`,
+                                            )
+                                          }
+                                          className="text-green-600"
+                                        >
+                                          <DollarSign className="w-4 h-4 mr-2" />
+                                          Make Finance Person
+                                        </DropdownMenuItem>
+                                      )}
+                                      {userData.role !== "ordinary_user" && (
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleRoleChange(
+                                              userData.id,
+                                              "ordinary_user",
+                                              `${userData.firstName} ${userData.lastName}`,
+                                            )
+                                          }
+                                          className="text-amber-600"
+                                        >
+                                          <UserCheck className="w-4 h-4 mr-2" />
+                                          Make Ordinary User
+                                        </DropdownMenuItem>
+                                      )}
+                                    </>
+                                  )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -1129,14 +1587,16 @@ export default function AdminDashboard() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Calendar className="w-6 h-6 text-[#1C356B]" />
-                  Event Management
-                </CardTitle>
-                <CardDescription>Overview and management of all training events</CardDescription>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Calendar className="w-6 h-6 text-[#1C356B]" />
+                      Event Management
+                    </CardTitle>
+                    <CardDescription>
+                      Overview and management of all training events
+                    </CardDescription>
                   </div>
                   <Button
-                    onClick={() => exportToExcel('events')}
+                    onClick={() => exportToExcel("events")}
                     variant="outline"
                     className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
                   >
@@ -1149,20 +1609,35 @@ export default function AdminDashboard() {
                   <Table>
                     <TableHeader className="bg-slate-50">
                       <TableRow>
-                        <TableHead className="font-semibold">Event Details</TableHead>
-                        <TableHead className="font-semibold">Schedule</TableHead>
-                        <TableHead className="font-semibold">Location</TableHead>
+                        <TableHead className="font-semibold">
+                          Event Details
+                        </TableHead>
+                        <TableHead className="font-semibold">
+                          Schedule
+                        </TableHead>
+                        <TableHead className="font-semibold">
+                          Location
+                        </TableHead>
                         <TableHead className="font-semibold">Pricing</TableHead>
-                        <TableHead className="font-semibold">Attendance</TableHead>
+                        <TableHead className="font-semibold">
+                          Attendance
+                        </TableHead>
                         <TableHead className="font-semibold">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredEvents.map((event, index) => (
-                        <TableRow key={event.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
+                        <TableRow
+                          key={event.id}
+                          className={
+                            index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                          }
+                        >
                           <TableCell>
                             <div className="space-y-2">
-                              <div className="font-semibold text-gray-900 text-base">{event.title}</div>
+                              <div className="font-semibold text-gray-900 text-base">
+                                {event.title}
+                              </div>
                               <div className="text-sm text-gray-600 max-w-xs line-clamp-2">
                                 {event.description}
                               </div>
@@ -1173,11 +1648,13 @@ export default function AdminDashboard() {
                               <div className="text-sm font-medium">
                                 {formatDate(event.startDate)}
                               </div>
-                              {event.endDate && event.startDate && event.endDate !== event.startDate && (
-                                <div className="text-sm text-gray-500">
-                                  to {formatDate(event.endDate)}
-                                </div>
-                              )}
+                              {event.endDate &&
+                                event.startDate &&
+                                event.endDate !== event.startDate && (
+                                  <div className="text-sm text-gray-500">
+                                    to {formatDate(event.endDate)}
+                                  </div>
+                                )}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -1187,7 +1664,7 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="font-semibold text-lg text-[#1C356B]">
-                                K{event.price}
+                              K{event.price}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -1209,7 +1686,10 @@ export default function AdminDashboard() {
                                 Featured
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="border-emerald-300 text-emerald-700 bg-emerald-50">
+                              <Badge
+                                variant="outline"
+                                className="border-emerald-300 text-emerald-700 bg-emerald-50"
+                              >
                                 Active
                               </Badge>
                             )}
@@ -1232,7 +1712,10 @@ export default function AdminDashboard() {
                       <UserCog className="w-6 h-6 text-[#1C356B]" />
                       Registration Management
                     </CardTitle>
-                    <CardDescription>Monitor and manage event registrations and payment statuses</CardDescription>
+                    <CardDescription>
+                      Monitor and manage event registrations and payment
+                      statuses
+                    </CardDescription>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Button
@@ -1242,52 +1725,255 @@ export default function AdminDashboard() {
                       <CalendarPlus className="w-4 h-4 mr-2" />
                       Register User for Event
                     </Button>
-                  <Button
-                    onClick={() => exportToExcel('registrations')}
-                    variant="outline"
-                    className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
-                  >
-                    Download Registrations as Excel
-                  </Button>
+                    <Button
+                      onClick={() => exportToExcel("registrations")}
+                      variant="outline"
+                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                    >
+                      Download Registrations as Excel
+                    </Button>
+                    {/* Temporary test button - remove in production */}
+                    {process.env.NODE_ENV === "development" && isSuperAdmin && (
+                      <Button
+                        onClick={async () => {
+                          try {
+                            // Find a pending registration to cancel for testing
+                            const pendingReg = registrations.find(
+                              (r) => r.paymentStatus === "pending",
+                            );
+                            if (pendingReg) {
+                              await handlePaymentStatusUpdate(
+                                pendingReg.id,
+                                "cancelled",
+                              );
+                              toast({
+                                title: "Test Registration Cancelled",
+                                description: `Registration ${pendingReg.registrationNumber} cancelled for testing`,
+                              });
+                            } else {
+                              toast({
+                                title: "No Pending Registrations",
+                                description:
+                                  "Create a pending registration first to test cancellation",
+                                variant: "destructive",
+                              });
+                            }
+                          } catch (error) {
+                            toast({
+                              title: "Test Failed",
+                              description:
+                                "Could not create test cancelled registration",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        variant="destructive"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        🧪 Test Cancel Registration
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Debug Info - Remove in production */}
+                {process.env.NODE_ENV === "development" && (
+                  <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <h4 className="font-semibold mb-2">Debug Info:</h4>
+                    <div className="text-sm grid grid-cols-2 md:grid-cols-5 gap-2">
+                      <div>Total: {registrations.length}</div>
+                      <div>
+                        Pending:{" "}
+                        {
+                          registrations.filter(
+                            (r) => r.paymentStatus === "pending",
+                          ).length
+                        }
+                      </div>
+                      <div>
+                        Paid:{" "}
+                        {
+                          registrations.filter(
+                            (r) =>
+                              r.paymentStatus === "paid" ||
+                              r.paymentStatus === "completed",
+                          ).length
+                        }
+                      </div>
+                      <div className="font-bold text-red-600">
+                        Cancelled:{" "}
+                        {
+                          registrations.filter(
+                            (r) => r.paymentStatus === "cancelled",
+                          ).length
+                        }
+                      </div>
+                      <div>
+                        Failed:{" "}
+                        {
+                          registrations.filter(
+                            (r) => r.paymentStatus === "failed",
+                          ).length
+                        }
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs">
+                      Filtered showing: {filteredRegistrations.length}{" "}
+                      registrations
+                    </div>
+                    {registrations.filter(
+                      (r) => r.paymentStatus === "cancelled",
+                    ).length > 0 && (
+                      <div className="mt-2">
+                        <strong>Cancelled Registrations:</strong>
+                        <ul className="text-xs ml-4">
+                          {registrations
+                            .filter((r) => r.paymentStatus === "cancelled")
+                            .map((reg) => (
+                              <li key={reg.id}>
+                                #{reg.registrationNumber} -{" "}
+                                {reg.user?.firstName} {reg.user?.lastName} -{" "}
+                                {reg.event?.title}
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Status Filter Tabs */}
+                <div className="mb-6 flex flex-wrap gap-2">
+                  <Button
+                    variant={statusFilter === "all" ? "default" : "outline"}
+                    onClick={() => setStatusFilter("all")}
+                    size="sm"
+                    className="text-xs"
+                  >
+                    All ({registrations.length})
+                  </Button>
+                  <Button
+                    variant={statusFilter === "pending" ? "default" : "outline"}
+                    onClick={() => setStatusFilter("pending")}
+                    size="sm"
+                    className="text-xs"
+                  >
+                    Pending (
+                    {
+                      registrations.filter((r) => r.paymentStatus === "pending")
+                        .length
+                    }
+                    )
+                  </Button>
+                  <Button
+                    variant={statusFilter === "paid" ? "default" : "outline"}
+                    onClick={() => setStatusFilter("paid")}
+                    size="sm"
+                    className="text-xs"
+                  >
+                    Paid (
+                    {
+                      registrations.filter(
+                        (r) =>
+                          r.paymentStatus === "paid" ||
+                          r.paymentStatus === "completed",
+                      ).length
+                    }
+                    )
+                  </Button>
+                  <Button
+                    variant={
+                      statusFilter === "cancelled" ? "default" : "outline"
+                    }
+                    onClick={() => setStatusFilter("cancelled")}
+                    size="sm"
+                    className="text-xs"
+                  >
+                    Cancelled (
+                    {
+                      registrations.filter(
+                        (r) => r.paymentStatus === "cancelled",
+                      ).length
+                    }
+                    )
+                  </Button>
+                  <Button
+                    variant={statusFilter === "failed" ? "default" : "outline"}
+                    onClick={() => setStatusFilter("failed")}
+                    size="sm"
+                    className="text-xs"
+                  >
+                    Failed (
+                    {
+                      registrations.filter((r) => r.paymentStatus === "failed")
+                        .length
+                    }
+                    )
+                  </Button>
+                </div>
+
                 <div className="rounded-lg border border-slate-200 overflow-hidden">
                   <Table>
                     <TableHeader className="bg-slate-50">
                       <TableRow>
                         <TableHead className="font-semibold">Reg. #</TableHead>
-                        <TableHead className="font-semibold">Participant</TableHead>
+                        <TableHead className="font-semibold">
+                          Participant
+                        </TableHead>
                         <TableHead className="font-semibold">Event</TableHead>
-                        <TableHead className="font-semibold">Registration</TableHead>
+                        <TableHead className="font-semibold">
+                          Registration
+                        </TableHead>
                         <TableHead className="font-semibold">Payment</TableHead>
                         <TableHead className="font-semibold">Amount</TableHead>
-                        <TableHead className="font-semibold">Evidence</TableHead>
-                        <TableHead className="font-semibold text-center">Actions</TableHead>
+                        <TableHead className="font-semibold">
+                          Evidence
+                        </TableHead>
+                        <TableHead className="font-semibold text-center">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredRegistrations.map((registration, index) => (
-                        <TableRow key={registration.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
+                        <TableRow
+                          key={registration.id}
+                          className={
+                            registration.paymentStatus === "cancelled"
+                              ? "bg-red-50/50 dark:bg-red-900/20 opacity-70"
+                              : index % 2 === 0
+                                ? "bg-white"
+                                : "bg-slate-50/30"
+                          }
+                        >
                           <TableCell>
                             <div className="font-mono font-bold text-[#1C356B] text-lg">
-                              #{registration.registrationNumber || 'N/A'}
+                              #{registration.registrationNumber || "N/A"}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="border-2 border-slate-200">
                                 <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
-                                  {registration.user?.firstName?.charAt(0)?.toUpperCase() || "U"}
-                                  {registration.user?.lastName?.charAt(0)?.toUpperCase() || ""}
+                                  {registration.user?.firstName
+                                    ?.charAt(0)
+                                    ?.toUpperCase() || "U"}
+                                  {registration.user?.lastName
+                                    ?.charAt(0)
+                                    ?.toUpperCase() || ""}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
                                 <div className="font-semibold text-gray-900">
-                                  {registration.user ? `${registration.user.firstName} ${registration.user.lastName}` : "Unknown User"}
+                                  {registration.user
+                                    ? `${registration.user.firstName} ${registration.user.lastName}`
+                                    : "Unknown User"}
                                 </div>
-                                <div className="text-sm text-gray-500">{registration.user?.email}</div>
+                                <div className="text-sm text-gray-500">
+                                  {registration.user?.email}
+                                </div>
                               </div>
                             </div>
                           </TableCell>
@@ -1298,7 +1984,9 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              {registration.registeredAt ? formatDate(registration.registeredAt) : "Unknown"}
+                              {registration.registeredAt
+                                ? formatDate(registration.registeredAt)
+                                : "Unknown"}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -1310,16 +1998,22 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {registration.paymentEvidence && registration.paymentEvidence.trim() ? (
+                            {registration.paymentEvidence &&
+                            registration.paymentEvidence.trim() ? (
                               <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleViewPaymentEvidence(
-                                    registration.paymentEvidence, 
-                                    registration.paymentEvidence?.split('/').pop(),
-                                    registration.id
-                                  )}
+                                  onClick={() =>
+                                    handleViewPaymentEvidence(
+                                      registration.paymentEvidence!,
+                                      registration.paymentEvidence
+                                        ?.split("/")
+                                        .pop(),
+                                      registration.id,
+                                      registration.paymentStatus,
+                                    )
+                                  }
                                   className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
                                 >
                                   <Eye className="w-4 h-4 mr-1" />
@@ -1327,38 +2021,98 @@ export default function AdminDashboard() {
                                 </Button>
                               </div>
                             ) : (
-                              <span className="text-gray-400 text-sm">No evidence</span>
+                              <span className="text-gray-400 text-sm">
+                                No evidence
+                              </span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="hover:bg-slate-100">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="hover:bg-slate-100"
+                                >
                                   <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-56 bg-white border border-slate-200 shadow-lg rounded-md">
-                                <DropdownMenuItem
-                                  disabled={registration.paymentStatus === "completed" || registration.paymentStatus === "paid"}
-                                  className="text-emerald-600"
-                                >
-                                  <CheckCircle className="w-4 h-4 mr-2" />
-                                  Mark as Paid
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  disabled={registration.paymentStatus === "pending"}
-                                  className="text-amber-600"
-                                >
-                                  <Clock className="w-4 h-4 mr-2" />
-                                  Mark as Pending
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  disabled={registration.paymentStatus === "failed"}
-                                  className="text-red-600"
-                                >
-                                  <XCircle className="w-4 h-4 mr-2" />
-                                  Mark as Failed
-                                </DropdownMenuItem>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
+                              >
+                                {registration.paymentStatus !== "cancelled" &&
+                                  canManageFinance && (
+                                    <>
+                                      <DropdownMenuItem
+                                        disabled={
+                                          registration.paymentStatus ===
+                                            "completed" ||
+                                          registration.paymentStatus ===
+                                            "paid" ||
+                                          isLoading
+                                        }
+                                        onClick={() =>
+                                          handlePaymentStatusUpdate(
+                                            registration.id,
+                                            "paid",
+                                          )
+                                        }
+                                        className="text-emerald-600"
+                                      >
+                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                        Mark as Paid
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        disabled={
+                                          registration.paymentStatus ===
+                                            "pending" || isLoading
+                                        }
+                                        onClick={() =>
+                                          handlePaymentStatusUpdate(
+                                            registration.id,
+                                            "pending",
+                                          )
+                                        }
+                                        className="text-amber-600"
+                                      >
+                                        <Clock className="w-4 h-4 mr-2" />
+                                        Mark as Pending
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        disabled={
+                                          registration.paymentStatus ===
+                                            "failed" || isLoading
+                                        }
+                                        onClick={() =>
+                                          handlePaymentStatusUpdate(
+                                            registration.id,
+                                            "failed",
+                                          )
+                                        }
+                                        className="text-red-600"
+                                      >
+                                        <XCircle className="w-4 h-4 mr-2" />
+                                        Mark as Failed
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+
+                                {registration.paymentStatus === "cancelled" &&
+                                  isSuperAdmin && (
+                                    <DropdownMenuItem
+                                      disabled={isLoading}
+                                      onClick={() =>
+                                        handleReactivateRegistration(
+                                          registration.id,
+                                        )
+                                      }
+                                      className="text-blue-600"
+                                    >
+                                      <RefreshCw className="w-4 h-4 mr-2" />
+                                      Reactivate Registration
+                                    </DropdownMenuItem>
+                                  )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -1377,14 +2131,16 @@ export default function AdminDashboard() {
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <div>
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <Mail className="w-6 h-6 text-[#1C356B]" />
-                    Newsletter Management
-                  </CardTitle>
-                  <CardDescription>Manage subscribers and send targeted email campaigns</CardDescription>
+                      <CardTitle className="flex items-center gap-2 text-xl">
+                        <Mail className="w-6 h-6 text-[#1C356B]" />
+                        Newsletter Management
+                      </CardTitle>
+                      <CardDescription>
+                        Manage subscribers and send targeted email campaigns
+                      </CardDescription>
                     </div>
                     <Button
-                      onClick={() => exportToExcel('newsletter')}
+                      onClick={() => exportToExcel("newsletter")}
                       variant="outline"
                       className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
                     >
@@ -1401,10 +2157,14 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <h3 className="text-2xl font-bold text-purple-900">
-                            {newsletterSubscriptions.length}
+                            {String(newsletterSubscriptions.length)}
                           </h3>
-                          <p className="text-purple-700 font-medium">Active Subscribers</p>
-                          <p className="text-purple-600 text-sm">Ready to receive your updates</p>
+                          <p className="text-purple-700 font-medium">
+                            Active Subscribers
+                          </p>
+                          <p className="text-purple-600 text-sm">
+                            Ready to receive your updates
+                          </p>
                         </div>
                       </div>
                       <Button
@@ -1422,26 +2182,43 @@ export default function AdminDashboard() {
                     <Table>
                       <TableHeader className="bg-slate-50">
                         <TableRow>
-                          <TableHead className="font-semibold">Email Address</TableHead>
-                          <TableHead className="font-semibold">Subscriber Name</TableHead>
-                          <TableHead className="font-semibold">Subscribe Date</TableHead>
-                          <TableHead className="font-semibold">Status</TableHead>
+                          <TableHead className="font-semibold">
+                            Email Address
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Subscriber Name
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Subscribe Date
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Status
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredNewsletter.map((subscription, index) => (
-                          <TableRow key={subscription.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
+                          <TableRow
+                            key={subscription.id}
+                            className={
+                              index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                            }
+                          >
                             <TableCell className="font-medium text-gray-900">
                               {subscription.email}
                             </TableCell>
                             <TableCell>
                               <div className="text-gray-900">
-                                {"name" in subscription ? subscription.name : "Anonymous Subscriber"}
+                                {"name" in subscription
+                                  ? subscription.name
+                                  : "Anonymous Subscriber"}
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="text-sm">
-                                {subscription.subscribedAt ? formatDate(subscription.subscribedAt) : "Unknown"}
+                                {subscription.subscribedAt
+                                  ? formatDate(subscription.subscribedAt)
+                                  : "Unknown"}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -1470,9 +2247,12 @@ export default function AdminDashboard() {
                   <Send className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-2xl font-bold text-gray-900">Create Email Campaign</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold text-gray-900">
+                    Create Email Campaign
+                  </DialogTitle>
                   <DialogDescription className="text-gray-600">
-                    Compose and send newsletter to all {newsletterSubscriptions.length} active subscribers
+                    Compose and send newsletter to all{" "}
+                    {newsletterSubscriptions.length} active subscribers
                   </DialogDescription>
                 </div>
               </div>
@@ -1483,14 +2263,21 @@ export default function AdminDashboard() {
                 <div className="flex items-center space-x-3">
                   <Mail className="w-5 h-5 text-blue-600" />
                   <div>
-                    <p className="font-semibold text-blue-900">Campaign Details</p>
-                    <p className="text-blue-700 text-sm">From: Alliance Procurement & Capacity Building Ltd</p>
+                    <p className="font-semibold text-blue-900">
+                      Campaign Details
+                    </p>
+                    <p className="text-blue-700 text-sm">
+                      From: Alliance Procurement & Capacity Building Ltd
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email-subject" className="text-sm font-semibold text-gray-700">
+                <Label
+                  htmlFor="email-subject"
+                  className="text-sm font-semibold text-gray-700"
+                >
                   Email Subject *
                 </Label>
                 <Input
@@ -1503,7 +2290,10 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email-message" className="text-sm font-semibold text-gray-700">
+                <Label
+                  htmlFor="email-message"
+                  className="text-sm font-semibold text-gray-700"
+                >
                   Message Content *
                 </Label>
                 <Textarea
@@ -1514,7 +2304,8 @@ export default function AdminDashboard() {
                   className="min-h-[200px] text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] resize-none"
                 />
                 <p className="text-sm text-gray-500">
-                  Tip: Keep your message clear, engaging, and valuable for your subscribers.
+                  Tip: Keep your message clear, engaging, and valuable for your
+                  subscribers.
                 </p>
               </div>
             </div>
@@ -1533,7 +2324,9 @@ export default function AdminDashboard() {
                 </Button>
                 <Button
                   onClick={handleSendEmailBlast}
-                  disabled={isLoading || !emailSubject.trim() || !emailMessage.trim()}
+                  disabled={
+                    isLoading || !emailSubject.trim() || !emailMessage.trim()
+                  }
                   className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   {isLoading ? (
@@ -1554,7 +2347,10 @@ export default function AdminDashboard() {
         </Dialog>
 
         {/* Enhanced Role Change Confirmation Dialog */}
-        <AlertDialog open={!!confirmRoleChange} onOpenChange={() => setConfirmRoleChange(null)}>
+        <AlertDialog
+          open={!!confirmRoleChange}
+          onOpenChange={() => setConfirmRoleChange(null)}
+        >
           <AlertDialogContent className="bg-white border-0 shadow-2xl">
             <AlertDialogHeader className="space-y-4">
               <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto">
@@ -1564,16 +2360,32 @@ export default function AdminDashboard() {
                 Confirm Role Change
               </AlertDialogTitle>
               <AlertDialogDescription className="text-center text-gray-600 text-base leading-relaxed">
-                Are you sure you want to change <span className="font-semibold text-gray-900">{confirmRoleChange?.userName}</span>'s role to{' '}
-                <span className="font-semibold text-[#1C356B]">{confirmRoleChange?.role}</span>?
-                <br /><br />
-                This action will {confirmRoleChange?.role === "super_admin" ? (
-                  <span className="text-purple-600 font-medium">grant super admin privileges (full system access)</span>
+                Are you sure you want to change{" "}
+                <span className="font-semibold text-gray-900">
+                  {confirmRoleChange?.userName}
+                </span>
+                's role to{" "}
+                <span className="font-semibold text-[#1C356B]">
+                  {confirmRoleChange?.role}
+                </span>
+                ?
+                <br />
+                <br />
+                This action will{" "}
+                {confirmRoleChange?.role === "super_admin" ? (
+                  <span className="text-purple-600 font-medium">
+                    grant super admin privileges (full system access)
+                  </span>
                 ) : confirmRoleChange?.role === "finance_person" ? (
-                  <span className="text-green-600 font-medium">grant finance management privileges</span>
+                  <span className="text-green-600 font-medium">
+                    grant finance management privileges
+                  </span>
                 ) : (
-                  <span className="text-amber-600 font-medium">remove administrative privileges</span>
-                )}.
+                  <span className="text-amber-600 font-medium">
+                    remove administrative privileges
+                  </span>
+                )}
+                .
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex items-center justify-center space-x-4 pt-6">
@@ -1602,128 +2414,195 @@ export default function AdminDashboard() {
         </AlertDialog>
 
         {/* Compact User Registration Dialog */}
-        <Dialog open={showUserRegistrationDialog} onOpenChange={setShowUserRegistrationDialog}>
-          <DialogContent className="sm:max-w-4xl bg-white border-0 shadow-2xl">
-            <DialogHeader className="pb-4">
+        <Dialog
+          open={showUserRegistrationDialog}
+          onOpenChange={setShowUserRegistrationDialog}
+        >
+          <DialogContent className="w-[95vw] max-w-md sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto bg-white border-0 shadow-2xl">
+            <DialogHeader className="pb-4 sm:pb-6">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-xl font-bold text-gray-900">Register New User</DialogTitle>
-                  <DialogDescription className="text-gray-600 text-sm">
+                  <DialogTitle className="text-lg sm:text-xl font-bold text-gray-900">
+                    Register New User
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-600 text-xs sm:text-sm leading-relaxed">
                     Create a new user account with administrative privileges
                   </DialogDescription>
                 </div>
               </div>
             </DialogHeader>
 
-            <div className="space-y-4">
-              {/* Row 1: Role and Name */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-4 sm:space-y-5">
+              {/* Role Selection - Full Width on Mobile */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="user-role"
+                  className="text-xs sm:text-sm font-medium text-gray-700"
+                >
+                  Role *
+                </Label>
+                <Select
+                  onValueChange={(value) =>
+                    setUserRegistrationData((prev) => ({
+                      ...prev,
+                      role: value,
+                    }))
+                  }
+                  value={userRegistrationData.role}
+                >
+                  <SelectTrigger className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
+                    <SelectItem value="finance_person">
+                      Finance Person
+                    </SelectItem>
+                    <SelectItem value="ordinary_user">Ordinary User</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Name Fields - Responsive Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="user-role" className="text-sm font-medium text-gray-700">
-                    Role *
-                  </Label>
-                  <Select onValueChange={(value) => setUserRegistrationData(prev => ({ ...prev, role: value }))} value={userRegistrationData.role}>
-                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
-                      <SelectItem value="finance_person">Finance Person</SelectItem>
-                      <SelectItem value="ordinary_user">Ordinary User</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="user-firstName" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="user-firstName"
+                    className="text-xs sm:text-sm font-medium text-gray-700"
+                  >
                     First Name *
                   </Label>
                   <Input
                     id="user-firstName"
                     placeholder="First name"
                     value={userRegistrationData.firstName}
-                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, firstName: e.target.value }))}
-                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    onChange={(e) =>
+                      setUserRegistrationData((prev) => ({
+                        ...prev,
+                        firstName: e.target.value,
+                      }))
+                    }
+                    className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="user-lastName" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="user-lastName"
+                    className="text-xs sm:text-sm font-medium text-gray-700"
+                  >
                     Last Name *
                   </Label>
                   <Input
                     id="user-lastName"
                     placeholder="Last name"
                     value={userRegistrationData.lastName}
-                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, lastName: e.target.value }))}
-                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    onChange={(e) =>
+                      setUserRegistrationData((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }))
+                    }
+                    className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
-                
+              </div>
+
+              {/* Contact Fields - Responsive Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="user-phone" className="text-sm font-medium text-gray-700">
-                    Phone Number
+                  <Label
+                    htmlFor="user-phone"
+                    className="text-xs sm:text-sm font-medium text-gray-700"
+                  >
+                    Phone (optional)
                   </Label>
                   <Input
                     id="user-phone"
                     placeholder="Phone (optional)"
                     value={userRegistrationData.phoneNumber}
-                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    onChange={(e) =>
+                      setUserRegistrationData((prev) => ({
+                        ...prev,
+                        phoneNumber: e.target.value,
+                      }))
+                    }
+                    className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
-              </div>
 
-              {/* Row 2: Email and Password */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="user-email" className="text-sm font-medium text-gray-700">
-                    Email Address *
+                  <Label
+                    htmlFor="user-email"
+                    className="text-xs sm:text-sm font-medium text-gray-700"
+                  >
+                    Email *
                   </Label>
                   <Input
                     id="user-email"
                     type="email"
                     placeholder="user@example.com"
                     value={userRegistrationData.email}
-                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, email: e.target.value }))}
-                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="user-password" className="text-sm font-medium text-gray-700">
-                    Password *
-                  </Label>
-                  <Input
-                    id="user-password"
-                    type="password"
-                    placeholder="Enter secure password"
-                    value={userRegistrationData.password}
-                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, password: e.target.value }))}
-                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    onChange={(e) =>
+                      setUserRegistrationData((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
               </div>
 
-              {/* Info Box */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-white text-xs font-bold">i</span>
+              {/* Password Field - Full Width on Mobile */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="user-password"
+                  className="text-xs sm:text-sm font-medium text-gray-700"
+                >
+                  Password *
+                </Label>
+                <Input
+                  id="user-password"
+                  type="password"
+                  placeholder="Enter secure password"
+                  value={userRegistrationData.password}
+                  onChange={(e) =>
+                    setUserRegistrationData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
+                  className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                />
+              </div>
+
+              {/* Info Section */}
+              <div className="bg-blue-50/50 p-3 sm:p-4 rounded-lg border border-blue-200/30">
+                <div className="flex items-start space-x-3">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </div>
-                  <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">Registration Information</p>
-                    <p>New users will receive a sequential registration ID (0001, 0002, etc.) and can log in immediately with their email and password.</p>
+                  <div className="text-xs sm:text-sm text-gray-700">
+                    <p className="font-medium text-blue-700 mb-1">
+                      Registration Information
+                    </p>
+                    <p className="leading-relaxed">
+                      New users will receive a sequential registration ID (0001,
+                      0002, etc.) and can log in immediately with their email
+                      and password.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200">
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4 sm:pt-6 border-t border-gray-200/50">
               <Button
+                type="button"
                 variant="outline"
                 onClick={() => {
                   setShowUserRegistrationDialog(false);
@@ -1733,10 +2612,10 @@ export default function AdminDashboard() {
                     email: "",
                     phoneNumber: "",
                     password: "",
-                    role: "ordinary_user"
+                    role: "ordinary_user",
                   });
                 }}
-                className="px-6"
+                className="w-full sm:w-auto order-2 sm:order-1 border-slate-300 text-gray-700 hover:bg-gray-50 h-10 sm:h-11"
               >
                 Cancel
               </Button>
@@ -1745,33 +2624,37 @@ export default function AdminDashboard() {
                   setUserRegistrationLoading(true);
                   try {
                     // Get current session
-                    const { data: { session } } = await supabase.auth.getSession();
+                    const {
+                      data: { session },
+                    } = await supabase.auth.getSession();
                     if (!session?.access_token) {
-                      throw new Error('No active session found');
+                      throw new Error("No active session found");
                     }
 
-                    const response = await fetch('/api/admin/users/register', {
-                      method: 'POST',
+                    const response = await fetch("/api/admin/users/register", {
+                      method: "POST",
                       headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`,
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
                       },
                       body: JSON.stringify(userRegistrationData),
                     });
 
                     if (!response.ok) {
                       const errorData = await response.json();
-                      throw new Error(errorData.message || 'Failed to register user');
+                      throw new Error(
+                        errorData.message || "Failed to register user",
+                      );
                     }
 
                     const result = await response.json();
-                    
+
                     // Show success message
                     toast({
                       title: "User Registration Successful",
-                      description: `${userRegistrationData.firstName} ${userRegistrationData.lastName} has been registered with role ${userRegistrationData.role.replace('_', ' ')}. They can now log in with their email and password.`,
+                      description: `${userRegistrationData.firstName} ${userRegistrationData.lastName} has been registered with role ${userRegistrationData.role.replace("_", " ")}. They can now log in with their email and password.`,
                     });
-                    
+
                     setShowUserRegistrationDialog(false);
                     setUserRegistrationData({
                       firstName: "",
@@ -1779,32 +2662,36 @@ export default function AdminDashboard() {
                       email: "",
                       phoneNumber: "",
                       password: "",
-                      role: "ordinary_user"
+                      role: "ordinary_user",
                     });
                     fetchData(); // Refresh users list
                   } catch (err: any) {
                     toast({
                       variant: "destructive",
                       title: "Registration Failed",
-                      description: err.message || "An error occurred during user registration",
+                      description:
+                        err.message ||
+                        "An error occurred during user registration",
                     });
-                    console.error('Registration error:', err);
+                    console.error("Registration error:", err);
                   } finally {
                     setUserRegistrationLoading(false);
                   }
                 }}
-                disabled={userRegistrationLoading || !userRegistrationData.firstName || !userRegistrationData.lastName || !userRegistrationData.email || !userRegistrationData.password}
-                className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
+                disabled={userRegistrationLoading}
+                className="w-full sm:w-auto order-1 sm:order-2 bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white h-10 sm:h-11 text-sm font-medium min-h-[44px] transition-all duration-200"
               >
                 {userRegistrationLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating User...
+                    <span className="hidden sm:inline">Registering...</span>
+                    <span className="sm:hidden">Please wait...</span>
                   </>
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Create User
+                    <span className="hidden sm:inline">Register User</span>
+                    <span className="sm:hidden">Register</span>
                   </>
                 )}
               </Button>
@@ -1813,27 +2700,35 @@ export default function AdminDashboard() {
         </Dialog>
 
         {/* Compact Event Registration Dialog */}
-        <Dialog open={showEventRegistrationDialog} onOpenChange={setShowEventRegistrationDialog}>
-          <DialogContent className="sm:max-w-5xl bg-white border-0 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-4">
+        <Dialog
+          open={showEventRegistrationDialog}
+          onOpenChange={setShowEventRegistrationDialog}
+        >
+          <DialogContent className="w-[95vw] max-w-md sm:max-w-2xl lg:max-w-5xl max-h-[90vh] overflow-y-auto bg-white border-0 shadow-2xl">
+            <DialogHeader className="pb-4 sm:pb-6">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl flex items-center justify-center">
-                  <CalendarPlus className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl flex items-center justify-center">
+                  <CalendarPlus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-xl font-bold text-gray-900">Register User for Event</DialogTitle>
-                  <DialogDescription className="text-gray-600 text-sm">
+                  <DialogTitle className="text-lg sm:text-xl font-bold text-gray-900">
+                    Register User for Event
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-600 text-xs sm:text-sm leading-relaxed">
                     Register an existing user for a training event
                   </DialogDescription>
                 </div>
               </div>
             </DialogHeader>
 
-            <div className="space-y-4">
-              {/* Row 1: User and Event Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4 sm:space-y-5">
+              {/* User and Event Selection - Responsive Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="event-user" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-user"
+                    className="text-xs sm:text-sm font-medium text-gray-700"
+                  >
                     Select User *
                   </Label>
                   <div className="relative">
@@ -1841,57 +2736,73 @@ export default function AdminDashboard() {
                       placeholder="Search users by name or email..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                      className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                     />
                     {searchTerm && (
-                      <div className="absolute z-10 w-full mt-1 max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-lg">
-                        {filteredUsers.slice(0, 5).map(user => (
+                      <div className="absolute z-10 w-full mt-1 max-h-32 sm:max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-lg">
+                        {filteredUsers.slice(0, 5).map((user) => (
                           <div
                             key={user.id}
                             onClick={() => {
                               setSelectedUser(user);
-                              setSearchTerm('');
+                              setSearchTerm("");
                             }}
-                            className="p-2 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
+                            className="p-3 sm:p-2 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors"
                           >
-                            <div className="font-medium text-gray-900 text-sm">
+                            <div className="font-medium text-gray-900 text-sm sm:text-base">
                               {user.firstName} {user.lastName}
                             </div>
-                            <div className="text-xs text-gray-600">{user.email}</div>
+                            <div className="text-xs sm:text-sm text-gray-600">
+                              {user.email}
+                            </div>
                           </div>
                         ))}
                         {filteredUsers.length === 0 && (
-                          <div className="p-2 text-gray-500 text-center text-sm">
+                          <div className="p-3 sm:p-2 text-gray-500 text-center text-sm">
                             No users found
                           </div>
                         )}
                       </div>
                     )}
                     {selectedUser && (
-                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="text-sm font-medium text-green-800">
+                      <div className="mt-2 p-3 sm:p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="text-sm sm:text-base font-medium text-green-800">
                           ✓ {selectedUser.firstName} {selectedUser.lastName}
                         </div>
-                        <div className="text-xs text-green-600">{selectedUser.email}</div>
+                        <div className="text-xs sm:text-sm text-green-600">
+                          {selectedUser.email}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="event-event" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-event"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Select Event *
                   </Label>
-                  <Select onValueChange={(value) => setSelectedEvent(events.find(e => e.id === value) || null)} value={selectedEvent?.id || ""}>
+                  <Select
+                    onValueChange={(value) =>
+                      setSelectedEvent(
+                        events.find((e) => e.id === value) || null,
+                      )
+                    }
+                    value={selectedEvent?.id || ""}
+                  >
                     <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
                       <SelectValue placeholder="Choose an event" />
                     </SelectTrigger>
                     <SelectContent>
-                      {events.map(event => (
+                      {events.map((event) => (
                         <SelectItem key={event.id} value={event.id}>
                           <div className="flex flex-col">
                             <span className="font-medium">{event.title}</span>
-                            <span className="text-xs text-gray-500">{new Date(event.startDate).toLocaleDateString()}</span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(event.startDate).toLocaleDateString()}
+                            </span>
                           </div>
                         </SelectItem>
                       ))}
@@ -1903,7 +2814,8 @@ export default function AdminDashboard() {
                         ✓ {selectedEvent.title}
                       </div>
                       <div className="text-xs text-blue-600">
-                        {new Date(selectedEvent.startDate).toLocaleDateString()} • K{selectedEvent.price}
+                        {new Date(selectedEvent.startDate).toLocaleDateString()}{" "}
+                        • K{selectedEvent.price}
                       </div>
                     </div>
                   )}
@@ -1913,10 +2825,21 @@ export default function AdminDashboard() {
               {/* Row 2: Personal Details */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="event-title" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-title"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Title *
                   </Label>
-                  <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, title: value }))} value={eventRegistrationData.title}>
+                  <Select
+                    onValueChange={(value) =>
+                      setEventRegistrationData((prev) => ({
+                        ...prev,
+                        title: value,
+                      }))
+                    }
+                    value={eventRegistrationData.title}
+                  >
                     <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
                       <SelectValue placeholder="Title" />
                     </SelectTrigger>
@@ -1929,12 +2852,23 @@ export default function AdminDashboard() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="event-gender" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-gender"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Gender *
                   </Label>
-                  <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, gender: value }))} value={eventRegistrationData.gender}>
+                  <Select
+                    onValueChange={(value) =>
+                      setEventRegistrationData((prev) => ({
+                        ...prev,
+                        gender: value,
+                      }))
+                    }
+                    value={eventRegistrationData.gender}
+                  >
                     <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
                       <SelectValue placeholder="Gender" />
                     </SelectTrigger>
@@ -1945,29 +2879,45 @@ export default function AdminDashboard() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="event-country" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-country"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Country *
                   </Label>
                   <Input
                     id="event-country"
                     placeholder="Country"
                     value={eventRegistrationData.country}
-                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, country: e.target.value }))}
+                    onChange={(e) =>
+                      setEventRegistrationData((prev) => ({
+                        ...prev,
+                        country: e.target.value,
+                      }))
+                    }
                     className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="event-position" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-position"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Position *
                   </Label>
                   <Input
                     id="event-position"
                     placeholder="Job position"
                     value={eventRegistrationData.position}
-                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, position: e.target.value }))}
+                    onChange={(e) =>
+                      setEventRegistrationData((prev) => ({
+                        ...prev,
+                        position: e.target.value,
+                      }))
+                    }
                     className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
@@ -1976,23 +2926,42 @@ export default function AdminDashboard() {
               {/* Row 3: Organization Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="event-organization" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-organization"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Organization *
                   </Label>
                   <Input
                     id="event-organization"
                     placeholder="Organization name"
                     value={eventRegistrationData.organization}
-                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, organization: e.target.value }))}
+                    onChange={(e) =>
+                      setEventRegistrationData((prev) => ({
+                        ...prev,
+                        organization: e.target.value,
+                      }))
+                    }
                     className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="event-organizationType" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-organizationType"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Organization Type *
                   </Label>
-                  <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, organizationType: value }))} value={eventRegistrationData.organizationType}>
+                  <Select
+                    onValueChange={(value) =>
+                      setEventRegistrationData((prev) => ({
+                        ...prev,
+                        organizationType: value,
+                      }))
+                    }
+                    value={eventRegistrationData.organizationType}
+                  >
                     <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
                       <SelectValue placeholder="Organization type" />
                     </SelectTrigger>
@@ -2000,7 +2969,9 @@ export default function AdminDashboard() {
                       <SelectItem value="Government">Government</SelectItem>
                       <SelectItem value="Private">Private Sector</SelectItem>
                       <SelectItem value="NGO">NGO/Non-Profit</SelectItem>
-                      <SelectItem value="Academic">Academic Institution</SelectItem>
+                      <SelectItem value="Academic">
+                        Academic Institution
+                      </SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
@@ -2010,10 +2981,21 @@ export default function AdminDashboard() {
               {/* Row 4: Payment and Notes */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="event-paymentStatus" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-paymentStatus"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Payment Status *
                   </Label>
-                  <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, paymentStatus: value }))} value={eventRegistrationData.paymentStatus}>
+                  <Select
+                    onValueChange={(value) =>
+                      setEventRegistrationData((prev) => ({
+                        ...prev,
+                        paymentStatus: value,
+                      }))
+                    }
+                    value={eventRegistrationData.paymentStatus}
+                  >
                     <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
                       <SelectValue placeholder="Payment status" />
                     </SelectTrigger>
@@ -2025,32 +3007,50 @@ export default function AdminDashboard() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Payment Confirmation</Label>
+                  <Label className="text-sm font-medium text-gray-700">
+                    Payment Confirmation
+                  </Label>
                   <div className="flex items-center space-x-2 h-10">
                     <input
                       type="checkbox"
                       id="event-hasPaid"
                       checked={eventRegistrationData.hasPaid}
-                      onChange={(e) => setEventRegistrationData(prev => ({ ...prev, hasPaid: e.target.checked }))}
+                      onChange={(e) =>
+                        setEventRegistrationData((prev) => ({
+                          ...prev,
+                          hasPaid: e.target.checked,
+                        }))
+                      }
                       className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
                     />
-                    <Label htmlFor="event-hasPaid" className="text-sm text-gray-700">
+                    <Label
+                      htmlFor="event-hasPaid"
+                      className="text-sm text-gray-700"
+                    >
                       User has paid
                     </Label>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="event-notes" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="event-notes"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Notes (optional)
                   </Label>
                   <Input
                     id="event-notes"
                     placeholder="Registration notes..."
                     value={eventRegistrationData.notes}
-                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) =>
+                      setEventRegistrationData((prev) => ({
+                        ...prev,
+                        notes: e.target.value,
+                      }))
+                    }
                     className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
@@ -2064,13 +3064,17 @@ export default function AdminDashboard() {
                   </div>
                   <div className="text-sm text-emerald-800">
                     <p className="font-medium mb-1">Registration Information</p>
-                    <p>This will create a new event registration with a sequential ID (0001, 0002, etc.) for the selected user and event.</p>
+                    <p>
+                      This will create a new event registration with a
+                      sequential ID (0001, 0002, etc.) for the selected user and
+                      event.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200">
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4 sm:pt-6 border-t border-gray-200/50">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2086,13 +3090,13 @@ export default function AdminDashboard() {
                     position: "",
                     notes: "",
                     hasPaid: false,
-                    paymentStatus: "pending"
+                    paymentStatus: "pending",
                   });
                   setSelectedUser(null);
                   setSelectedEvent(null);
-                  setSearchTerm('');
+                  setSearchTerm("");
                 }}
-                className="px-6"
+                className="w-full sm:w-auto order-2 sm:order-1 border-slate-300 text-gray-700 hover:bg-gray-50 h-10 sm:h-11"
               >
                 Cancel
               </Button>
@@ -2101,16 +3105,18 @@ export default function AdminDashboard() {
                   setEventRegistrationLoading(true);
                   try {
                     // Get current session
-                    const { data: { session } } = await supabase.auth.getSession();
+                    const {
+                      data: { session },
+                    } = await supabase.auth.getSession();
                     if (!session?.access_token) {
-                      throw new Error('No active session found');
+                      throw new Error("No active session found");
                     }
 
-                    const response = await fetch('/api/admin/events/register', {
-                      method: 'POST',
+                    const response = await fetch("/api/admin/events/register", {
+                      method: "POST",
                       headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`,
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
                       },
                       body: JSON.stringify({
                         userId: selectedUser?.id,
@@ -2119,7 +3125,8 @@ export default function AdminDashboard() {
                         gender: eventRegistrationData.gender,
                         country: eventRegistrationData.country,
                         organization: eventRegistrationData.organization,
-                        organizationType: eventRegistrationData.organizationType,
+                        organizationType:
+                          eventRegistrationData.organizationType,
                         position: eventRegistrationData.position,
                         notes: eventRegistrationData.notes,
                         hasPaid: eventRegistrationData.hasPaid,
@@ -2129,17 +3136,20 @@ export default function AdminDashboard() {
 
                     if (!response.ok) {
                       const errorData = await response.json();
-                      throw new Error(errorData.message || 'Failed to register user for event');
+                      throw new Error(
+                        errorData.message ||
+                          "Failed to register user for event",
+                      );
                     }
 
                     const result = await response.json();
-                    
+
                     // Show success message
                     toast({
                       title: "Event Registration Successful",
-                      description: `${selectedUser?.firstName} ${selectedUser?.lastName} has been registered for ${selectedEvent?.title} with ID ${result.registration?.registrationNumber || 'Generated'}.`,
+                      description: `${selectedUser?.firstName} ${selectedUser?.lastName} has been registered for ${selectedEvent?.title} with ID ${result.registration?.registrationNumber || "Generated"}.`,
                     });
-                    
+
                     setShowEventRegistrationDialog(false);
                     setEventRegistrationData({
                       userId: "",
@@ -2152,35 +3162,49 @@ export default function AdminDashboard() {
                       position: "",
                       notes: "",
                       hasPaid: false,
-                      paymentStatus: "pending"
+                      paymentStatus: "pending",
                     });
                     setSelectedUser(null);
                     setSelectedEvent(null);
-                    setSearchTerm('');
+                    setSearchTerm("");
                     fetchData(); // Refresh registrations list
                   } catch (err: any) {
                     toast({
                       variant: "destructive",
                       title: "Registration Failed",
-                      description: err.message || "An error occurred during event registration",
+                      description:
+                        err.message ||
+                        "An error occurred during event registration",
                     });
-                    console.error('Registration error:', err);
+                    console.error("Event registration error:", err);
                   } finally {
                     setEventRegistrationLoading(false);
                   }
                 }}
-                disabled={eventRegistrationLoading || !selectedUser || !selectedEvent || !eventRegistrationData.country || !eventRegistrationData.organization || !eventRegistrationData.position}
-                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
+                disabled={
+                  eventRegistrationLoading ||
+                  !selectedUser ||
+                  !selectedEvent ||
+                  !eventRegistrationData.title ||
+                  !eventRegistrationData.gender ||
+                  !eventRegistrationData.country ||
+                  !eventRegistrationData.organization
+                }
+                className="w-full sm:w-auto order-1 sm:order-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white h-10 sm:h-11 text-sm font-medium min-h-[44px] transition-all duration-200"
               >
                 {eventRegistrationLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating Registration...
+                    <span className="hidden sm:inline">Registering...</span>
+                    <span className="sm:hidden">Please wait...</span>
                   </>
                 ) : (
                   <>
                     <CalendarPlus className="w-4 h-4 mr-2" />
-                    Register User for Event
+                    <span className="hidden sm:inline">
+                      Register User for Event
+                    </span>
+                    <span className="sm:hidden">Register</span>
                   </>
                 )}
               </Button>
@@ -2191,7 +3215,9 @@ export default function AdminDashboard() {
         {/* Evidence Viewer */}
         <EvidenceViewer
           open={evidenceViewer.open}
-          onOpenChange={(open) => setEvidenceViewer(prev => ({ ...prev, open }))}
+          onOpenChange={(open) =>
+            setEvidenceViewer((prev) => ({ ...prev, open }))
+          }
           evidencePath={evidenceViewer.evidencePath}
           fileName={evidenceViewer.fileName}
           registrationId={evidenceViewer.registrationId}

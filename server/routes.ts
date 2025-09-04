@@ -1,15 +1,34 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage"; // Assumes storage.ts from my previous response
-import { insertUserSchema, insertEventRegistrationSchema, insertNewsletterSubscriptionSchema } from "@shared/schema";
+import {
+  insertUserSchema,
+  insertEventRegistrationSchema,
+  insertNewsletterSubscriptionSchema,
+} from "@shared/schema";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import fileUpload from "express-fileupload";
+
+// Role helpers
+const Roles = {
+  SuperAdmin: "super_admin",
+  Finance: "finance_person",
+  EventManager: "event_manager",
+  Ordinary: "ordinary_user",
+} as const;
+
+type RoleValue = (typeof Roles)[keyof typeof Roles];
+
+const hasAnyRole = (userRole: RoleValue | undefined, allowed: RoleValue[]) =>
+  !!userRole && allowed.includes(userRole);
 
 // Middleware: Verify Supabase access token and attach user
 const authenticateSupabase = async (req: any, res: any, next: any) => {
   try {
     const authHeader = req.headers["authorization"] as string | undefined;
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : undefined;
     if (!token) {
       return res.status(401).json({ message: "Access token required" });
     }
@@ -17,7 +36,9 @@ const authenticateSupabase = async (req: any, res: any, next: any) => {
     const supabaseUrl = process.env.SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!supabaseUrl || !serviceRoleKey) {
-      return res.status(500).json({ message: "Supabase server credentials not configured" });
+      return res
+        .status(500)
+        .json({ message: "Supabase server credentials not configured" });
     }
 
     const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
@@ -27,31 +48,35 @@ const authenticateSupabase = async (req: any, res: any, next: any) => {
     }
 
     req.supabaseUser = data.user;
-    req.supabaseRole = data.user.user_metadata?.role || "ordinary_user";
+    req.supabaseRole =
+      (data.user.user_metadata?.role as RoleValue) || Roles.Ordinary;
     next();
   } catch (err) {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
 };
 
-// Middleware: Verify admin role based on Supabase metadata
-const requireSupabaseAdmin = (req: any, res: any, next: any) => {
-  const role = req.supabaseRole;
-  if (role !== "super_admin" && role !== "finance_person") {
-    return res.status(403).json({ message: "Admin access required" });
-  }
-  next();
-};
+// Middleware: Verify specific roles
+const requireRoles =
+  (allowedRoles: RoleValue[]) => (req: any, res: any, next: any) => {
+    const role: RoleValue | undefined = req.supabaseRole;
+    if (!hasAnyRole(role, allowedRoles)) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+    next();
+  };
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add file upload middleware
-  app.use(fileUpload({
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-    abortOnLimit: true,
-    useTempFiles: true,
-    tempFileDir: '/tmp/',
-    debug: false,
-  }));
+  app.use(
+    fileUpload({
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+      abortOnLimit: true,
+      useTempFiles: true,
+      tempFileDir: "/tmp/",
+      debug: false,
+    }),
+  );
 
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
@@ -81,84 +106,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin user registration endpoint
-  app.post("/api/admin/users/register", authenticateSupabase, requireSupabaseAdmin, async (req: any, res) => {
-    try {
-      const { firstName, lastName, email, phoneNumber, password, role } = req.body;
+  // Admin user registration endpoint (super admin only)
+  app.post(
+    "/api/admin/users/register",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req: any, res) => {
+      try {
+        const { firstName, lastName, email, phoneNumber, password, role } =
+          req.body;
 
-      // Validate required fields
-      if (!firstName || !lastName || !email || !password || !role) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: "User already exists" });
-      }
-
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!supabaseUrl || !serviceRoleKey) {
-        return res.status(500).json({ message: "Server configuration error" });
-      }
-
-      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
-
-      // Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true, // Auto-confirm email
-        user_metadata: {
-          first_name: firstName,
-          last_name: lastName,
-          phone_number: phoneNumber,
-          role: role,
-        },
-      });
-
-      if (authError) {
-        console.error("Supabase auth error:", authError);
-        return res.status(500).json({ message: "Failed to create user account" });
-      }
-
-      if (!authData.user) {
-        return res.status(500).json({ message: "Failed to create user" });
-      }
-
-      // Create user in public.users table
-      const user = await storage.createUser({
-        id: authData.user.id,
-        firstName,
-        lastName,
-        email,
-        phoneNumber: phoneNumber || null,
-        role,
-      });
-
-      console.log(`✅ Admin created user: ${email} with role: ${role}`);
-      res.status(201).json({ 
-        message: "User created successfully",
-        user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          role: user.role,
-          createdAt: user.createdAt,
+        // Validate required fields
+        if (!firstName || !lastName || !email || !password || !role) {
+          return res.status(400).json({ message: "Missing required fields" });
         }
-      });
 
-    } catch (error: any) {
-      console.error("Admin user registration error:", error);
-      res.status(500).json({ 
-        message: "Failed to create user",
-        details: error.message 
-      });
-    }
-  });
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser) {
+          return res.status(400).json({ message: "User already exists" });
+        }
+
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          return res
+            .status(500)
+            .json({ message: "Server configuration error" });
+        }
+
+        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+
+        // Create user in Supabase Auth
+        const { data: authData, error: authError } =
+          await supabaseAdmin.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true, // Auto-confirm email
+            user_metadata: {
+              first_name: firstName,
+              last_name: lastName,
+              phone_number: phoneNumber,
+              role: role,
+            },
+          });
+
+        if (authError) {
+          console.error("Supabase auth error:", authError);
+          return res
+            .status(500)
+            .json({ message: "Failed to create user account" });
+        }
+
+        if (!authData.user) {
+          return res.status(500).json({ message: "Failed to create user" });
+        }
+
+        // Create user in public.users table
+        const user = await storage.createUser({
+          firstName,
+          lastName,
+          email,
+          password: password,
+          phoneNumber: phoneNumber || null,
+          role,
+        });
+
+        console.log(`✅ Admin created user: ${email} with role: ${role}`);
+        res.status(201).json({
+          message: "User created successfully",
+          user: {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            role: user.role,
+            createdAt: user.createdAt,
+          },
+        });
+      } catch (error: any) {
+        console.error("Admin user registration error:", error);
+        res.status(500).json({
+          message: "Failed to create user",
+          details: error.message,
+        });
+      }
+    },
+  );
 
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -170,11 +205,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const supabaseUrl = process.env.SUPABASE_URL;
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       if (!supabaseUrl || !serviceRoleKey) {
-        return res.status(500).json({ message: "Supabase server credentials not configured" });
+        return res
+          .status(500)
+          .json({ message: "Supabase server credentials not configured" });
       }
 
       const supabase = createSupabaseClient(supabaseUrl, serviceRoleKey);
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (error || !data.user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -202,121 +242,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/events/register", authenticateSupabase, async (req: any, res) => {
-    try {
-      const registrationData = insertEventRegistrationSchema.parse(req.body);
+  app.post(
+    "/api/events/register",
+    authenticateSupabase,
+    async (req: any, res) => {
+      try {
+        const registrationData = insertEventRegistrationSchema.parse(req.body);
 
-      // Ensure the user is registering themselves
-      if (registrationData.userId !== req.supabaseUser.id) {
-        return res.status(403).json({ message: "Can only register for yourself" });
-      }
-
-      // Check if user is already registered for this event
-      const existingRegistrations = await storage.getEventRegistrationsByUser(registrationData.userId);
-      const alreadyRegistered = existingRegistrations.some(reg => reg.eventId === registrationData.eventId);
-      if (alreadyRegistered) {
-        return res.status(400).json({ message: "Already registered for this event" });
-      }
-
-      // Check if event exists and has capacity
-      const event = await storage.getEvent(registrationData.eventId);
-      if (!event) {
-        return res.status(404).json({ message: "Event not found" });
-      }
-      if (event.maxAttendees && event.currentAttendees && event.currentAttendees >= event.maxAttendees) {
-        return res.status(400).json({ message: "Event is full" });
-      }
-
-      // Force paymentStatus to 'pending' for all new user-initiated registrations
-      const registration = await storage.createEventRegistration({
-        ...registrationData,
-        paymentStatus: 'pending',
-        hasPaid: false
-      });
-      res.status(201).json(registration);
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(400).json({ message: "Registration failed" });
-    }
-  });
-
-  // Admin event registration endpoint
-  app.post("/api/admin/events/register", authenticateSupabase, requireSupabaseAdmin, async (req: any, res) => {
-    try {
-      const { userId, eventId, title, gender, country, organization, organizationType, position, notes, hasPaid, paymentStatus } = req.body;
-
-      // Validate required fields
-      if (!userId || !eventId || !title || !gender || !country || !organization || !position) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-
-      // Check if user exists
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Check if event exists
-      const event = await storage.getEvent(eventId);
-      if (!event) {
-        return res.status(404).json({ message: "Event not found" });
-      }
-
-      // Check if user is already registered for this event
-      const existingRegistrations = await storage.getEventRegistrationsByUser(userId);
-      const alreadyRegistered = existingRegistrations.some(reg => reg.eventId === eventId);
-      if (alreadyRegistered) {
-        return res.status(400).json({ message: "User is already registered for this event" });
-      }
-
-      // Check if event has capacity
-      if (event.maxAttendees && event.currentAttendees && event.currentAttendees >= event.maxAttendees) {
-        return res.status(400).json({ message: "Event is full" });
-      }
-
-      // Create registration
-      const registration = await storage.createEventRegistration({
-        eventId,
-        userId,
-        title,
-        gender,
-        country,
-        organization,
-        organizationType: organizationType || "Other",
-        position,
-        notes: notes || null,
-        hasPaid: hasPaid || false,
-        paymentStatus: paymentStatus || "pending",
-        paymentEvidence: null,
-      });
-
-      console.log(`✅ Admin registered user ${userId} for event ${eventId}`);
-      res.status(201).json({ 
-        message: "Registration created successfully",
-        registration: {
-          id: registration.id,
-          eventId: registration.eventId,
-          userId: registration.userId,
-          paymentStatus: registration.paymentStatus,
-          registeredAt: registration.registeredAt,
+        // Ensure the user is registering themselves
+        if (registrationData.userId !== req.supabaseUser.id) {
+          return res
+            .status(403)
+            .json({ message: "Can only register for yourself" });
         }
-      });
 
-    } catch (error: any) {
-      console.error("Admin event registration error:", error);
-      res.status(500).json({ 
-        message: "Failed to create registration",
-        details: error.message 
-      });
-    }
-  });
+        // Check if user is already registered for this event (excluding cancelled registrations)
+        const existingRegistrations = await storage.getEventRegistrationsByUser(
+          registrationData.userId,
+        );
+        const alreadyRegistered = existingRegistrations.some(
+          (reg) =>
+            reg.eventId === registrationData.eventId &&
+            reg.paymentStatus !== "cancelled",
+        );
+        if (alreadyRegistered) {
+          return res
+            .status(400)
+            .json({ message: "Already registered for this event" });
+        }
+
+        // Check if event exists and has capacity
+        const event = await storage.getEvent(registrationData.eventId);
+        if (!event) {
+          return res.status(404).json({ message: "Event not found" });
+        }
+        if (
+          event.maxAttendees &&
+          event.currentAttendees &&
+          event.currentAttendees >= event.maxAttendees
+        ) {
+          return res.status(400).json({ message: "Event is full" });
+        }
+
+        // Force paymentStatus to 'pending' for all new user-initiated registrations
+        const registration = await storage.createEventRegistration({
+          ...registrationData,
+          paymentStatus: "pending",
+          hasPaid: false,
+        });
+        res.status(201).json(registration);
+      } catch (error) {
+        console.error("Registration error:", error);
+        res.status(400).json({ message: "Registration failed" });
+      }
+    },
+  );
+
+  // Admin event registration endpoint (event manager or super admin)
+  app.post(
+    "/api/admin/events/register",
+    authenticateSupabase,
+    requireRoles([Roles.EventManager, Roles.SuperAdmin]),
+    async (req: any, res) => {
+      try {
+        const {
+          userId,
+          eventId,
+          title,
+          gender,
+          country,
+          organization,
+          organizationType,
+          position,
+          notes,
+          hasPaid,
+          paymentStatus,
+        } = req.body;
+
+        // Validate required fields
+        if (
+          !userId ||
+          !eventId ||
+          !title ||
+          !gender ||
+          !country ||
+          !organization ||
+          !position
+        ) {
+          return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        // Check if user exists
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Check if event exists
+        const event = await storage.getEvent(eventId);
+        if (!event) {
+          return res.status(404).json({ message: "Event not found" });
+        }
+
+        // Check if user is already registered for this event (excluding cancelled registrations)
+        const existingRegistrations =
+          await storage.getEventRegistrationsByUser(userId);
+        const alreadyRegistered = existingRegistrations.some(
+          (reg) => reg.eventId === eventId && reg.paymentStatus !== "cancelled",
+        );
+        if (alreadyRegistered) {
+          return res
+            .status(400)
+            .json({ message: "User is already registered for this event" });
+        }
+
+        // Check if event has capacity
+        if (
+          event.maxAttendees &&
+          event.currentAttendees &&
+          event.currentAttendees >= event.maxAttendees
+        ) {
+          return res.status(400).json({ message: "Event is full" });
+        }
+
+        // Create registration
+        const registration = await storage.createEventRegistration({
+          eventId,
+          userId,
+          title,
+          gender,
+          country,
+          organization,
+          organizationType: organizationType || "Other",
+          position,
+          notes: notes || null,
+          hasPaid: hasPaid || false,
+          paymentStatus: paymentStatus || "pending",
+          paymentEvidence: null,
+        });
+
+        console.log(`✅ Admin registered user ${userId} for event ${eventId}`);
+        res.status(201).json({
+          message: "Registration created successfully",
+          registration: {
+            id: registration.id,
+            eventId: registration.eventId,
+            userId: registration.userId,
+            paymentStatus: registration.paymentStatus,
+            registeredAt: registration.registeredAt,
+          },
+        });
+      } catch (error: any) {
+        console.error("Admin event registration error:", error);
+        res.status(500).json({
+          message: "Failed to create registration",
+          details: error.message,
+        });
+      }
+    },
+  );
 
   // Registration confirmation email (stub)
   app.post("/api/notifications/registration-confirmation", async (req, res) => {
     try {
       const { email, eventId, fullName } = req.body;
       if (!email || !eventId || !fullName) {
-        return res.status(400).json({ message: "Email, eventId, and fullName required" });
+        return res
+          .status(400)
+          .json({ message: "Email, eventId, and fullName required" });
       }
 
       const event = await storage.getEvent(eventId);
@@ -372,70 +465,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User dashboard routes
-  app.get("/api/users/:userId/registrations", authenticateSupabase, async (req: any, res) => {
-    try {
-      const { userId } = req.params;
+  app.get(
+    "/api/users/:userId/registrations",
+    authenticateSupabase,
+    async (req: any, res) => {
+      try {
+        const { userId } = req.params;
 
-      // Ensure user can only access their own data (unless admin)
-      if (req.supabaseRole !== "super_admin" && req.supabaseRole !== "finance_person" && req.supabaseUser.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
+        // Ensure user can only access their own data (unless admin)
+        if (
+          req.supabaseRole !== "super_admin" &&
+          req.supabaseRole !== "finance_person" &&
+          req.supabaseUser.id !== userId
+        ) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        const registrations = await storage.getEventRegistrationsByUser(userId);
+        const registrationsWithEvents = await Promise.all(
+          registrations.map(async (registration) => {
+            const event = await storage.getEvent(registration.eventId);
+            return { ...registration, event };
+          }),
+        );
+
+        res.json(registrationsWithEvents);
+      } catch (error) {
+        console.error("Error fetching registrations:", error);
+        res.status(500).json({ message: "Failed to fetch registrations" });
       }
+    },
+  );
 
-      const registrations = await storage.getEventRegistrationsByUser(userId);
-      const registrationsWithEvents = await Promise.all(
-        registrations.map(async (registration) => {
-          const event = await storage.getEvent(registration.eventId);
-          return { ...registration, event };
-        })
-      );
+  app.patch(
+    "/api/users/:userId/registrations/:registrationId/cancel",
+    authenticateSupabase,
+    async (req: any, res) => {
+      try {
+        const { userId, registrationId } = req.params;
 
-      res.json(registrationsWithEvents);
-    } catch (error) {
-      console.error("Error fetching registrations:", error);
-      res.status(500).json({ message: "Failed to fetch registrations" });
-    }
-  });
+        // Ensure user can only cancel their own registrations (unless admin)
+        if (
+          req.supabaseRole !== "super_admin" &&
+          req.supabaseRole !== "finance_person" &&
+          req.supabaseUser.id !== userId
+        ) {
+          return res.status(403).json({ message: "Access denied" });
+        }
 
-  app.delete("/api/users/:userId/registrations/:registrationId", authenticateSupabase, async (req: any, res) => {
-    try {
-      const { userId, registrationId } = req.params;
+        const registration = await storage.getEventRegistration(registrationId);
+        if (!registration) {
+          return res.status(404).json({ message: "Registration not found" });
+        }
 
-      // Ensure user can only cancel their own registrations (unless admin)
-      if (req.supabaseRole !== "super_admin" && req.supabaseRole !== "finance_person" && req.supabaseUser.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
+        // Check if user owns this registration
+        if (
+          req.supabaseRole !== "super_admin" &&
+          req.supabaseRole !== "finance_person" &&
+          registration.userId !== userId
+        ) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        // Check if registration is already cancelled
+        if (registration.paymentStatus === "cancelled") {
+          return res
+            .status(400)
+            .json({ message: "Registration is already cancelled" });
+        }
+
+        await storage.cancelEventRegistration(registrationId);
+        res.json({ message: "Registration cancelled successfully" });
+      } catch (error) {
+        console.error("Error cancelling registration:", error);
+        res.status(500).json({ message: "Failed to cancel registration" });
       }
+    },
+  );
 
-      const registration = await storage.getEventRegistration(registrationId);
-      if (!registration) {
-        return res.status(404).json({ message: "Registration not found" });
+  // Keep DELETE endpoint for actual deletion (admin only)
+  app.delete(
+    "/api/users/:userId/registrations/:registrationId",
+    authenticateSupabase,
+    requireRoles(["super_admin"]),
+    async (req: any, res) => {
+      try {
+        const { userId, registrationId } = req.params;
+
+        const registration = await storage.getEventRegistration(registrationId);
+        if (!registration) {
+          return res.status(404).json({ message: "Registration not found" });
+        }
+
+        await storage.deleteEventRegistration(registrationId);
+        res.json({ message: "Registration deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting registration:", error);
+        res.status(500).json({ message: "Failed to delete registration" });
       }
-
-      // Check if user owns this registration
-      if (req.supabaseRole !== "super_admin" && req.supabaseRole !== "finance_person" && registration.userId !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      await storage.deleteEventRegistration(registrationId);
-      res.json({ message: "Registration cancelled successfully" });
-    } catch (error) {
-      console.error("Error cancelling registration:", error);
-      res.status(500).json({ message: "Failed to cancel registration" });
-    }
-  });
+    },
+  );
 
   // Newsletter subscription
   app.post("/api/newsletter/subscribe", async (req, res) => {
     try {
-      const subscriptionData = insertNewsletterSubscriptionSchema.parse(req.body);
+      const subscriptionData = insertNewsletterSubscriptionSchema.parse(
+        req.body,
+      );
 
       // Check if email is already subscribed
-      const existingSubscription = await storage.getNewsletterSubscriptionByEmail(subscriptionData.email);
+      const existingSubscription =
+        await storage.getNewsletterSubscriptionByEmail(subscriptionData.email);
       if (existingSubscription) {
         // If already subscribed, just return success (don't fail the registration)
-        return res.status(200).json({ message: "Already subscribed", subscription: existingSubscription });
+        return res.status(200).json({
+          message: "Already subscribed",
+          subscription: existingSubscription,
+        });
       }
 
-      const subscription = await storage.createNewsletterSubscription(subscriptionData);
+      const subscription =
+        await storage.createNewsletterSubscription(subscriptionData);
       res.status(201).json(subscription);
     } catch (error) {
       console.error("Subscription error:", error);
@@ -444,182 +594,260 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get("/api/admin/events", authenticateSupabase, requireSupabaseAdmin, async (_req, res) => {
-    try {
-      const events = await storage.getAllEvents();
-      res.json(events);
-    } catch (error) {
-      console.error("Error fetching admin events:", error);
-      res.status(500).json({ message: "Failed to fetch events" });
-    }
-  });
-
-  app.get("/api/admin/users", authenticateSupabase, requireSupabaseAdmin, async (_req, res) => {
-    try {
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!supabaseUrl || !serviceRoleKey) {
-        return res.status(500).json({ message: "Supabase server credentials not configured" });
+  // Admin events listing (all admin roles)
+  app.get(
+    "/api/admin/events",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (_req, res) => {
+      try {
+        const events = await storage.getAllEvents();
+        res.json(events);
+      } catch (error) {
+        console.error("Error fetching admin events:", error);
+        res.status(500).json({ message: "Failed to fetch events" });
       }
+    },
+  );
 
-      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
-      const allUsers: any[] = [];
-      const perPage = 1000;
-      let page = 1;
+  // Admin users listing (super admin only)
+  app.get(
+    "/api/admin/users",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (_req, res) => {
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          return res
+            .status(500)
+            .json({ message: "Supabase server credentials not configured" });
+        }
 
-      while (true) {
-        const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const allUsers: any[] = [];
+        const perPage = 1000;
+        let page = 1;
+
+        while (true) {
+          const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+            page,
+            perPage,
+          });
+          if (error) {
+            throw error;
+          }
+          const batch = data.users || [];
+          if (batch.length === 0) break;
+          allUsers.push(...batch);
+          if (batch.length < perPage) break;
+          page += 1;
+        }
+
+        const mappedUsers = await Promise.all(
+          allUsers.map(async (u: any) => {
+            const user = await storage.getUser(u.id);
+            return (
+              user || {
+                id: u.id,
+                email: u.email || "",
+                firstName: u.user_metadata?.first_name || "",
+                lastName: u.user_metadata?.last_name || "",
+                phoneNumber: u.user_metadata?.phone_number || "",
+                role: u.user_metadata?.role || "ordinary_user",
+                createdAt: u.created_at,
+              }
+            );
+          }),
+        );
+
+        res.json(mappedUsers);
+      } catch (error) {
+        console.error("Error fetching admin users:", error);
+        res.status(500).json({ message: "Failed to fetch users" });
+      }
+    },
+  );
+
+  // Admin registrations listing (all admin roles)
+  app.get(
+    "/api/admin/registrations",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (_req, res) => {
+      try {
+        const registrations = await storage.getAllEventRegistrations();
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const supabaseAdmin =
+          supabaseUrl && serviceRoleKey
+            ? createSupabaseClient(supabaseUrl, serviceRoleKey)
+            : null;
+
+        const registrationsWithDetails = await Promise.all(
+          registrations.map(async (registration) => {
+            const event = await storage.getEvent(registration.eventId);
+            let user: any = undefined;
+            if (supabaseAdmin) {
+              try {
+                const { data } = await supabaseAdmin.auth.admin.getUserById(
+                  registration.userId,
+                );
+                const u = data?.user;
+                if (u) {
+                  user = {
+                    id: u.id,
+                    email: u.email,
+                    firstName: u.user_metadata?.first_name || "",
+                    lastName: u.user_metadata?.last_name || "",
+                  };
+                }
+              } catch {}
+            }
+            return { ...registration, event, user };
+          }),
+        );
+
+        res.json(registrationsWithDetails);
+      } catch (error) {
+        console.error("Error fetching admin registrations:", error);
+        res.status(500).json({ message: "Failed to fetch registrations" });
+      }
+    },
+  );
+
+  // Finance-only updates: payment status and hasPaid
+  app.patch(
+    "/api/admin/registrations/:registrationId",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
+    async (req, res) => {
+      try {
+        const { registrationId } = req.params;
+        const { paymentStatus, hasPaid } = req.body;
+
+        if (!paymentStatus && hasPaid === undefined) {
+          return res.status(400).json({ message: "No updates provided" });
+        }
+
+        const updatedRegistration = await storage.updateEventRegistration(
+          registrationId,
+          {
+            paymentStatus,
+            hasPaid,
+          },
+        );
+
+        if (!updatedRegistration) {
+          return res.status(404).json({ message: "Registration not found" });
+        }
+
+        res.json(updatedRegistration);
+      } catch (error) {
+        console.error("Error updating registration:", error);
+        res.status(500).json({ message: "Failed to update registration" });
+      }
+    },
+  );
+
+  // Role updates (super admin only)
+  app.patch(
+    "/api/admin/users/:userId/role",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req, res) => {
+      try {
+        const { userId } = req.params;
+        const { role } = req.body;
+
+        if (
+          !role ||
+          ![
+            "super_admin",
+            "finance_person",
+            "event_manager",
+            "ordinary_user",
+          ].includes(role)
+        ) {
+          return res.status(400).json({ message: "Invalid role" });
+        }
+
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          return res
+            .status(500)
+            .json({ message: "Supabase server credentials not configured" });
+        }
+
+        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
+          {
+            user_metadata: { role },
+          },
+        );
+
         if (error) {
           throw error;
         }
-        const batch = data.users || [];
-        if (batch.length === 0) break;
-        allUsers.push(...batch);
-        if (batch.length < perPage) break;
-        page += 1;
+
+        res.json({ success: true });
+      } catch (error) {
+        console.error("Error updating user role:", error);
+        res.status(500).json({ message: "Failed to update user role" });
       }
+    },
+  );
 
-      const mappedUsers = await Promise.all(
-        allUsers.map(async (u: any) => {
-          const user = await storage.getUser(u.id);
-          return user || {
-            id: u.id,
-            email: u.email || "",
-            firstName: u.user_metadata?.first_name || "",
-            lastName: u.user_metadata?.last_name || "",
-            phoneNumber: u.user_metadata?.phone_number || "",
-            role: u.user_metadata?.role || "ordinary_user",
-            createdAt: u.created_at,
-          };
-        })
-      );
-
-      res.json(mappedUsers);
-    } catch (error) {
-      console.error("Error fetching admin users:", error);
-      res.status(500).json({ message: "Failed to fetch users" });
-    }
-  });
-
-  app.get("/api/admin/registrations", authenticateSupabase, requireSupabaseAdmin, async (_req, res) => {
-    try {
-      const registrations = await storage.getAllEventRegistrations();
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      const supabaseAdmin = supabaseUrl && serviceRoleKey ? createSupabaseClient(supabaseUrl, serviceRoleKey) : null;
-
-      const registrationsWithDetails = await Promise.all(
-        registrations.map(async (registration) => {
-          const event = await storage.getEvent(registration.eventId);
-          let user: any = undefined;
-          if (supabaseAdmin) {
-            try {
-              const { data } = await supabaseAdmin.auth.admin.getUserById(registration.userId);
-              const u = data?.user;
-              if (u) {
-                user = {
-                  id: u.id,
-                  email: u.email,
-                  firstName: u.user_metadata?.first_name || "",
-                  lastName: u.user_metadata?.last_name || "",
-                };
-              }
-            } catch {}
-          }
-          return { ...registration, event, user };
-        })
-      );
-
-      res.json(registrationsWithDetails);
-    } catch (error) {
-      console.error("Error fetching admin registrations:", error);
-      res.status(500).json({ message: "Failed to fetch registrations" });
-    }
-  });
-
-  app.patch("/api/admin/registrations/:registrationId", authenticateSupabase, requireSupabaseAdmin, async (req, res) => {
-    try {
-      const { registrationId } = req.params;
-      const { paymentStatus, hasPaid } = req.body;
-
-      if (!paymentStatus && hasPaid === undefined) {
-        return res.status(400).json({ message: "No updates provided" });
+  // Newsletter subscriptions (super admin only)
+  app.get(
+    "/api/admin/newsletter-subscriptions",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (_req, res) => {
+      try {
+        const subscriptions = await storage.getAllNewsletterSubscriptions();
+        res.json(subscriptions);
+      } catch (error) {
+        console.error("Error fetching newsletter subscriptions:", error);
+        res.status(500).json({ message: "Failed to fetch subscriptions" });
       }
+    },
+  );
 
-      const updatedRegistration = await storage.updateEventRegistration(registrationId, {
-        paymentStatus,
-        hasPaid,
-      });
+  // Email blast (super admin only)
+  app.post(
+    "/api/admin/email-blast",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req, res) => {
+      try {
+        const {
+          subject,
+          message,
+          fromName = "Alliance Procurement",
+          fromEmail = "no-reply@apcb.com",
+        } = req.body;
 
-      if (!updatedRegistration) {
-        return res.status(404).json({ message: "Registration not found" });
-      }
+        if (!subject || !message) {
+          return res
+            .status(400)
+            .json({ message: "Subject and message are required" });
+        }
 
-      res.json(updatedRegistration);
-    } catch (error) {
-      console.error("Error updating registration:", error);
-      res.status(500).json({ message: "Failed to update registration" });
-    }
-  });
+        const subscriptions = await storage.getAllNewsletterSubscriptions();
 
-  app.patch("/api/admin/users/:userId/role", authenticateSupabase, requireSupabaseAdmin, async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const { role } = req.body;
+        // Log email blast details (replace with SendGrid when ready)
+        console.log(
+          `📧 Sending email blast to ${subscriptions.length} subscribers`,
+        );
+        console.log(`   Subject: ${subject}`);
+        console.log(`   From: ${fromName} <${fromEmail}>`);
 
-      if (!role || !["super_admin", "finance_person", "ordinary_user"].includes(role)) {
-        return res.status(400).json({ message: "Invalid role" });
-      }
-
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!supabaseUrl || !serviceRoleKey) {
-        return res.status(500).json({ message: "Supabase server credentials not configured" });
-      }
-
-      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: { role },
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      res.status(500).json({ message: "Failed to update user role" });
-    }
-  });
-
-  app.get("/api/admin/newsletter-subscriptions", authenticateSupabase, requireSupabaseAdmin, async (_req, res) => {
-    try {
-      const subscriptions = await storage.getAllNewsletterSubscriptions();
-      res.json(subscriptions);
-    } catch (error) {
-      console.error("Error fetching newsletter subscriptions:", error);
-      res.status(500).json({ message: "Failed to fetch subscriptions" });
-    }
-  });
-
-  app.post("/api/admin/email-blast", authenticateSupabase, requireSupabaseAdmin, async (req, res) => {
-    try {
-      const { subject, message, fromName = "Alliance Procurement", fromEmail = "no-reply@apcb.com" } = req.body;
-
-      if (!subject || !message) {
-        return res.status(400).json({ message: "Subject and message are required" });
-      }
-
-      const subscriptions = await storage.getAllNewsletterSubscriptions();
-
-      // Log email blast details (replace with SendGrid when ready)
-      console.log(`📧 Sending email blast to ${subscriptions.length} subscribers`);
-      console.log(`   Subject: ${subject}`);
-      console.log(`   From: ${fromName} <${fromEmail}>`);
-
-      // TODO: Integrate SendGrid
-      /*
+        // TODO: Integrate SendGrid
+        /*
       const sgMail = require('@sendgrid/mail');
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       const messages = subscriptions.map(sub => ({
@@ -632,481 +860,486 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await sgMail.send(messages);
       */
 
-      res.json({
-        message: `Email blast queued for ${subscriptions.length} subscribers`,
-        results: { sent: subscriptions.length, failed: 0, total: subscriptions.length },
-      });
-    } catch (error) {
-      console.error("Error sending email blast:", error);
-      res.status(500).json({ message: "Failed to send email blast" });
-    }
-  });
-
+        res.json({
+          message: `Email blast queued for ${subscriptions.length} subscribers`,
+          results: {
+            sent: subscriptions.length,
+            failed: 0,
+            total: subscriptions.length,
+          },
+        });
+      } catch (error) {
+        console.error("Error sending email blast:", error);
+        res.status(500).json({ message: "Failed to send email blast" });
+      }
+    },
+  );
 
   // Optional: Direct file serving route (keeping your existing implementation)
-  app.get("/evidence/:userId/:eventId/:fileName", authenticateSupabase, async (req: any, res) => {
-    try {
-      const { userId, eventId, fileName } = req.params;
-      const filePath = `evidence/${userId || ''}/${eventId || ''}/${fileName || ''}`;
+  app.get(
+    "/evidence/:userId/:eventId/:fileName",
+    authenticateSupabase,
+    async (req: any, res) => {
+      try {
+        const { userId, eventId, fileName } = req.params;
+        const filePath = `evidence/${userId || ""}/${eventId || ""}/${fileName || ""}`;
 
-      // Check if user can access this file (own file or admin)
-      const canAccess =
-        req.supabaseUser.id === userId ||
-        req.supabaseRole === "super_admin" ||
-        req.supabaseRole === "finance_person";
+        // Check if user can access this file (own file or admin)
+        const canAccess =
+          req.supabaseUser.id === userId ||
+          req.supabaseRole === "super_admin" ||
+          req.supabaseRole === "finance_person";
 
-      if (!canAccess) {
-        return res.status(403).json({ message: "Access denied" });
+        if (!canAccess) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          return res
+            .status(500)
+            .json({ message: "Supabase server credentials not configured" });
+        }
+
+        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const bucket =
+          process.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
+
+        // Get the file from Supabase storage
+        const { data, error } = await supabaseAdmin.storage
+          .from(bucket)
+          .download(filePath);
+
+        if (error) {
+          console.error("File download error:", error);
+          return res.status(404).json({ message: "File not found" });
+        }
+
+        if (!data) {
+          return res.status(404).json({ message: "File not found" });
+        }
+
+        // Convert blob to buffer
+        const buffer = Buffer.from(await data.arrayBuffer());
+
+        // Set appropriate content type based on file extension
+        const ext = fileName.toLowerCase().split(".").pop();
+        let contentType = "application/octet-stream";
+
+        switch (ext) {
+          case "pdf":
+            contentType = "application/pdf";
+            break;
+          case "jpg":
+          case "jpeg":
+            contentType = "image/jpeg";
+            break;
+          case "png":
+            contentType = "image/png";
+            break;
+          case "doc":
+            contentType = "application/msword";
+            break;
+          case "docx":
+            contentType =
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            break;
+        }
+
+        // Set headers for inline viewing (browser will try to display the file)
+        res.set({
+          "Content-Type": contentType,
+          "Content-Disposition": `inline; filename="${fileName}"`,
+          "Cache-Control": "public, max-age=31536000", // Cache for 1 year
+        });
+
+        res.send(buffer);
+      } catch (error) {
+        console.error("Error serving evidence file:", error);
+        res.status(500).json({ message: "Failed to serve file" });
       }
+    },
+  );
 
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!supabaseUrl || !serviceRoleKey) {
-        return res.status(500).json({ message: "Supabase server credentials not configured" });
-      }
+  // PAYMENT EVIDENCE ROUTE - Enhanced with better error handling
+  app.get(
+    "/api/admin/payment-evidence/:evidencePath",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
+    async (req: any, res) => {
+      try {
+        const { evidencePath } = req.params;
+        const decodedPath = decodeURIComponent(evidencePath);
 
-      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
-      const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
+        console.log(`🔍 Fetching evidence from path: ${decodedPath}`);
 
-      // Get the file from Supabase storage
-      const { data, error } = await supabaseAdmin.storage
-        .from(bucket)
-        .download(filePath);
+        if (!decodedPath) {
+          console.log(`❌ No evidence path provided`);
+          return res.status(400).json({ message: "Evidence path is required" });
+        }
 
-      if (error) {
-        console.error('File download error:', error);
-        return res.status(404).json({ message: "File not found" });
-      }
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          console.error("❌ Missing Supabase credentials");
+          return res
+            .status(500)
+            .json({ message: "Server configuration error" });
+        }
 
-      if (!data) {
-        return res.status(404).json({ message: "File not found" });
-      }
+        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const bucket =
+          process.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
 
-      // Convert blob to buffer
-      const buffer = Buffer.from(await data.arrayBuffer());
+        console.log(`🪣 Using bucket: ${bucket}`);
+        console.log(`📂 File path: ${decodedPath}`);
 
-      // Set appropriate content type based on file extension
-      const ext = fileName.toLowerCase().split('.').pop();
-      let contentType = 'application/octet-stream';
+        // Try to download the file directly using the provided path
+        const { data, error } = await supabaseAdmin.storage
+          .from(bucket)
+          .download(decodedPath || "");
 
-      switch (ext) {
-        case 'pdf':
-          contentType = 'application/pdf';
-          break;
-        case 'jpg':
-        case 'jpeg':
-          contentType = 'image/jpeg';
-          break;
-        case 'png':
-          contentType = 'image/png';
-          break;
-        case 'doc':
-          contentType = 'application/msword';
-          break;
-        case 'docx':
-          contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-          break;
-      }
+        if (error) {
+          console.error(`❌ Storage download error:`, error);
 
-      // Set headers for inline viewing (browser will try to display the file)
-      res.set({
-        'Content-Type': contentType,
-        'Content-Disposition': `inline; filename="${fileName}"`,
-        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
-      });
+          // Try alternative path formats if the direct path fails
+          const alternativePaths = [
+            decodedPath.replace("/storage/v1/object/", ""),
+            decodedPath.split("/").slice(-3).join("/"), // Last 3 parts
+            `evidence/${decodedPath.split("/").slice(-3).join("/")}`, // Ensure evidence prefix
+          ];
 
-      res.send(buffer);
-    } catch (error) {
-      console.error('Error serving evidence file:', error);
-      res.status(500).json({ message: "Failed to serve file" });
-    }
-  });
+          console.log(`🔄 Trying alternative paths:`, alternativePaths);
 
-// PAYMENT EVIDENCE ROUTE - Enhanced with better error handling
-app.get("/api/admin/payment-evidence/:evidencePath", authenticateSupabase, requireSupabaseAdmin, async (req: any, res) => {
-  try {
-    const { evidencePath } = req.params;
-    const decodedPath = decodeURIComponent(evidencePath);
-    
-    console.log(`🔍 Fetching evidence from path: ${decodedPath}`);
+          for (const altPath of alternativePaths) {
+            try {
+              console.log(`🔄 Attempting: ${altPath}`);
+              const { data: altData, error: altError } =
+                await supabaseAdmin.storage.from(bucket).download(altPath);
 
-    if (!decodedPath) {
-      console.log(`❌ No evidence path provided`);
-      return res.status(400).json({ message: "Evidence path is required" });
-    }
+              if (!altError && altData) {
+                console.log(`✅ Success with alternative path: ${altPath}`);
+                const buffer = Buffer.from(await altData.arrayBuffer());
+                const filename = altPath.split("/").pop() || "evidence";
+                const ext = filename.toLowerCase().split(".").pop() || "";
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error('❌ Missing Supabase credentials');
-      return res.status(500).json({ message: "Server configuration error" });
-    }
+                let contentType = "application/octet-stream";
+                if (ext === "pdf") contentType = "application/pdf";
+                else if (["jpg", "jpeg"].includes(ext || ""))
+                  contentType = "image/jpeg";
+                else if (ext === "png") contentType = "image/png";
 
-    const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
-    const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
-    
-    console.log(`🪣 Using bucket: ${bucket}`);
-    console.log(`📂 File path: ${decodedPath}`);
+                res.set({
+                  "Content-Type": contentType,
+                  "Content-Disposition": `inline; filename="${filename}"`,
+                  "Cache-Control": "private, max-age=3600",
+                });
 
-          // Try to download the file directly using the provided path
-      const { data, error } = await supabaseAdmin.storage
-        .from(bucket)
-        .download(decodedPath || '');
-
-    if (error) {
-      console.error(`❌ Storage download error:`, error);
-      
-      // Try alternative path formats if the direct path fails
-      const alternativePaths = [
-        decodedPath.replace('/storage/v1/object/', ''),
-        decodedPath.split('/').slice(-3).join('/'), // Last 3 parts
-        `evidence/${decodedPath.split('/').slice(-3).join('/')}` // Ensure evidence prefix
-      ];
-      
-      console.log(`🔄 Trying alternative paths:`, alternativePaths);
-      
-      for (const altPath of alternativePaths) {
-        try {
-          console.log(`🔄 Attempting: ${altPath}`);
-          const { data: altData, error: altError } = await supabaseAdmin.storage
-            .from(bucket)
-            .download(altPath);
-          
-          if (!altError && altData) {
-            console.log(`✅ Success with alternative path: ${altPath}`);
-            const buffer = Buffer.from(await altData.arrayBuffer());
-            const filename = altPath.split('/').pop() || 'evidence';
-            const ext = filename.toLowerCase().split('.').pop();
-            
-            let contentType = 'application/octet-stream';
-            if (ext === 'pdf') contentType = 'application/pdf';
-            else if (['jpg', 'jpeg'].includes(ext)) contentType = 'image/jpeg';
-            else if (ext === 'png') contentType = 'image/png';
-            
-            res.set({
-              'Content-Type': contentType,
-              'Content-Disposition': `inline; filename="${filename}"`,
-              'Cache-Control': 'private, max-age=3600',
-            });
-            
-            return res.send(buffer);
+                return res.send(buffer);
+              }
+            } catch (altErr) {
+              console.log(`❌ Alternative path failed: ${altPath}`, altErr);
+            }
           }
-        } catch (altErr) {
-          console.log(`❌ Alternative path failed: ${altPath}`, altErr);
+
+          return res.status(404).json({
+            message: "Evidence file not found in storage",
+            details: error.message,
+            attemptedPaths: alternativePaths,
+          });
         }
+
+        if (!data) {
+          console.log(`❌ No data returned from storage`);
+          return res.status(404).json({ message: "Evidence file not found" });
+        }
+
+        console.log(`✅ File downloaded successfully`);
+        const buffer = Buffer.from(await data.arrayBuffer());
+        const filename = decodedPath.split("/").pop() || "evidence";
+        const ext = filename.toLowerCase().split(".").pop() || "";
+
+        let contentType = "application/octet-stream";
+        if (ext === "pdf") contentType = "application/pdf";
+        else if (["jpg", "jpeg"].includes(ext || ""))
+          contentType = "image/jpeg";
+        else if (ext === "png") contentType = "image/png";
+
+        res.set({
+          "Content-Type": contentType,
+          "Content-Disposition": `inline; filename="${filename}"`,
+          "Cache-Control": "private, max-age=3600",
+        });
+
+        res.send(buffer);
+      } catch (error: any) {
+        console.error("❌ Evidence error:", error);
+        res.status(500).json({
+          message: "Server error while fetching evidence",
+          details: error.message,
+        });
       }
-      
-      return res.status(404).json({ 
-        message: "Evidence file not found in storage",
-        details: error.message,
-        attemptedPaths: alternativePaths
-      });
-    }
-
-    if (!data) {
-      console.log(`❌ No data returned from storage`);
-      return res.status(404).json({ message: "Evidence file not found" });
-    }
-
-    console.log(`✅ File downloaded successfully`);
-    const buffer = Buffer.from(await data.arrayBuffer());
-    const filename = decodedPath.split('/').pop() || 'evidence';
-    const ext = filename.toLowerCase().split('.').pop();
-
-    let contentType = 'application/octet-stream';
-    if (ext === 'pdf') contentType = 'application/pdf';
-    else if (['jpg', 'jpeg'].includes(ext)) contentType = 'image/jpeg';
-    else if (ext === 'png') contentType = 'image/png';
-
-    res.set({
-      'Content-Type': contentType,
-      'Content-Disposition': `inline; filename="${filename}"`,
-      'Cache-Control': 'private, max-age=3600',
-    });
-
-    res.send(buffer);
-  } catch (error: any) {
-    console.error('❌ Evidence error:', error);
-    res.status(500).json({ 
-      message: "Server error while fetching evidence",
-      details: error.message 
-    });
-  }
-});
+    },
+  );
   // Route to get payment evidence for users (their own evidence only)
-  app.get("/api/users/payment-evidence/:evidencePath", authenticateSupabase, async (req: any, res) => {
-    try {
-      const { evidencePath } = req.params;
-      const decodedPath = decodeURIComponent(evidencePath);
-      const userId = req.supabaseUser.id;
-      
-      console.log(`🔍 User ${userId} fetching evidence from path: ${decodedPath}`);
+  app.get(
+    "/api/users/payment-evidence/:evidencePath",
+    authenticateSupabase,
+    async (req: any, res) => {
+      try {
+        const { evidencePath } = req.params;
+        const decodedPath = decodeURIComponent(evidencePath);
+        const userId = req.supabaseUser.id;
 
-      if (!decodedPath) {
-        console.log(`❌ No evidence path provided`);
-        return res.status(400).json({ message: "Evidence path is required" });
-      }
+        console.log(
+          `🔍 User ${userId} fetching evidence from path: ${decodedPath}`,
+        );
 
-      // Verify the user owns this evidence by checking if it contains their user ID
-      if (!decodedPath.includes(userId)) {
-        console.log(`❌ User ${userId} trying to access evidence not owned by them`);
-        return res.status(403).json({ message: "Access denied to this evidence" });
-      }
-
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!supabaseUrl || !serviceRoleKey) {
-        console.error('❌ Missing Supabase credentials');
-        return res.status(500).json({ message: "Server configuration error" });
-      }
-
-      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
-    const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
-      
-      console.log(`🪣 Using bucket: ${bucket}`);
-      console.log(`📂 File path: ${decodedPath}`);
-
-      // Try to download the file directly using the provided path
-      const { data, error } = await supabaseAdmin.storage
-        .from(bucket)
-        .download(decodedPath || '');
-
-      if (error) {
-        console.error(`❌ Storage download error:`, error);
-        return res.status(404).json({ 
-          message: "Evidence file not found in storage",
-          details: error.message
-        });
-      }
-
-      if (!data) {
-        console.log(`❌ No data returned from storage`);
-        return res.status(404).json({ message: "Evidence file not found" });
-      }
-
-      console.log(`✅ File downloaded successfully for user ${userId}`);
-    const buffer = Buffer.from(await data.arrayBuffer());
-      const filename = decodedPath.split('/').pop() || 'evidence';
-    const ext = filename.toLowerCase().split('.').pop();
-
-    let contentType = 'application/octet-stream';
-    if (ext === 'pdf') contentType = 'application/pdf';
-    else if (['jpg', 'jpeg'].includes(ext)) contentType = 'image/jpeg';
-    else if (ext === 'png') contentType = 'image/png';
-
-    res.set({
-      'Content-Type': contentType,
-      'Content-Disposition': `inline; filename="${filename}"`,
-      'Cache-Control': 'private, max-age=3600',
-    });
-
-    res.send(buffer);
-    } catch (error: any) {
-      console.error('❌ User evidence error:', error);
-      res.status(500).json({ 
-        message: "Server error while fetching evidence",
-        details: error.message 
-      });
-    }
-  });
-
-        // Route to update payment evidence for users (their own evidence only)
-  app.put("/api/users/payment-evidence/:registrationId", authenticateSupabase, async (req: any, res) => {
-    try {
-      const { registrationId } = req.params;
-      const userId = req.supabaseUser.id;
-      
-      console.log('🔄 User evidence update request:');
-      console.log('Registration ID:', registrationId);
-      console.log('User ID:', userId);
-      console.log('Request body:', req.body);
-      console.log('Request files:', req.files);
-      
-      if (!req.files || !req.files.evidence) {
-        console.log('❌ No evidence file provided');
-        return res.status(400).json({ message: "Evidence file is required" });
-      }
-
-      const evidenceFile = req.files.evidence as any;
-      console.log(`🔄 User ${userId} updating evidence for registration: ${registrationId}`);
-      console.log('File details:', {
-        name: evidenceFile.name,
-        size: evidenceFile.size,
-        mimetype: evidenceFile.mimetype
-      });
-
-      const registration = await storage.getEventRegistration(registrationId);
-      if (!registration) {
-        console.log('❌ Registration not found:', registrationId);
-        return res.status(404).json({ message: "Registration not found" });
-      }
-
-      // Verify the user owns this registration
-      if (registration.userId !== userId) {
-        console.log(`❌ User ${userId} trying to update evidence for registration owned by ${registration.userId}`);
-        return res.status(403).json({ message: "Access denied to this registration" });
-      }
-
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!supabaseUrl || !serviceRoleKey) {
-        console.error('❌ Missing Supabase credentials');
-        return res.status(500).json({ message: "Server configuration error" });
-      }
-
-      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
-      const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
-      
-      console.log('🪣 Using bucket:', bucket);
-
-      // Generate new file path
-      const fileExtension = evidenceFile.name.split('.').pop();
-      const newFileName = `evidence_${Date.now()}.${fileExtension}`;
-      const newFilePath = `evidence/${userId}/${registration.eventId}/${newFileName}`;
-      
-      console.log('📁 New file path:', newFilePath);
-
-      // Upload new evidence file
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from(bucket)
-        .upload(newFilePath, evidenceFile.data, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: evidenceFile.mimetype || 'application/octet-stream',
-        });
-
-      if (uploadError) {
-        console.error(`❌ Upload error:`, uploadError);
-        return res.status(500).json({ message: "Failed to upload new evidence file" });
-      }
-
-      console.log('✅ File uploaded successfully');
-
-      // Delete old evidence file if it exists
-      if (registration.paymentEvidence) {
-        try {
-          console.log('🗑️ Attempting to delete old evidence:', registration.paymentEvidence);
-          await supabaseAdmin.storage
-            .from(bucket)
-            .remove([registration.paymentEvidence]);
-          console.log(`🗑️ Deleted old evidence: ${registration.paymentEvidence}`);
-        } catch (deleteError) {
-          console.warn(`⚠️ Failed to delete old evidence:`, deleteError);
-          // Don't fail the update if deletion fails
+        if (!decodedPath) {
+          console.log(`❌ No evidence path provided`);
+          return res.status(400).json({ message: "Evidence path is required" });
         }
+
+        // Verify the user owns this evidence by checking if it contains their user ID
+        if (!decodedPath.includes(userId)) {
+          console.log(
+            `❌ User ${userId} trying to access evidence not owned by them`,
+          );
+          return res
+            .status(403)
+            .json({ message: "Access denied to this evidence" });
+        }
+
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          console.error("❌ Missing Supabase credentials");
+          return res
+            .status(500)
+            .json({ message: "Server configuration error" });
+        }
+
+        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const bucket =
+          process.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
+
+        console.log(`🪣 Using bucket: ${bucket}`);
+        console.log(`📂 File path: ${decodedPath}`);
+
+        // Try to download the file directly using the provided path
+        const { data, error } = await supabaseAdmin.storage
+          .from(bucket)
+          .download(decodedPath || "");
+
+        if (error) {
+          console.error(`❌ Storage download error:`, error);
+          return res.status(404).json({
+            message: "Evidence file not found in storage",
+            details: error.message,
+          });
+        }
+
+        if (!data) {
+          console.log(`❌ No data returned from storage`);
+          return res.status(404).json({ message: "Evidence file not found" });
+        }
+
+        console.log(`✅ File downloaded successfully for user ${userId}`);
+        const buffer = Buffer.from(await data.arrayBuffer());
+        const filename = decodedPath.split("/").pop() || "evidence";
+        const ext = filename.toLowerCase().split(".").pop() || "";
+
+        let contentType = "application/octet-stream";
+        if (ext === "pdf") contentType = "application/pdf";
+        else if (["jpg", "jpeg"].includes(ext || ""))
+          contentType = "image/jpeg";
+        else if (ext === "png") contentType = "image/png";
+
+        res.set({
+          "Content-Type": contentType,
+          "Content-Disposition": `inline; filename="${filename}"`,
+          "Cache-Control": "private, max-age=3600",
+        });
+
+        res.send(buffer);
+      } catch (error: any) {
+        console.error("❌ User evidence error:", error);
+        res.status(500).json({
+          message: "Server error while fetching evidence",
+          details: error.message,
+        });
       }
+    },
+  );
 
-      // Update registration with new evidence path
-      console.log('📝 Updating registration with new evidence path:', newFilePath);
-      const updatedRegistration = await storage.updateEventRegistration(registrationId, {
-        paymentEvidence: newFilePath,
-      });
-
-      if (!updatedRegistration) {
-        console.error('❌ Failed to update registration in database');
-        return res.status(500).json({ message: "Failed to update registration" });
-      }
-
-      console.log(`✅ Evidence updated successfully by user ${userId}: ${newFilePath}`);
-      console.log('📤 Sending response with new evidence path:', newFilePath);
-      
-      res.json({
-        message: "Evidence updated successfully",
-        registration: updatedRegistration,
-        newEvidencePath: newFilePath
-      });
-
-    } catch (error: any) {
-      console.error('❌ User evidence update error:', error);
-      res.status(500).json({ 
-        message: "Server error while updating evidence",
-        details: error.message 
-      });
-    }
-  });
+  // Route to update payment evidence for users (their own evidence only)
+  app.put(
+    "/api/users/payment-evidence/:registrationId",
+    authenticateSupabase,
+    async (_req: any, res) => {
+      return res
+        .status(403)
+        .json({ message: "Evidence updates are restricted to finance" });
+    },
+  );
 
   // Route to update payment evidence for admins
-  app.put("/api/admin/payment-evidence/:registrationId", authenticateSupabase, requireSupabaseAdmin, async (req: any, res) => {
-    try {
-      const { registrationId } = req.params;
-      const { evidenceFile } = req.body;
+  app.put(
+    "/api/admin/payment-evidence/:registrationId",
+    authenticateSupabase,
+    async (req: any, res) => {
+      try {
+        const { registrationId } = req.params;
+        const { evidenceFile } = req.body;
 
-      if (!evidenceFile) {
-        return res.status(400).json({ message: "Evidence file is required" });
-      }
-
-      console.log(`🔄 Updating evidence for registration: ${registrationId}`);
-
-      const registration = await storage.getEventRegistration(registrationId);
-      if (!registration) {
-        return res.status(404).json({ message: "Registration not found" });
-      }
-
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!supabaseUrl || !serviceRoleKey) {
-        return res.status(500).json({ message: "Server configuration error" });
-      }
-
-      const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
-      const bucket = process.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
-
-      // Generate new file path
-      const fileExtension = evidenceFile.name.split('.').pop();
-      const newFileName = `evidence_${Date.now()}.${fileExtension}`;
-      const newFilePath = `evidence/${registration.userId}/${registration.eventId}/${newFileName}`;
-
-      // Upload new evidence file
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from(bucket)
-        .upload(newFilePath, evidenceFile, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: evidenceFile.type || 'application/octet-stream',
-        });
-
-      if (uploadError) {
-        console.error(`❌ Upload error:`, uploadError);
-        return res.status(500).json({ message: "Failed to upload new evidence file" });
-      }
-
-      // Delete old evidence file if it exists
-      if (registration.paymentEvidence) {
-        try {
-          await supabaseAdmin.storage
-            .from(bucket)
-            .remove([registration.paymentEvidence]);
-          console.log(`🗑️ Deleted old evidence: ${registration.paymentEvidence}`);
-        } catch (deleteError) {
-          console.warn(`⚠️ Failed to delete old evidence:`, deleteError);
-          // Don't fail the update if deletion fails
+        if (!evidenceFile) {
+          return res.status(400).json({ message: "Evidence file is required" });
         }
+
+        console.log(`🔄 Updating evidence for registration: ${registrationId}`);
+
+        const registration = await storage.getEventRegistration(registrationId);
+        if (!registration) {
+          return res.status(404).json({ message: "Registration not found" });
+        }
+
+        // Check if registration is cancelled
+        if (registration.paymentStatus === "cancelled") {
+          return res.status(400).json({
+            message: "Cannot update evidence for cancelled registration",
+          });
+        }
+
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          return res
+            .status(500)
+            .json({ message: "Server configuration error" });
+        }
+
+        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const bucket =
+          process.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
+
+        // Generate new file path
+        const fileExtension = evidenceFile.name.split(".").pop();
+        const newFileName = `evidence_${Date.now()}.${fileExtension}`;
+        const newFilePath = `evidence/${registration.userId}/${registration.eventId}/${newFileName}`;
+
+        // Upload new evidence file
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from(bucket)
+          .upload(newFilePath, evidenceFile, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: evidenceFile.type || "application/octet-stream",
+          });
+
+        if (uploadError) {
+          console.error(`❌ Upload error:`, uploadError);
+          return res
+            .status(500)
+            .json({ message: "Failed to upload new evidence file" });
+        }
+
+        // Delete old evidence file if it exists
+        if (registration.paymentEvidence) {
+          try {
+            await supabaseAdmin.storage
+              .from(bucket)
+              .remove([registration.paymentEvidence]);
+            console.log(
+              `🗑️ Deleted old evidence: ${registration.paymentEvidence}`,
+            );
+          } catch (deleteError) {
+            console.warn(`⚠️ Failed to delete old evidence:`, deleteError);
+            // Don't fail the update if deletion fails
+          }
+        }
+
+        // Update registration with new evidence path
+        const updatedRegistration = await storage.updateEventRegistration(
+          registrationId,
+          {
+            paymentEvidence: newFilePath,
+          },
+        );
+
+        if (!updatedRegistration) {
+          return res
+            .status(500)
+            .json({ message: "Failed to update registration" });
+        }
+
+        console.log(`✅ Evidence updated successfully: ${newFilePath}`);
+        res.json({
+          message: "Evidence updated successfully",
+          registration: updatedRegistration,
+          newEvidencePath: newFilePath,
+        });
+      } catch (error: any) {
+        console.error("❌ Evidence update error:", error);
+        res.status(500).json({
+          message: "Server error while updating evidence",
+          details: error.message,
+        });
       }
+    },
+  );
 
-      // Update registration with new evidence path
-      const updatedRegistration = await storage.updateEventRegistration(registrationId, {
-        paymentEvidence: newFilePath,
-      });
-
-      if (!updatedRegistration) {
-        return res.status(500).json({ message: "Failed to update registration" });
+  // Events CRUD for admins (Super Admin and Event Manager)
+  app.post(
+    "/api/admin/events",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.EventManager]),
+    async (req, res) => {
+      try {
+        const event = await storage.createEvent(req.body);
+        res.status(201).json(event);
+      } catch (error: any) {
+        res
+          .status(400)
+          .json({ message: "Failed to create event", details: error.message });
       }
+    },
+  );
 
-      console.log(`✅ Evidence updated successfully: ${newFilePath}`);
-      res.json({
-        message: "Evidence updated successfully",
-        registration: updatedRegistration,
-        newEvidencePath: newFilePath
-      });
+  app.patch(
+    "/api/admin/events/:eventId",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.EventManager]),
+    async (req, res) => {
+      try {
+        const updated = await storage.updateEvent(req.params.eventId, req.body);
+        if (!updated)
+          return res.status(404).json({ message: "Event not found" });
+        res.json(updated);
+      } catch (error: any) {
+        res
+          .status(400)
+          .json({ message: "Failed to update event", details: error.message });
+      }
+    },
+  );
 
-    } catch (error: any) {
-      console.error('❌ Evidence update error:', error);
-      res.status(500).json({ 
-        message: "Server error while updating evidence",
-        details: error.message 
-      });
-    }
-  });
+  app.delete(
+    "/api/admin/events/:eventId",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.EventManager]),
+    async (req, res) => {
+      try {
+        const ok = await storage.deleteEvent(req.params.eventId);
+        if (!ok) return res.status(404).json({ message: "Event not found" });
+        res.json({ success: true });
+      } catch (error: any) {
+        res
+          .status(400)
+          .json({ message: "Failed to delete event", details: error.message });
+      }
+    },
+  );
 
   const httpServer = createServer(app);
   return httpServer;

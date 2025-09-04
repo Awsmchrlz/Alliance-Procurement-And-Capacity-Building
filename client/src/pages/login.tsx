@@ -3,7 +3,17 @@ import { useForm } from "react-hook-form";
 import { supabase } from "@/lib/supabase";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Mail, Lock, Handshake, ArrowRight, Shield, Users, Target } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Handshake,
+  ArrowRight,
+  Shield,
+  Users,
+  Target,
+} from "lucide-react";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -13,8 +23,8 @@ const LoginPage = () => {
 
   // Background images
   const backgroundImages = [
-      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
-   "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858600/groupPhoto4_shvwfy.jpg"
+    "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
+    "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858600/groupPhoto4_shvwfy.jpg",
   ];
 
   // Image rotation effect
@@ -39,7 +49,7 @@ const LoginPage = () => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  const onSubmit = async (data: { email: string; password: string }) => {
+  const onSubmit = async (data: any) => {
     try {
       setIsLoading(true);
       const { error, data: authData } = await supabase.auth.signInWithPassword({
@@ -47,19 +57,29 @@ const LoginPage = () => {
         password: data.password,
       });
       if (error) throw error;
-      
+
       // Check user role and redirect accordingly
-      const userRole = authData.user?.user_metadata?.role || 'ordinary_user';
-      
-      if (userRole === 'super_admin' || userRole === 'finance_person') {
-        toast({ title: "Welcome back!", description: "Redirecting to admin dashboard..." });
+      const userRole = authData.user?.user_metadata?.role || "ordinary_user";
+
+      if (userRole === "super_admin" || userRole === "finance_person") {
+        toast({
+          title: "Welcome back!",
+          description: "Redirecting to admin dashboard...",
+        });
         navigate("/admin-dashboard");
       } else {
-        toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
+        toast({
+          title: "Welcome back!",
+          description: "Redirecting to your dashboard...",
+        });
         navigate("/dashboard");
       }
     } catch (err: any) {
-      toast({ title: "Sign in failed", description: err.message ?? "Unable to sign in", variant: "destructive" });
+      toast({
+        title: "Sign in failed",
+        description: err.message ?? "Unable to sign in",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -76,13 +96,15 @@ const LoginPage = () => {
           <div
             key={index}
             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentImageIndex && isImageVisible ? 'opacity-[0.15]' : 'opacity-0'
+              index === currentImageIndex && isImageVisible
+                ? "opacity-[0.15]"
+                : "opacity-0"
             }`}
             style={{
               backgroundImage: `url(${image})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
             }}
           />
         ))}
@@ -108,7 +130,9 @@ const LoginPage = () => {
             </div>
             <div className="ml-4">
               <h1 className="text-2xl font-bold tracking-tight">APCB</h1>
-              <p className="text-blue-200 text-sm">Alliance Procurement & Capacity Building</p>
+              <p className="text-blue-200 text-sm">
+                Alliance Procurement & Capacity Building
+              </p>
             </div>
           </div>
 
@@ -120,7 +144,8 @@ const LoginPage = () => {
           </h2>
 
           <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-            Empowering organizations through expert procurement solutions and capacity building initiatives.
+            Empowering organizations through expert procurement solutions and
+            capacity building initiatives.
           </p>
 
           {/* Features */}
@@ -148,30 +173,34 @@ const LoginPage = () => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 relative z-10 flex items-center justify-center px-4 lg:px-6 py-6 min-h-screen">
-        <div className="w-full max-w-sm lg:max-w-md">
+      <div className="w-full lg:w-1/2 relative z-10 flex items-center justify-center px-4 sm:px-6 lg:px-6 py-8 sm:py-12 min-h-screen">
+        <div className="w-full max-w-xs sm:max-w-sm lg:max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-2xl">
-              <Handshake className="w-6 h-6 text-white" />
+          <div className="lg:hidden flex items-center justify-center mb-6 sm:mb-8">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-2xl">
+              <Handshake className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
             </div>
           </div>
 
           {/* Enhanced Login Card */}
           <div className="bg-white/[0.02] backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 w-full">
             {/* Card Header with Gradient */}
-            <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 p-6 rounded-t-2xl border-b border-white/10">
+            <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 p-4 sm:p-6 rounded-t-2xl border-b border-white/10">
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-1">Welcome Back</h2>
-                <p className="text-gray-300 text-sm">Sign in to access your APCB dashboard</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">
+                  Welcome Back
+                </h2>
+                <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+                  Sign in to access your APCB dashboard
+                </p>
               </div>
             </div>
 
             {/* Form Content */}
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
               {/* Email Field */}
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2 sm:mb-2">
                   Email Address
                 </label>
                 <div className="relative group">
@@ -183,22 +212,24 @@ const LoginPage = () => {
                       required: "Email is required",
                       pattern: {
                         value: /^\S+@\S+$/i,
-                        message: "Please enter a valid email"
-                      }
+                        message: "Please enter a valid email",
+                      },
                     })}
                     type="email"
                     placeholder="your.email@example.com"
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 hover:bg-white/10 text-sm"
+                    className="w-full pl-10 pr-4 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 hover:bg-white/10 text-sm sm:text-base"
                   />
                 </div>
                 {errors.email && (
-                  <p className="mt-1 text-xs text-red-400">{errors.email.message}</p>
+                  <p className="mt-1 text-xs text-red-400">
+                    {errors.email.message as string}
+                  </p>
                 )}
               </div>
 
               {/* Password Field */}
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2">
                   Password
                 </label>
                 <div className="relative group">
@@ -210,12 +241,12 @@ const LoginPage = () => {
                       required: "Password is required",
                       minLength: {
                         value: 6,
-                        message: "Password must be at least 6 characters"
-                      }
+                        message: "Password must be at least 6 characters",
+                      },
                     })}
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
-                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 hover:bg-white/10 text-sm"
+                    className="w-full pl-10 pr-12 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 hover:bg-white/10 text-sm sm:text-base"
                   />
                   <button
                     type="button"
@@ -230,20 +261,25 @@ const LoginPage = () => {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="mt-1 text-xs text-red-400">{errors.password.message}</p>
+                  <p className="mt-1 text-xs text-red-400">
+                    {errors.password.message as string}
+                  </p>
                 )}
               </div>
 
               {/* Remember & Forgot Password */}
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 text-xs sm:text-sm">
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 text-blue-600 bg-transparent border-gray-400 rounded focus:ring-blue-500 focus:ring-2"
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-transparent border-gray-400 rounded focus:ring-blue-500 focus:ring-2"
                   />
                   <span className="ml-2 text-gray-300">Remember me</span>
                 </label>
-                <a href="#" className="text-blue-400 hover:text-blue-300 font-medium transition-colors underline underline-offset-2">
+                <a
+                  href="#"
+                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors underline underline-offset-2"
+                >
                   Forgot password?
                 </a>
               </div>
@@ -253,7 +289,7 @@ const LoginPage = () => {
                 onClick={handleSubmit(onSubmit)}
                 disabled={isLoading}
                 style={{ background: `#1C356B` }}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 focus:ring-4 focus:ring-blue-500/50 disabled:opacity-70 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-2xl border border-blue-500/20"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 sm:py-3.5 px-6 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 focus:ring-4 focus:ring-blue-500/50 disabled:opacity-70 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-2xl border border-blue-500/20 min-h-[48px]"
               >
                 {isLoading ? (
                   <>
@@ -270,26 +306,30 @@ const LoginPage = () => {
             </div>
 
             {/* Create Account Link */}
-            <div className="p-6 pt-0 border-t border-white/10">
-              <p className="text-center text-sm text-gray-300">
+            <div className="p-4 sm:p-6 pt-0 border-t border-white/10">
+              <p className="text-center text-xs sm:text-sm text-gray-300 leading-relaxed">
                 Don't have an account?{" "}
-                <a href="/register" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-2">
+                <a
+                  href="/register"
+                  className="font-semibold text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-2"
+                >
                   Create account
                 </a>
               </p>
             </div>
 
             {/* Security Badge */}
-            <div className="pb-6 flex items-center justify-center text-xs text-gray-400">
-              <Shield className="w-4 h-4 mr-1" />
+            <div className="pb-4 sm:pb-6 flex items-center justify-center text-xs text-gray-400">
+              <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               <span>Your information is secure and encrypted</span>
             </div>
           </div>
 
           {/* Mobile Features */}
-          <div className="lg:hidden mt-4 text-center">
-            <p className="text-white/60 text-xs">
-              Trusted by organizations worldwide for strategic procurement solutions
+          <div className="lg:hidden mt-4 sm:mt-6 text-center px-2">
+            <p className="text-white/60 text-xs leading-relaxed">
+              Trusted by organizations worldwide for strategic procurement
+              solutions
             </p>
           </div>
 
@@ -307,8 +347,8 @@ const LoginPage = () => {
                 }}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   index === currentImageIndex
-                    ? 'bg-yellow-400 shadow-lg'
-                    : 'bg-white/30 hover:bg-white/50'
+                    ? "bg-yellow-400 shadow-lg"
+                    : "bg-white/30 hover:bg-white/50"
                 }`}
                 aria-label={`View background image ${index + 1}`}
               />
