@@ -227,7 +227,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Event is full" });
       }
 
-      const registration = await storage.createEventRegistration(registrationData);
+      // Force paymentStatus to 'pending' for all new user-initiated registrations
+      const registration = await storage.createEventRegistration({
+        ...registrationData,
+        paymentStatus: 'pending',
+        hasPaid: false
+      });
       res.status(201).json(registration);
     } catch (error) {
       console.error("Registration error:", error);

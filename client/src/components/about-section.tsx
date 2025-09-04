@@ -20,14 +20,18 @@ export function AboutSection() {
             <h2 className="text-4xl font-bold text-primary-blue dark:text-white mb-6" data-testid="about-title">
               WHO IS ALLIANCE
             </h2>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed" data-testid="about-description-1">
-        Alliance Procurement and Capacity Building Limited (APCBL) is a Zambian-owned private company
-        established and registered under the Patents and Companies Registration Agency (PACRA) on 16th
-        November, 2022. Our main objective is to enhance practitioners&#39; and stakeholders&#39; procurement and
-        supply chain management technical skills, competencies, knowledge and capabilities to supplement the
-        Government’s effort in improving service delivery in the public and private sectors through training
-        workshops and capacity development.
-         </p>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed" data-testid="about-description-1">
+              Alliance Procurement and Capacity Building Limited (APCBL) is a Zambian-owned private company established and registered under the Patents and Companies Registration Agency (PACRA) on 16th November, 2022. Our main objective is to enhance practitioners' and stakeholders' procurement and supply chain management technical skills, competencies, knowledge and capabilities to supplement the Government’s effort in improving service delivery in the public and private sectors through training workshops and capacity development.
+            </p>
+
+            <div className="mb-8">
+                <h3 className="text-2xl font-bold text-primary-blue dark:text-white mb-4" data-testid="mission-title">
+                  Our Mission
+                </h3>
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+                  To be a knowledge bank on Capacity Development, Capacity Building, In-house training and consultancy services. As a knowledge bank institution, we aim to engage the most qualified experts who would enhance competencies in areas such as Procurement and Supply Chain Management, Financial Management, Consultancy and Training Services, In-House Training, Research and Development, Compliance Assessment, Procurement and Supply Chain Forensic Audits. Alliance Procurement and Capacity Building Limited shall always actively participate in formulating the best Procurement & Supply Chain, Financial Management Regulations and Procedures in the value chain, emphasizing cost reduction, quality, and timely delivery of goods, works, and services.
+                </p>
+            </div>
 
             <div className="mb-8">
               <h3 className="text-xl font-semibold text-primary-blue dark:text-white mb-4" data-testid="core-values-title">
@@ -45,7 +49,7 @@ export function AboutSection() {
 
             <Button className="bg-primary-yellow text-primary-blue hover:bg-yellow-400" data-testid="about-learn-more"
              onClick={() => window.location.href = "/about"}>
-              Learn More About Our Mission
+              Learn More About Our Story
             </Button>
           </div>
 
@@ -60,7 +64,7 @@ export function AboutSection() {
             <div className="bg-primary-blue text-white rounded-2xl p-8 -mt-20 ml-8 relative z-10 shadow-xl">
               <h3 className="text-xl font-bold mb-4" data-testid="vision-title">Our Vision</h3>
               <p className="leading-relaxed" data-testid="vision-description">
-                To be a leading training, research and consultancy company for public and private sector supply chain systems and processes in the Southern Africa Region and beyond.
+                To be a leading training, research and consultancy company for public and private sector Supply Chain Systems and Financial Management in the Southern Africa Region and beyond. This can only be achieved with the full commitment, involvement, and proficient support of the Government of the Republic of Zambia (GRZ) and cooperating partners.
               </p>
             </div>
           </div>
