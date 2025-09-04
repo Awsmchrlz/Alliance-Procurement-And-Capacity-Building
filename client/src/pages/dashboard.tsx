@@ -56,6 +56,7 @@ export default function Dashboard() {
     fileName?: string;
     registrationId?: string;
   }>({ open: false, evidencePath: null });
+  const [showCancelled, setShowCancelled] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -121,12 +122,12 @@ export default function Dashboard() {
   };
 
   const handleCancelRegistration = async (registration: RegistrationWithEvent) => {
-    if (confirm("Are you sure you want to cancel this registration? This action cannot be undone.")) {
+    if (confirm("Are you sure you want to cancel this registration? You can still view it in your cancelled registrations.")) {
       try {
         await apiRequest("DELETE", `/api/users/${user?.id}/registrations/${registration.id}`);
         toast({
           title: "Registration Cancelled",
-          description: "Your registration has been cancelled successfully.",
+          description: "Your registration has been cancelled successfully. You can view it in cancelled registrations.",
         });
         refetch();
       } catch (error) {
@@ -185,30 +186,53 @@ export default function Dashboard() {
 
   const paidRegistrations = registrations?.filter(r => r.paymentStatus === "paid") || [];
   const pendingRegistrations = registrations?.filter(r => r.paymentStatus === "pending") || [];
+  const cancelledRegistrations = registrations?.filter(r => r.paymentStatus === "cancelled") || [];
+  const activeRegistrations = registrations?.filter(r => r.paymentStatus !== "cancelled") || [];
+  
+  // Filter registrations based on view mode
+  const displayRegistrations = showCancelled ? cancelledRegistrations : activeRegistrations;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-slate-200/60">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-blue to-[#2d4a7a] rounded-xl flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
+      {/* Enhanced Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1C356B] via-[#1C356B] to-[#2d4a7a]" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22m36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-10" />
+        
+        <div className="relative container mx-auto px-4 py-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="flex items-center space-x-6 text-center lg:text-left">
+              <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <User className="w-10 h-10 text-[#FDC123]" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-gray-600">Welcome back, {user?.firstName} {user?.lastName}</p>
+                <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2">
+                  Welcome back, {user?.firstName}!
+                </h1>
+                <p className="text-blue-100 text-lg">
+                  Manage your event registrations and track your learning journey
+                </p>
+                <div className="flex items-center gap-4 mt-3">
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
+                    <CheckCircle className="w-4 h-4 text-[#FDC123]" />
+                    <span className="text-white text-sm font-medium">{paidRegistrations.length} Completed</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
+                    <Clock className="w-4 h-4 text-[#FDC123]" />
+                    <span className="text-white text-sm font-medium">{pendingRegistrations.length} Pending</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            
+            <div className="flex flex-col sm:flex-row items-center gap-3">
               <Button
                 onClick={() => navigate("/")}
                 variant="outline"
-                className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm"
               >
                 <Home className="w-4 h-4 mr-2" />
-                Home
+                Browse Events
               </Button>
               <Button
                 onClick={async () => {
@@ -216,7 +240,7 @@ export default function Dashboard() {
                   navigate("/");
                 }}
                 variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50"
+                className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout

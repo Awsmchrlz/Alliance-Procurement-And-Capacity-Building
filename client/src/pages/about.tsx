@@ -58,36 +58,76 @@ export default function About() {
     }
   ];
 
-  const teamMembers = [
-    {
-      name: "Dr. Patricia Mwansa",
-      position: "Chief Executive Officer",
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&q=80",
-      bio: "Leading procurement expert with over 15 years of experience in public and private sector supply chain management.",
-      expertise: ["Strategic Procurement", "Public Sector Reform", "Capacity Building"]
-    },
-    {
-      name: "James Mulenga",
-      position: "Director of Operations",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&q=80",
-      bio: "Operations specialist with extensive experience in process optimization and organizational development.",
-      expertise: ["Operations Management", "Process Improvement", "Training Design"]
-    },
-    {
-      name: "Sarah Banda",
-      position: "Senior Consultant",
-      image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&q=80",
-      bio: "Compliance and audit specialist with deep knowledge of procurement regulations and risk management.",
-      expertise: ["Compliance Auditing", "Risk Management", "Regulatory Affairs"]
-    },
-    {
-      name: "Michael Tembo",
-      position: "Research Director",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80",
-      bio: "Research and analytics expert focused on supply chain innovation and market intelligence.",
-      expertise: ["Market Research", "Data Analytics", "Innovation Strategy"]
-    }
-  ];
+ const teamMembers = [
+   {
+     name: "Consultant Kelvin M. Nsemu",
+     position: "Chairperson – Southern Africa Region",
+     image: "https://res.cloudinary.com/duu5rnmeu/image/upload/e_background_removal/v1756973662/WhatsApp_Image_2025-09-02_at_12.45.31_kweji1.jpg",
+     /*https://res.cloudinary.com/duu5rnmeu/image/upload/v1756973662/WhatsApp_Image_2025-09-02_at_12.45.31_kweji1.jpg*/
+     bio: "Chairperson of Alliance Procurement and Capacity Building Ltd and Foundation. With 15 years of procurement and supply chain experience, he holds multiple advanced degrees in Procurement, Logistics, Political Science, and Materials Administration. He is recognized as a leading private sector consultancy training provider in Zambia, with deep expertise in capacity building, public sector reforms, and financial management.",
+     expertise: [
+       "Strategic Sourcing",
+       "Negotiation",
+       "Supplier Relationship Management",
+       "Regulatory Compliance (ZPPA, World Bank, COMESA)",
+       "Leadership and Coaching",
+       "Business Transformation",
+       "Training & Capacity Development"
+     ]
+   },
+   {
+     name: "Lotson M.K. Buumba",
+     position: "Training Specialist",
+     image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756973993/WhatsApp_Image_2025-09-02_at_12.45.56_zkbshw.jpg",
+     bio: "Training specialist with 16 years of experience in research, planning, monitoring, and evaluation. Holds a Master of Arts in Human Resource Management, Bachelor of Business Administration, and a Primary Teacher’s Diploma. Recognized for strong interpersonal and leadership skills, proactive mindset, and ability to deliver under pressure.",
+     expertise: [
+       "Training & Capacity Building",
+       "Monitoring and Evaluation",
+       "Human Resource Management",
+       "Planning and Research",
+       "Leadership Development"
+     ]
+   },
+   {
+     name: "Siphiwe Mabhena",
+     position: "Director – Secretarial Services (Southern Region)",
+     image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.46.41_ymeqvm.jpg",
+     bio: "Director of Secretarial Services – Southern Region at Alliance Procurement and Capacity Building Ltd. Holds a Master’s in Public Administration, a Bachelor’s in Public Administration, and a Diploma in International Travel & Tourism. Passionate about continuous learning, personal growth, and building strong professional networks.",
+     expertise: [
+       "Public Administration",
+       "Organizational Development",
+       "Secretarial & Governance Support",
+       "Networking & Relationship Building"
+     ]
+   },
+   {
+     name: "Ms. Chomba Chileshe",
+     position: "Manager – Consultancy Services",
+     image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.48.51_tfmqm9.jpg",
+     bio: "Procurement and supply chain consultant with 12+ years of experience in procurement planning, contract management, and supply chain coordination. Holds a BSc in Purchasing & Supply Management and is pursuing an MBA in Strategic Management. A full member of the Zambia Institute of Purchasing and Supply (ZIPS). Known for her integrity, stakeholder engagement, and ability to drive efficiency and accountability.",
+     expertise: [
+       "Procurement Strategy",
+       "Contract Management",
+       "Inventory Management",
+       "Performance Supervision",
+       "Stakeholder Engagement"
+     ]
+   },
+   {
+     name: "Dr. Joseph Selisho",
+     position: "Director – Corporate Affairs (Southern Africa Region)",
+     image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974009/WhatsApp_Image_2025-09-02_at_12.51.05_wswnjq.jpg",
+     bio: "APCB Ltd’s first training specialist in 2023 and appointed Director of Corporate Affairs in 2024. Oversees corporate strategy development in capacity building, training, research, and consultancy. Key driver behind the first International Indaba in Procurement, Supply Chain, and Financial Management, advancing regional integration across Africa.",
+     expertise: [
+       "Corporate Strategy",
+       "Capacity Development",
+       "Training & Research",
+       "Consultancy Services",
+       "Regional Integration"
+     ]
+   }
+ ];
+
 
   const milestones = [
     {
@@ -195,7 +235,10 @@ export default function About() {
                     Our Vision
                   </h3>
                   <p className="text-gray-700 leading-relaxed">
-                    To be a leading training, research and consultancy company for public and private sector supply chain systems and processes in the Southern Africa Region and beyond.
+                    To be a leading training, research and consultancy company for public and private sector
+                    Supply Chain Systems and Financial Management in the Southern Africa Region and beyond .This can
+                    only be achieved with the full commitment, involvement, and proficient support of the Government of
+                    the Republic of Zambia (GRZ) and cooperating partners.
                   </p>
                 </div>
 
@@ -205,7 +248,7 @@ export default function About() {
                     Our Mission
                   </h3>
                   <p className="text-gray-700 leading-relaxed">
-                    To provide world-class procurement and supply chain management training, advisory services, and capacity building solutions that empower organizations to achieve operational excellence and sustainable growth.
+                   To be a knowledge bank on Capacity Development, Capacity Building, In-house Training, and Consultancy Services by engaging top experts in procurement, supply chain management, financial management, compliance, audits, and research. Alliance Procurement and Capacity Building Limited also contributes to developing effective regulations and procedures that ensure cost reduction, quality, and timely delivery of goods, works, and services.
                   </p>
                 </div>
               </div>

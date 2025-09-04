@@ -15,16 +15,18 @@ interface EvidenceViewerProps {
   registrationId?: string;
   onEvidenceUpdate?: (newPath: string) => void;
   canUpdate?: boolean;
+  isAdmin?: boolean;
 }
 
-export function EvidenceViewer({ 
-  open, 
-  onOpenChange, 
-  evidencePath, 
-  fileName, 
+export function EvidenceViewer({
+  open,
+  onOpenChange,
+  evidencePath,
+  fileName,
   registrationId,
   onEvidenceUpdate,
-  canUpdate = false 
+  canUpdate = false,
+  isAdmin = false
 }: EvidenceViewerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,10 +63,11 @@ export function EvidenceViewer({
   const loadFileUrl = async (path?: string) => {
     const targetPath = path || currentEvidencePath;
     if (!targetPath) return;
-    
+
+    console.log('🔍 loadFileUrl called with path:', targetPath);
     setLoading(true);
     setError(null);
-    
+
     try {
       // Get current session
       const { data: { session } } = await supabase.auth.getSession();
@@ -72,20 +75,39 @@ export function EvidenceViewer({
         throw new Error('No active session found');
       }
 
-      // Use user endpoint instead of admin endpoint
-      const response = await fetch(`/api/users/payment-evidence/${encodeURIComponent(targetPath)}`, {
+      // Use appropriate endpoint based on user type with cache busting
+      const cacheBuster = `?t=${Date.now()}`;
+      const baseEndpoint = isAdmin 
+        ? `/api/admin/payment-evidence/${encodeURIComponent(targetPath)}`
+        : `/api/users/payment-evidence/${encodeURIComponent(targetPath)}`;
+      const fetchUrl = `${baseEndpoint}${cacheBuster}`;
+      console.log('🌐 Fetching from URL:', fetchUrl, 'isAdmin:', isAdmin);
+
+      const response = await fetch(fetchUrl, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
+          'Cache-Control': 'no-cache',
         },
       });
 
+      console.log('📡 Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`Failed to load file: ${response.statusText}`);
+        console.error('❌ Failed to load file:', response.status, response.statusText);
+        // Try to get more details from the response
+        try {
+          const errorData = await response.json();
+          console.error('❌ Error details:', errorData);
+          throw new Error(errorData.message || `Failed to load file: ${response.statusText}`);
+        } catch {
+          throw new Error(`Failed to load file: ${response.statusText}`);
+        }
       }
 
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      setFileUrl(url);
+      console.log('✅ File loaded successfully, blob size:', blob.size);
+      const blobUrl = URL.createObjectURL(blob);
+      setFileUrl(blobUrl);
     } catch (err: any) {
       console.error('Error loading file:', err);
       setError(err.message || 'Failed to load file');
@@ -96,10 +118,10 @@ export function EvidenceViewer({
 
   const handleDownload = async () => {
     if (!currentEvidencePath) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // Get current session
       const { data: { session } } = await supabase.auth.getSession();
@@ -108,7 +130,11 @@ export function EvidenceViewer({
       }
 
       // Download file via API
-      const response = await fetch(`/api/users/payment-evidence/${encodeURIComponent(currentEvidencePath)}`, {
+      const downloadEndpoint = isAdmin 
+        ? `/api/admin/payment-evidence/${encodeURIComponent(currentEvidencePath)}`
+        : `/api/users/payment-evidence/${encodeURIComponent(currentEvidencePath)}`;
+      
+      const response = await fetch(downloadEndpoint, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
@@ -120,7 +146,7 @@ export function EvidenceViewer({
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      
+
       // Create download link
       const link = document.createElement('a');
       link.href = url;
@@ -128,7 +154,7 @@ export function EvidenceViewer({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up
       URL.revokeObjectURL(url);
     } catch (err: any) {
@@ -140,7 +166,7 @@ export function EvidenceViewer({
 
   const handleView = async () => {
     if (!currentEvidencePath) return;
-    
+
     try {
       // Get current session
       const { data: { session } } = await supabase.auth.getSession();
@@ -149,7 +175,11 @@ export function EvidenceViewer({
       }
 
       // Open file in new tab via API
-      const response = await fetch(`/api/users/payment-evidence/${encodeURIComponent(currentEvidencePath)}`, {
+      const viewEndpoint = isAdmin 
+        ? `/api/admin/payment-evidence/${encodeURIComponent(currentEvidencePath)}`
+        : `/api/users/payment-evidence/${encodeURIComponent(currentEvidencePath)}`;
+      
+      const response = await fetch(viewEndpoint, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
@@ -178,10 +208,10 @@ export function EvidenceViewer({
 
   const handleUpdateEvidence = async () => {
     if (!newFile || !registrationId) return;
-    
+
     setUpdating(true);
     setError(null);
-    
+
     try {
       // Get current session
       const { data: { session } } = await supabase.auth.getSession();
@@ -189,59 +219,150 @@ export function EvidenceViewer({
         throw new Error('No active session found');
       }
 
-      // Create FormData for the update - follow exact same pattern as dashboard
-      const formData = new FormData();
-      formData.append('evidence', newFile);
-      
       console.log('Updating evidence for registration:', registrationId);
       console.log('File being uploaded:', newFile.name);
+
+      // Step 1: Upload new file directly to Supabase storage (same as registration dialog)
+      const fileExtension = newFile.name.split('.').pop();
+      const sanitizedFileName = `evidence_${Date.now()}.${fileExtension}`;
+      const bucket = import.meta.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
       
-      // Use direct fetch for FormData upload - same as dashboard
-      const response = await fetch(`/api/users/payment-evidence/${registrationId}`, {
-        method: 'PUT',
+      // Get user ID from session
+      const userId = session.user.id;
+      
+      // We need to get the event ID from the current evidence path or registration
+      // For now, let's extract it from the current evidence path
+      let eventId = '';
+      if (currentEvidencePath) {
+        const pathParts = currentEvidencePath.split('/');
+        if (pathParts.length >= 3 && pathParts[0] === 'evidence') {
+          eventId = pathParts[2]; // evidence/userId/eventId/filename
+        }
+      }
+      
+      if (!eventId) {
+        throw new Error('Could not determine event ID from evidence path');
+      }
+      
+      const newFilePath = `evidence/${userId}/${eventId}/${sanitizedFileName}`;
+      
+      console.log('Uploading to path:', newFilePath);
+      
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(newFilePath, newFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: newFile.type || 'application/octet-stream',
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        if (uploadError.message?.toLowerCase().includes('bucket')) {
+          throw new Error('Payment evidence bucket not found. Please create a Storage bucket named "' + bucket + '" or set VITE_SUPABASE_EVIDENCE_BUCKET to an existing bucket.');
+        }
+        throw new Error(`File upload failed: ${uploadError.message}`);
+      }
+
+      console.log('✅ File uploaded successfully to:', newFilePath);
+
+      // Step 2: Update the registration record via API
+      const apiEndpoint = isAdmin 
+        ? `/api/admin/registrations/${registrationId}`
+        : `/api/users/registrations/${registrationId}`;
+      
+      console.log('Using API endpoint:', apiEndpoint, 'isAdmin:', isAdmin);
+      
+      const updateResponse = await fetch(apiEndpoint, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
-          // Don't set Content-Type for FormData - let browser set it with boundary
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+          paymentEvidence: newFilePath,
+        }),
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update evidence');
-      }
-      
-      const result = await response.json();
-      console.log('Update result:', result);
-      
-      // Update the current evidence path
-      if (result.newEvidencePath) {
-        console.log('New evidence path:', result.newEvidencePath);
-        setCurrentEvidencePath(result.newEvidencePath);
-        
-        // Clear old file URL
-        if (fileUrl) {
-          URL.revokeObjectURL(fileUrl);
-          setFileUrl(null);
+
+      if (!updateResponse.ok) {
+        // If registration update fails, try to clean up the uploaded file
+        try {
+          await supabase.storage.from(bucket).remove([newFilePath]);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup uploaded file:', cleanupError);
         }
         
-        // Call the callback to update the parent component
-        if (onEvidenceUpdate) {
-          onEvidenceUpdate(result.newEvidencePath);
-        }
-        
-        // Reload the file with the new path
-        await loadFileUrl(result.newEvidencePath);
+        const errorData = await updateResponse.json();
+        throw new Error(errorData.message || 'Failed to update registration record');
       }
-      
+
+      console.log('✅ Registration updated successfully');
+
+      // Step 3: Delete old evidence file if it exists
+      if (currentEvidencePath) {
+        try {
+          console.log('🗑️ Deleting old evidence:', currentEvidencePath);
+          const { error: deleteError } = await supabase.storage
+            .from(bucket)
+            .remove([currentEvidencePath]);
+          
+          if (deleteError) {
+            console.warn('Failed to delete old evidence:', deleteError);
+            // Don't fail the update if deletion fails
+          } else {
+            console.log('✅ Old evidence deleted successfully');
+          }
+        } catch (deleteError) {
+          console.warn('Error deleting old evidence:', deleteError);
+        }
+      }
+
+      // Step 4: Update UI state
+      console.log('New evidence path:', newFilePath);
+      setCurrentEvidencePath(newFilePath);
+
+      // Clear old file URL
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl);
+        setFileUrl(null);
+      }
+
+      // Call the callback to update the parent component
+      if (onEvidenceUpdate) {
+        onEvidenceUpdate(newFilePath);
+      }
+
+      // Force reload the file with cache busting and retry logic
+      const retryLoadFile = async (attempts = 3) => {
+        for (let i = 0; i < attempts; i++) {
+          try {
+            console.log(`🔄 Attempt ${i + 1} to reload file with new path:`, newFilePath);
+            await loadFileUrl(newFilePath);
+            console.log('✅ File loaded successfully on attempt', i + 1);
+            break;
+          } catch (error) {
+            console.warn(`⚠️ Attempt ${i + 1} failed:`, error);
+            if (i === attempts - 1) {
+              console.error('❌ All attempts failed to load new evidence file');
+              setError('Failed to load updated evidence. Please refresh the page.');
+            } else {
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            }
+          }
+        }
+      };
+
+      setTimeout(() => retryLoadFile(), 500); // Small delay to ensure file is fully uploaded
+
       setShowUpdateForm(false);
       setNewFile(null);
-      
+
       // Show success message
       setError(null);
       setSuccess('Evidence updated successfully!');
       console.log('✅ Evidence updated successfully!');
-      
+
     } catch (err: any) {
       console.error('Update error:', err);
       setError(err.message || 'Failed to update evidence. Please try again.');
@@ -316,6 +437,23 @@ export function EvidenceViewer({
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    // Force refresh the file
+                    if (fileUrl) {
+                      URL.revokeObjectURL(fileUrl);
+                      setFileUrl(null);
+                    }
+                    loadFileUrl(currentEvidencePath);
+                  }}
+                  disabled={loading}
+                  className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  Refresh
+                </Button>
                 {canUpdate && (
                   <Button
                     size="sm"

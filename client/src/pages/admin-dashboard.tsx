@@ -82,6 +82,7 @@ import {
 
 
 import { EvidenceViewer } from "@/components/evidence-viewer";
+import { useToast } from "@/hooks/use-toast";
 
 // Real data interfaces
 interface Event {
@@ -126,6 +127,7 @@ interface NewsletterSubscription {
 }
 
 export default function AdminDashboard() {
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -413,12 +415,31 @@ export default function AdminDashboard() {
     );
   };
 
-  const handleViewPaymentEvidence = (evidencePath: string, fileName?: string) => {
+  const handleViewPaymentEvidence = (evidencePath: string, fileName?: string, registrationId?: string) => {
     setEvidenceViewer({
       open: true,
       evidencePath,
       fileName,
+      registrationId,
     });
+  };
+
+  const handleEvidenceUpdate = (newEvidencePath: string) => {
+    // Update the registrations list with the new evidence path
+    setRegistrations(prev => prev.map(reg => 
+      reg.id === evidenceViewer.registrationId 
+        ? { ...reg, paymentEvidence: newEvidencePath }
+        : reg
+    ));
+    
+    // Update filtered registrations as well
+    setFilteredRegistrations(prev => prev.map(reg => 
+      reg.id === evidenceViewer.registrationId 
+        ? { ...reg, paymentEvidence: newEvidencePath }
+        : reg
+    ));
+    
+    console.log('✅ Evidence updated in admin dashboard:', newEvidencePath);
   };
 
   const exportToExcel = (type: string) => {
@@ -521,7 +542,10 @@ export default function AdminDashboard() {
         URL.revokeObjectURL(url);
         
         // Show success message
-        alert(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully!\n\nFile: ${filename}`);
+        toast({
+          title: "Export Successful",
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully as ${filename}`,
+        });
       } else {
         // Fallback for older browsers
         window.open('data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
@@ -529,7 +553,11 @@ export default function AdminDashboard() {
 
     } catch (error) {
       console.error('Export error:', error);
-      alert(`❌ Failed to export ${type}. Please try again.`);
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: `Failed to export ${type}. Please try again.`,
+      });
     }
   };
 
@@ -1287,7 +1315,11 @@ export default function AdminDashboard() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleViewPaymentEvidence(registration.paymentEvidence, registration.paymentEvidence?.split('/').pop())}
+                                  onClick={() => handleViewPaymentEvidence(
+                                    registration.paymentEvidence, 
+                                    registration.paymentEvidence?.split('/').pop(),
+                                    registration.id
+                                  )}
                                   className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
                                 >
                                   <Eye className="w-4 h-4 mr-1" />
@@ -1569,32 +1601,33 @@ export default function AdminDashboard() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Enhanced User Registration Dialog */}
+        {/* Compact User Registration Dialog */}
         <Dialog open={showUserRegistrationDialog} onOpenChange={setShowUserRegistrationDialog}>
-          <DialogContent className="sm:max-w-md bg-white border-0 shadow-2xl">
-            <DialogHeader className="space-y-4 pb-6">
+          <DialogContent className="sm:max-w-4xl bg-white border-0 shadow-2xl">
+            <DialogHeader className="pb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
-                  <UserPlus className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-2xl font-bold text-gray-900">Register New User</DialogTitle>
-                  <DialogDescription className="text-gray-600">
-                    Create a new user account with administrative privileges.
+                  <DialogTitle className="text-xl font-bold text-gray-900">Register New User</DialogTitle>
+                  <DialogDescription className="text-gray-600 text-sm">
+                    Create a new user account with administrative privileges
                   </DialogDescription>
                 </div>
               </div>
             </DialogHeader>
 
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-4">
+              {/* Row 1: Role and Name */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="user-role" className="text-sm font-semibold text-gray-700">
+                  <Label htmlFor="user-role" className="text-sm font-medium text-gray-700">
                     Role *
                   </Label>
                   <Select onValueChange={(value) => setUserRegistrationData(prev => ({ ...prev, role: value }))} value={userRegistrationData.role}>
-                    <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                      <SelectValue placeholder="Select a role" />
+                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="super_admin">Super Admin</SelectItem>
@@ -1603,76 +1636,106 @@ export default function AdminDashboard() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="user-firstName" className="text-sm font-semibold text-gray-700">
-                      First Name *
-                    </Label>
-                    <Input
-                      id="user-firstName"
-                      placeholder="Enter first name"
-                      value={userRegistrationData.firstName}
-                      onChange={(e) => setUserRegistrationData(prev => ({ ...prev, firstName: e.target.value }))}
-                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="user-lastName" className="text-sm font-semibold text-gray-700">
-                      Last Name *
-                    </Label>
-                    <Input
-                      id="user-lastName"
-                      placeholder="Enter last name"
-                      value={userRegistrationData.lastName}
-                      onChange={(e) => setUserRegistrationData(prev => ({ ...prev, lastName: e.target.value }))}
-                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
-                    />
-                  </div>
-                </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="user-email" className="text-sm font-semibold text-gray-700">
-                    Email *
+                  <Label htmlFor="user-firstName" className="text-sm font-medium text-gray-700">
+                    First Name *
                   </Label>
                   <Input
-                    id="user-email"
-                    placeholder="Enter email address"
-                    value={userRegistrationData.email}
-                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, email: e.target.value }))}
-                    className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    id="user-firstName"
+                    placeholder="First name"
+                    value={userRegistrationData.firstName}
+                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, firstName: e.target.value }))}
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="user-phone" className="text-sm font-semibold text-gray-700">
+                  <Label htmlFor="user-lastName" className="text-sm font-medium text-gray-700">
+                    Last Name *
+                  </Label>
+                  <Input
+                    id="user-lastName"
+                    placeholder="Last name"
+                    value={userRegistrationData.lastName}
+                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, lastName: e.target.value }))}
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="user-phone" className="text-sm font-medium text-gray-700">
                     Phone Number
                   </Label>
                   <Input
                     id="user-phone"
-                    placeholder="Enter phone number (optional)"
+                    placeholder="Phone (optional)"
                     value={userRegistrationData.phoneNumber}
                     onChange={(e) => setUserRegistrationData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                    className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
+              </div>
+
+              {/* Row 2: Email and Password */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="user-password" className="text-sm font-semibold text-gray-700">
+                  <Label htmlFor="user-email" className="text-sm font-medium text-gray-700">
+                    Email Address *
+                  </Label>
+                  <Input
+                    id="user-email"
+                    type="email"
+                    placeholder="user@example.com"
+                    value={userRegistrationData.email}
+                    onChange={(e) => setUserRegistrationData(prev => ({ ...prev, email: e.target.value }))}
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="user-password" className="text-sm font-medium text-gray-700">
                     Password *
                   </Label>
                   <Input
                     id="user-password"
                     type="password"
-                    placeholder="Enter password"
+                    placeholder="Enter secure password"
                     value={userRegistrationData.password}
                     onChange={(e) => setUserRegistrationData(prev => ({ ...prev, password: e.target.value }))}
-                    className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
+                </div>
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-white text-xs font-bold">i</span>
+                  </div>
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Registration Information</p>
+                    <p>New users will receive a sequential registration ID (0001, 0002, etc.) and can log in immediately with their email and password.</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <DialogFooter className="flex items-center justify-between pt-6 border-t border-slate-200">
+            <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200">
               <Button
                 variant="outline"
-                onClick={() => setShowUserRegistrationDialog(false)}
+                onClick={() => {
+                  setShowUserRegistrationDialog(false);
+                  setUserRegistrationData({
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                    phoneNumber: "",
+                    password: "",
+                    role: "ordinary_user"
+                  });
+                }}
                 className="px-6"
               >
                 Cancel
@@ -1702,7 +1765,13 @@ export default function AdminDashboard() {
                     }
 
                     const result = await response.json();
-                    alert(`User registered successfully! ${result.message}`);
+                    
+                    // Show success message
+                    toast({
+                      title: "User Registration Successful",
+                      description: `${userRegistrationData.firstName} ${userRegistrationData.lastName} has been registered with role ${userRegistrationData.role.replace('_', ' ')}. They can now log in with their email and password.`,
+                    });
+                    
                     setShowUserRegistrationDialog(false);
                     setUserRegistrationData({
                       firstName: "",
@@ -1714,7 +1783,11 @@ export default function AdminDashboard() {
                     });
                     fetchData(); // Refresh users list
                   } catch (err: any) {
-                    alert(`Registration failed: ${err.message}`);
+                    toast({
+                      variant: "destructive",
+                      title: "Registration Failed",
+                      description: err.message || "An error occurred during user registration",
+                    });
                     console.error('Registration error:', err);
                   } finally {
                     setUserRegistrationLoading(false);
@@ -1726,12 +1799,12 @@ export default function AdminDashboard() {
                 {userRegistrationLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Registering...
+                    Creating User...
                   </>
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Register User
+                    Create User
                   </>
                 )}
               </Button>
@@ -1739,209 +1812,210 @@ export default function AdminDashboard() {
           </DialogContent>
         </Dialog>
 
-        {/* Enhanced Event Registration Dialog */}
+        {/* Compact Event Registration Dialog */}
         <Dialog open={showEventRegistrationDialog} onOpenChange={setShowEventRegistrationDialog}>
-          <DialogContent className="sm:max-w-2xl bg-white border-0 shadow-2xl">
-            <DialogHeader className="space-y-4 pb-6">
+          <DialogContent className="sm:max-w-5xl bg-white border-0 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
-                  <CalendarPlus className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl flex items-center justify-center">
+                  <CalendarPlus className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-2xl font-bold text-gray-900">Register for Event</DialogTitle>
-                  <DialogDescription className="text-gray-600">
-                    Register a user for an upcoming training event.
+                  <DialogTitle className="text-xl font-bold text-gray-900">Register User for Event</DialogTitle>
+                  <DialogDescription className="text-gray-600 text-sm">
+                    Register an existing user for a training event
                   </DialogDescription>
                 </div>
               </div>
             </DialogHeader>
 
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-4">
-                                 <div className="space-y-2">
-                   <Label htmlFor="event-user" className="text-sm font-semibold text-gray-700">
-                     User *
-                   </Label>
-                   <div className="relative">
-                     <Input
-                       placeholder="Search users by name or email..."
-                       value={searchTerm}
-                       onChange={(e) => setSearchTerm(e.target.value)}
-                       className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] mb-2"
-                     />
-                     <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
-                       {filteredUsers.map(user => (
-                         <div
-                           key={user.id}
-                           onClick={() => {
-                             setSelectedUser(user);
-                             setSearchTerm('');
-                           }}
-                           className={`p-3 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0 ${
-                             selectedUser?.id === user.id ? 'bg-blue-50 border-blue-200' : ''
-                           }`}
-                         >
-                           <div className="font-medium text-gray-900">
-                             {user.firstName} {user.lastName}
-                           </div>
-                           <div className="text-sm text-gray-600">{user.email}</div>
-                           <div className="text-xs text-gray-500 capitalize">{user.role}</div>
-                         </div>
-                       ))}
-                       {filteredUsers.length === 0 && (
-                         <div className="p-3 text-gray-500 text-center">
-                           No users found
-                         </div>
-                       )}
-                     </div>
-                     {selectedUser && (
-                       <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                         <div className="text-sm font-medium text-green-800">
-                           Selected: {selectedUser.firstName} {selectedUser.lastName}
-                         </div>
-                         <div className="text-xs text-green-600">{selectedUser.email}</div>
-                       </div>
-                     )}
-                   </div>
-                 </div>
+            <div className="space-y-4">
+              {/* Row 1: User and Event Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="event-event" className="text-sm font-semibold text-gray-700">
-                    Event *
+                  <Label htmlFor="event-user" className="text-sm font-medium text-gray-700">
+                    Select User *
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      placeholder="Search users by name or email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    />
+                    {searchTerm && (
+                      <div className="absolute z-10 w-full mt-1 max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-lg">
+                        {filteredUsers.slice(0, 5).map(user => (
+                          <div
+                            key={user.id}
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setSearchTerm('');
+                            }}
+                            className="p-2 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
+                          >
+                            <div className="font-medium text-gray-900 text-sm">
+                              {user.firstName} {user.lastName}
+                            </div>
+                            <div className="text-xs text-gray-600">{user.email}</div>
+                          </div>
+                        ))}
+                        {filteredUsers.length === 0 && (
+                          <div className="p-2 text-gray-500 text-center text-sm">
+                            No users found
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {selectedUser && (
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="text-sm font-medium text-green-800">
+                          ✓ {selectedUser.firstName} {selectedUser.lastName}
+                        </div>
+                        <div className="text-xs text-green-600">{selectedUser.email}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="event-event" className="text-sm font-medium text-gray-700">
+                    Select Event *
                   </Label>
                   <Select onValueChange={(value) => setSelectedEvent(events.find(e => e.id === value) || null)} value={selectedEvent?.id || ""}>
-                    <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                      <SelectValue placeholder="Select an event" />
+                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Choose an event" />
                     </SelectTrigger>
                     <SelectContent>
                       {events.map(event => (
                         <SelectItem key={event.id} value={event.id}>
-                          {event.title}
+                          <div className="flex flex-col">
+                            <span className="font-medium">{event.title}</span>
+                            <span className="text-xs text-gray-500">{new Date(event.startDate).toLocaleDateString()}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedEvent && (
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="text-sm font-medium text-blue-800">
+                        ✓ {selectedEvent.title}
+                      </div>
+                      <div className="text-xs text-blue-600">
+                        {new Date(selectedEvent.startDate).toLocaleDateString()} • K{selectedEvent.price}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="event-title" className="text-sm font-semibold text-gray-700">
-                      Title *
-                    </Label>
-                    <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, title: value }))} value={eventRegistrationData.title}>
-                      <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                        <SelectValue placeholder="Select title" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Mr">Mr</SelectItem>
-                        <SelectItem value="Mrs">Mrs</SelectItem>
-                        <SelectItem value="Miss">Miss</SelectItem>
-                        <SelectItem value="Dr">Dr</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="event-gender" className="text-sm font-semibold text-gray-700">
-                      Gender *
-                    </Label>
-                    <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, gender: value }))} value={eventRegistrationData.gender}>
-                      <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="event-country" className="text-sm font-semibold text-gray-700">
-                      Country *
-                    </Label>
-                    <Input
-                      id="event-country"
-                      placeholder="Enter country"
-                      value={eventRegistrationData.country}
-                      onChange={(e) => setEventRegistrationData(prev => ({ ...prev, country: e.target.value }))}
-                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="event-organization" className="text-sm font-semibold text-gray-700">
-                      Organization *
-                    </Label>
-                    <Input
-                      id="event-organization"
-                      placeholder="Enter organization name"
-                      value={eventRegistrationData.organization}
-                      onChange={(e) => setEventRegistrationData(prev => ({ ...prev, organization: e.target.value }))}
-                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="event-organizationType" className="text-sm font-semibold text-gray-700">
-                      Organization Type *
-                    </Label>
-                    <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, organizationType: value }))} value={eventRegistrationData.organizationType}>
-                      <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                        <SelectValue placeholder="Select organization type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Government">Government</SelectItem>
-                        <SelectItem value="Private">Private</SelectItem>
-                        <SelectItem value="NGO">NGO</SelectItem>
-                        <SelectItem value="Academic">Academic</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="event-position" className="text-sm font-semibold text-gray-700">
-                      Position *
-                    </Label>
-                    <Input
-                      id="event-position"
-                      placeholder="Enter position"
-                      value={eventRegistrationData.position}
-                      onChange={(e) => setEventRegistrationData(prev => ({ ...prev, position: e.target.value }))}
-                      className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
-                    />
-                  </div>
-                </div>
+              </div>
+
+              {/* Row 2: Personal Details */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="event-notes" className="text-sm font-semibold text-gray-700">
-                    Notes (optional)
+                  <Label htmlFor="event-title" className="text-sm font-medium text-gray-700">
+                    Title *
                   </Label>
-                  <Textarea
-                    id="event-notes"
-                    placeholder="Any specific notes for the registration?"
-                    value={eventRegistrationData.notes}
-                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, notes: e.target.value }))}
-                    className="min-h-[100px] text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] resize-none"
+                  <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, title: value }))} value={eventRegistrationData.title}>
+                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Title" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Mr">Mr</SelectItem>
+                      <SelectItem value="Mrs">Mrs</SelectItem>
+                      <SelectItem value="Miss">Miss</SelectItem>
+                      <SelectItem value="Dr">Dr</SelectItem>
+                      <SelectItem value="Prof">Prof</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="event-gender" className="text-sm font-medium text-gray-700">
+                    Gender *
+                  </Label>
+                  <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, gender: value }))} value={eventRegistrationData.gender}>
+                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="event-country" className="text-sm font-medium text-gray-700">
+                    Country *
+                  </Label>
+                  <Input
+                    id="event-country"
+                    placeholder="Country"
+                    value={eventRegistrationData.country}
+                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, country: e.target.value }))}
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="event-hasPaid"
-                    checked={eventRegistrationData.hasPaid}
-                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, hasPaid: e.target.checked }))}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <Label htmlFor="event-hasPaid" className="text-sm text-gray-700">
-                    User has paid for the registration
-                  </Label>
-                </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="event-paymentStatus" className="text-sm font-semibold text-gray-700">
+                  <Label htmlFor="event-position" className="text-sm font-medium text-gray-700">
+                    Position *
+                  </Label>
+                  <Input
+                    id="event-position"
+                    placeholder="Job position"
+                    value={eventRegistrationData.position}
+                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, position: e.target.value }))}
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Organization Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="event-organization" className="text-sm font-medium text-gray-700">
+                    Organization *
+                  </Label>
+                  <Input
+                    id="event-organization"
+                    placeholder="Organization name"
+                    value={eventRegistrationData.organization}
+                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, organization: e.target.value }))}
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="event-organizationType" className="text-sm font-medium text-gray-700">
+                    Organization Type *
+                  </Label>
+                  <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, organizationType: value }))} value={eventRegistrationData.organizationType}>
+                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Organization type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Government">Government</SelectItem>
+                      <SelectItem value="Private">Private Sector</SelectItem>
+                      <SelectItem value="NGO">NGO/Non-Profit</SelectItem>
+                      <SelectItem value="Academic">Academic Institution</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Row 4: Payment and Notes */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="event-paymentStatus" className="text-sm font-medium text-gray-700">
                     Payment Status *
                   </Label>
                   <Select onValueChange={(value) => setEventRegistrationData(prev => ({ ...prev, paymentStatus: value }))} value={eventRegistrationData.paymentStatus}>
-                    <SelectTrigger className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                      <SelectValue placeholder="Select payment status" />
+                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Payment status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
@@ -1951,13 +2025,73 @@ export default function AdminDashboard() {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">Payment Confirmation</Label>
+                  <div className="flex items-center space-x-2 h-10">
+                    <input
+                      type="checkbox"
+                      id="event-hasPaid"
+                      checked={eventRegistrationData.hasPaid}
+                      onChange={(e) => setEventRegistrationData(prev => ({ ...prev, hasPaid: e.target.checked }))}
+                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                    />
+                    <Label htmlFor="event-hasPaid" className="text-sm text-gray-700">
+                      User has paid
+                    </Label>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="event-notes" className="text-sm font-medium text-gray-700">
+                    Notes (optional)
+                  </Label>
+                  <Input
+                    id="event-notes"
+                    placeholder="Registration notes..."
+                    value={eventRegistrationData.notes}
+                    onChange={(e) => setEventRegistrationData(prev => ({ ...prev, notes: e.target.value }))}
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                  />
+                </div>
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-white text-xs font-bold">✓</span>
+                  </div>
+                  <div className="text-sm text-emerald-800">
+                    <p className="font-medium mb-1">Registration Information</p>
+                    <p>This will create a new event registration with a sequential ID (0001, 0002, etc.) for the selected user and event.</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <DialogFooter className="flex items-center justify-between pt-6 border-t border-slate-200">
+            <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200">
               <Button
                 variant="outline"
-                onClick={() => setShowEventRegistrationDialog(false)}
+                onClick={() => {
+                  setShowEventRegistrationDialog(false);
+                  setEventRegistrationData({
+                    userId: "",
+                    eventId: "",
+                    title: "Mr",
+                    gender: "Male",
+                    country: "",
+                    organization: "",
+                    organizationType: "Government",
+                    position: "",
+                    notes: "",
+                    hasPaid: false,
+                    paymentStatus: "pending"
+                  });
+                  setSelectedUser(null);
+                  setSelectedEvent(null);
+                  setSearchTerm('');
+                }}
                 className="px-6"
               >
                 Cancel
@@ -1999,7 +2133,13 @@ export default function AdminDashboard() {
                     }
 
                     const result = await response.json();
-                    alert(`Registration successful! ${result.message}`);
+                    
+                    // Show success message
+                    toast({
+                      title: "Event Registration Successful",
+                      description: `${selectedUser?.firstName} ${selectedUser?.lastName} has been registered for ${selectedEvent?.title} with ID ${result.registration?.registrationNumber || 'Generated'}.`,
+                    });
+                    
                     setShowEventRegistrationDialog(false);
                     setEventRegistrationData({
                       userId: "",
@@ -2016,25 +2156,30 @@ export default function AdminDashboard() {
                     });
                     setSelectedUser(null);
                     setSelectedEvent(null);
+                    setSearchTerm('');
                     fetchData(); // Refresh registrations list
                   } catch (err: any) {
-                    alert(`Registration failed: ${err.message}`);
+                    toast({
+                      variant: "destructive",
+                      title: "Registration Failed",
+                      description: err.message || "An error occurred during event registration",
+                    });
                     console.error('Registration error:', err);
                   } finally {
                     setEventRegistrationLoading(false);
                   }
                 }}
-                disabled={eventRegistrationLoading || !selectedUser || !selectedEvent}
-                className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
+                disabled={eventRegistrationLoading || !selectedUser || !selectedEvent || !eventRegistrationData.country || !eventRegistrationData.organization || !eventRegistrationData.position}
+                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {eventRegistrationLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Registering...
+                    Creating Registration...
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4 mr-2" />
+                    <CalendarPlus className="w-4 h-4 mr-2" />
                     Register User for Event
                   </>
                 )}
@@ -2049,6 +2194,10 @@ export default function AdminDashboard() {
           onOpenChange={(open) => setEvidenceViewer(prev => ({ ...prev, open }))}
           evidencePath={evidenceViewer.evidencePath}
           fileName={evidenceViewer.fileName}
+          registrationId={evidenceViewer.registrationId}
+          onEvidenceUpdate={handleEvidenceUpdate}
+          canUpdate={true}
+          isAdmin={true}
         />
       </div>
     </div>
