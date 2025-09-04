@@ -67,14 +67,39 @@ export const insertEventSchema = createInsertSchema(events).omit({
   currentAttendees: true,
 });
 
-export const insertEventRegistrationSchema = createInsertSchema(eventRegistrations).omit({
-  id: true,
-  registeredAt: true,
+export const insertEventRegistrationSchema = z.object({
+  eventId: z.string(),
+  userId: z.string(),
+  title: z.string(),
+  gender: z.string(),
+  country: z.string(),
+  organization: z.string(),
+  organizationType: z.string(),
+  position: z.string(),
+  notes: z.string().optional().nullable(),
+  hasPaid: z.boolean().optional().default(false),
+  paymentStatus: z.enum(["pending", "paid", "cancelled"]).optional().default("pending"),
+  paymentMethod: z.string().optional().nullable(),
+  currency: z.string().optional().nullable(),
+  pricePaid: z.number().optional().nullable(),
+  paymentEvidence: z.string().optional().nullable(),
 });
 
-export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions).omit({
-  id: true,
-  subscribedAt: true,
+export const insertNewsletterSubscriptionSchema = z.object({
+  email: z.string().email(),
+  name: z.string().optional().nullable(),
+});
+
+export const evidenceHistorySchema = z.object({
+  id: z.string().uuid(),
+  registrationId: z.string().uuid(),
+  filePath: z.string(),
+  uploadedAt: z.string().datetime(),
+});
+
+export const insertEvidenceHistorySchema = z.object({
+  registrationId: z.string().uuid(),
+  filePath: z.string(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
