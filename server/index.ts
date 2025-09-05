@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 import { registerRoutes } from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -65,7 +66,7 @@ app.get("*", (req, res) => {
   const indexPath = path.join(publicPath, "index.html");
 
   // Check if the built client exists
-  if (!require("fs").existsSync(indexPath)) {
+  if (!fs.existsSync(indexPath)) {
     console.error(`Client build not found at ${indexPath}`);
     return res.status(503).json({
       message: "Client application not built yet",

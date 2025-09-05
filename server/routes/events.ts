@@ -9,14 +9,17 @@ export function registerEventRoutes(app: Express): void {
       const events = await storage.getAllEvents();
 
       // Filter out events that shouldn't be public or add public-only fields
-      const publicEvents = events.map(event => ({
+      const publicEvents = events.map((event) => ({
         ...event,
         // Remove any sensitive admin-only data if needed
         // For now, return all event data as it's generally public
       }));
 
-      // Sort events by date (upcoming first)
-      publicEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      // Sort events by startDate (upcoming first)
+      publicEvents.sort(
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+      );
 
       res.json(publicEvents);
     } catch (error) {
@@ -24,60 +27,31 @@ export function registerEventRoutes(app: Express): void {
     }
   });
 
-  // Get specific event details
-  app.get("/api/events/:eventId", async (req, res) => {
-    try {
-      const { eventId } = req.params;
-
-      const event = await storage.getEvent(eventId);
-      if (!event) {
-        return res.status(404).json({ message: "Event not found" });
-      }
-
-      // Get registration stats for the event (public info)
-      const registrations = await storage.getEventRegistrationsByEvent(eventId);
-      const activeRegistrations = registrations.filter(
-        r => r.paymentStatus !== "cancelled"
-      );
-
-      const eventWithStats = {
-        ...event,
-        registrationStats: {
-          totalRegistrations: registrations.length,
-          activeRegistrations: activeRegistrations.length,
-          availableSpots: event.maxAttendees
-            ? Math.max(0, event.maxAttendees - activeRegistrations.length)
-            : null,
-          isFull: event.maxAttendees
-            ? activeRegistrations.length >= event.maxAttendees
-            : false,
-        }
-      };
-
-      res.json(eventWithStats);
-    } catch (error) {
-      handleRouteError(error, req, res, "events/details");
-    }
-  });
-
-  // Get upcoming events only
+  // Get upcoming events only (must come before /:eventId route)
   app.get("/api/events/upcoming", async (req, res) => {
     try {
       const events = await storage.getAllEvents();
 
       const now = new Date();
-      const upcomingEvents = events.filter(event => new Date(event.date) > now);
+      const upcomingEvents = events.filter(
+        (event) => new Date(event.startDate) > now,
+      );
 
-      // Sort by date (soonest first)
-      upcomingEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      // Sort by startDate (soonest first)
+      upcomingEvents.sort(
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+      );
 
       // Add registration availability info
       const eventsWithAvailability = await Promise.all(
         upcomingEvents.map(async (event) => {
           try {
-            const registrations = await storage.getEventRegistrationsByEvent(event.id);
+            const registrations = await storage.getEventRegistrationsByEvent(
+              event.id,
+            );
             const activeRegistrations = registrations.filter(
-              r => r.paymentStatus !== "cancelled"
+              (r) => r.paymentStatus !== "cancelled",
             );
 
             return {
@@ -99,7 +73,7 @@ export function registerEventRoutes(app: Express): void {
               isFull: false,
             };
           }
-        })
+        }),
       );
 
       res.json(eventsWithAvailability);
@@ -114,10 +88,15 @@ export function registerEventRoutes(app: Express): void {
       const events = await storage.getAllEvents();
 
       const now = new Date();
-      const pastEvents = events.filter(event => new Date(event.date) <= now);
+      const pastEvents = events.filter(
+        (event) => new Date(event.startDate) <= now,
+      );
 
-      // Sort by date (most recent first)
-      pastEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      // Sort by startDate (most recent first)
+      pastEvents.sort(
+        (a, b) =>
+          new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+      );
 
       res.json(pastEvents);
     } catch (error) {
@@ -131,12 +110,19 @@ export function registerEventRoutes(app: Express): void {
       const { category } = req.params;
 
       const events = await storage.getAllEvents();
-      const categoryEvents = events.filter(event =>
-        event.category && event.category.toLowerCase() === category.toLowerCase()
+      const categoryEvents = events.filter(
+        (event) =>
+          event.tags &&
+          event.tags.some(
+            (tag) => tag.toLowerCase() === category.toLowerCase(),
+          ),
       );
 
-      // Sort by date (upcoming first)
-      categoryEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      // Sort by startDate (upcoming first)
+      categoryEvents.sort(
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+      );
 
       res.json(categoryEvents);
     } catch (error) {
@@ -152,44 +138,49 @@ export function registerEventRoutes(app: Express): void {
       let events = await storage.getAllEvents();
 
       // Text search
-      if (query && typeof query === 'string') {
+      if (query && typeof query === "string") {
         const searchTerm = query.toLowerCase();
-        events = events.filter(event =>
-          event.title?.toLowerCase().includes(searchTerm) ||
-          event.description?.toLowerCase().includes(searchTerm) ||
-          event.location?.toLowerCase().includes(searchTerm)
+        events = events.filter(
+          (event) =>
+            event.title?.toLowerCase().includes(searchTerm) ||
+            event.description?.toLowerCase().includes(searchTerm) ||
+            event.location?.toLowerCase().includes(searchTerm),
         );
       }
 
       // Location filter
-      if (location && typeof location === 'string') {
+      if (location && typeof location === "string") {
         const locationTerm = location.toLowerCase();
-        events = events.filter(event =>
-          event.location?.toLowerCase().includes(locationTerm)
+        events = events.filter((event) =>
+          event.location?.toLowerCase().includes(locationTerm),
         );
       }
 
       // Date range filter
-      if (date_from && typeof date_from === 'string') {
+      if (date_from && typeof date_from === "string") {
         const fromDate = new Date(date_from);
-        events = events.filter(event => new Date(event.date) >= fromDate);
+        events = events.filter(
+          (event) => new Date(event.startDate) >= fromDate,
+        );
       }
 
-      if (date_to && typeof date_to === 'string') {
+      if (date_to && typeof date_to === "string") {
         const toDate = new Date(date_to);
-        events = events.filter(event => new Date(event.date) <= toDate);
+        events = events.filter((event) => new Date(event.startDate) <= toDate);
       }
 
-      // Sort by relevance (upcoming events first, then by date)
+      // Sort by relevance (upcoming events first, then by startDate)
       const now = new Date();
       events.sort((a, b) => {
-        const aIsUpcoming = new Date(a.date) > now;
-        const bIsUpcoming = new Date(b.date) > now;
+        const aIsUpcoming = new Date(a.startDate) > now;
+        const bIsUpcoming = new Date(b.startDate) > now;
 
         if (aIsUpcoming && !bIsUpcoming) return -1;
         if (!aIsUpcoming && bIsUpcoming) return 1;
 
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
+        return (
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        );
       });
 
       res.json({
@@ -204,6 +195,42 @@ export function registerEventRoutes(app: Express): void {
       });
     } catch (error) {
       handleRouteError(error, req, res, "events/search");
+    }
+  });
+
+  // Get specific event details (must come after specific routes)
+  app.get("/api/events/:eventId", async (req, res) => {
+    try {
+      const { eventId } = req.params;
+
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      // Get registration stats for the event (public info)
+      const registrations = await storage.getEventRegistrationsByEvent(eventId);
+      const activeRegistrations = registrations.filter(
+        (r) => r.paymentStatus !== "cancelled",
+      );
+
+      const eventWithStats = {
+        ...event,
+        registrationStats: {
+          totalRegistrations: registrations.length,
+          activeRegistrations: activeRegistrations.length,
+          availableSpots: event.maxAttendees
+            ? Math.max(0, event.maxAttendees - activeRegistrations.length)
+            : null,
+          isFull: event.maxAttendees
+            ? activeRegistrations.length >= event.maxAttendees
+            : false,
+        },
+      };
+
+      res.json(eventWithStats);
+    } catch (error) {
+      handleRouteError(error, req, res, "events/details");
     }
   });
 }

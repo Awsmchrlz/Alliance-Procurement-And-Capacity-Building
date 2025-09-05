@@ -194,7 +194,10 @@ export function RegistrationDialog({
     try {
       // Upload payment evidence if provided
       if (formData.hasPaid && formData.evidenceFile) {
-        const filePath = `evidence/${user.id}/${event.id}/${formData.evidenceFile.name}`;
+        // Sanitize filename to prevent "Invalid key" errors
+        const fileExtension = formData.evidenceFile.name.split(".").pop();
+        const sanitizedFileName = `evidence_${Date.now()}.${fileExtension}`;
+        const filePath = `evidence/${user.id}/${event.id}/${sanitizedFileName}`;
         const bucket =
           import.meta.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
         const { error: uploadError } = await supabase.storage

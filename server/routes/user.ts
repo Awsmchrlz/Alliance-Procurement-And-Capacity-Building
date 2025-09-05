@@ -1,6 +1,11 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { insertEventRegistrationSchema, insertNewsletterSubscriptionSchema } from "@shared/schema";
+import {
+  insertEventRegistrationSchema,
+  insertNewsletterSubscriptionSchema,
+} from "@shared/schema";
+import fs from "fs";
+import path from "path";
 import {
   authenticateSupabase,
   requireOwnerOrAdmin,
@@ -75,7 +80,11 @@ export function registerUserRoutes(app: Express): void {
         const registrations = await storage.getEventRegistrationsByUser(userId);
 
         // Filter out sensitive admin data for non-admin users
-        const isAdmin = ["super_admin", "finance_person", "event_manager"].includes(req.supabaseRole);
+        const isAdmin = [
+          "super_admin",
+          "finance_person",
+          "event_manager",
+        ].includes(req.supabaseRole);
 
         const sanitizedRegistrations = registrations.map((reg) => {
           if (isAdmin) {
@@ -113,13 +122,18 @@ export function registerUserRoutes(app: Express): void {
         }
 
         if (registration.paymentStatus === "cancelled") {
-          return res.status(400).json({ message: "Registration already cancelled" });
+          return res
+            .status(400)
+            .json({ message: "Registration already cancelled" });
         }
 
         // Soft cancel by updating status
-        const cancelledRegistration = await storage.cancelEventRegistration(registrationId);
+        const cancelledRegistration =
+          await storage.cancelEventRegistration(registrationId);
 
-        console.log(`✅ User ${userId} cancelled registration ${registrationId}`);
+        console.log(
+          `✅ User ${userId} cancelled registration ${registrationId}`,
+        );
         res.json({
           message: "Registration cancelled successfully",
           registration: cancelledRegistration,
@@ -138,12 +152,16 @@ export function registerUserRoutes(app: Express): void {
     async (req: any, res) => {
       try {
         const { userId, registrationId } = req.params;
-        const isAdmin = ["super_admin", "finance_person", "event_manager"].includes(req.supabaseRole);
+        const isAdmin = [
+          "super_admin",
+          "finance_person",
+          "event_manager",
+        ].includes(req.supabaseRole);
 
         // Only admins can hard delete
         if (!isAdmin) {
           return res.status(403).json({
-            message: "Only administrators can permanently delete registrations"
+            message: "Only administrators can permanently delete registrations",
           });
         }
 
@@ -153,13 +171,18 @@ export function registerUserRoutes(app: Express): void {
         }
 
         // Verify ownership for non-super-admin
-        if (req.supabaseRole !== "super_admin" && registration.userId !== userId) {
+        if (
+          req.supabaseRole !== "super_admin" &&
+          registration.userId !== userId
+        ) {
           return res.status(403).json({ message: "Access denied" });
         }
 
         await storage.deleteEventRegistration(registrationId);
 
-        console.log(`✅ Admin deleted registration ${registrationId} for user ${userId}`);
+        console.log(
+          `✅ Admin deleted registration ${registrationId} for user ${userId}`,
+        );
         res.json({ message: "Registration deleted successfully" });
       } catch (error) {
         handleRouteError(error, req, res, "users/registrations/delete");
@@ -178,7 +201,9 @@ export function registerUserRoutes(app: Express): void {
         // Validate evidence path format
         const pathParts = evidencePath.split("/");
         if (pathParts.length !== 3) {
-          return res.status(400).json({ message: "Invalid evidence path format" });
+          return res
+            .status(400)
+            .json({ message: "Invalid evidence path format" });
         }
 
         const [userId, eventId, fileName] = pathParts;
@@ -203,23 +228,24 @@ export function registerUserRoutes(app: Express): void {
 
         // Serve the file
         const filePath = `./attached_assets/${evidencePath}`;
-        const fs = require("fs");
 
         if (!fs.existsSync(filePath)) {
-          return res.status(404).json({ message: "Evidence file not found on disk" });
+          return res
+            .status(404)
+            .json({ message: "Evidence file not found on disk" });
         }
 
         const mimeType = fileName.endsWith(".pdf")
           ? "application/pdf"
           : fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")
-          ? "image/jpeg"
-          : fileName.endsWith(".png")
-          ? "image/png"
-          : "application/octet-stream";
+            ? "image/jpeg"
+            : fileName.endsWith(".png")
+              ? "image/png"
+              : "application/octet-stream";
 
         res.setHeader("Content-Type", mimeType);
         res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
-        res.sendFile(require("path").resolve(filePath));
+        res.sendFile(path.resolve(filePath));
       } catch (error) {
         handleRouteError(error, req, res, "users/payment-evidence");
       }
@@ -256,18 +282,19 @@ export function registerUserRoutes(app: Express): void {
         const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
         if (!allowedTypes.includes(evidenceFile.mimetype)) {
           return res.status(400).json({
-            message: "Invalid file type. Only JPEG, PNG, and PDF files are allowed.",
+            message:
+              "Invalid file type. Only JPEG, PNG, and PDF files are allowed.",
           });
         }
 
         const maxSize = 10 * 1024 * 1024; // 10MB
         if (evidenceFile.size > maxSize) {
-          return res.status(400).json({ message: "File too large. Maximum size is 10MB." });
+          return res
+            .status(400)
+            .json({ message: "File too large. Maximum size is 10MB." });
         }
 
         // Create directory structure
-        const fs = require("fs");
-        const path = require("path");
         const uploadDir = `./attached_assets/${registration.userId}/${registration.eventId}`;
 
         if (!fs.existsSync(uploadDir)) {
@@ -292,11 +319,16 @@ export function registerUserRoutes(app: Express): void {
         await evidenceFile.mv(filePath);
 
         // Update registration with correct field name
-        const updatedRegistration = await storage.updateEventRegistration(registrationId, {
-          paymentEvidence: evidencePath,
-        });
+        const updatedRegistration = await storage.updateEventRegistration(
+          registrationId,
+          {
+            paymentEvidence: evidencePath,
+          },
+        );
 
-        console.log(`✅ User updated payment evidence for registration ${registrationId}`);
+        console.log(
+          `✅ User updated payment evidence for registration ${registrationId}`,
+        );
         res.json({
           message: "Payment evidence updated successfully",
           evidencePath,
@@ -311,12 +343,13 @@ export function registerUserRoutes(app: Express): void {
   // Newsletter subscription (public endpoint)
   app.post("/api/newsletter/subscribe", async (req, res) => {
     try {
-      const subscriptionData = insertNewsletterSubscriptionSchema.parse(req.body);
+      const subscriptionData = insertNewsletterSubscriptionSchema.parse(
+        req.body,
+      );
 
       // Check if email is already subscribed
-      const existingSubscription = await storage.getNewsletterSubscriptionByEmail(
-        subscriptionData.email,
-      );
+      const existingSubscription =
+        await storage.getNewsletterSubscriptionByEmail(subscriptionData.email);
       if (existingSubscription) {
         return res.status(200).json({
           message: "Email is already subscribed to newsletter",
@@ -324,7 +357,8 @@ export function registerUserRoutes(app: Express): void {
         });
       }
 
-      const subscription = await storage.createNewsletterSubscription(subscriptionData);
+      const subscription =
+        await storage.createNewsletterSubscription(subscriptionData);
 
       console.log(`✅ New newsletter subscription: ${subscriptionData.email}`);
       res.status(201).json({
@@ -368,7 +402,12 @@ export function registerUserRoutes(app: Express): void {
         },
       });
     } catch (error) {
-      handleRouteError(error, req, res, "notifications/registration-confirmation");
+      handleRouteError(
+        error,
+        req,
+        res,
+        "notifications/registration-confirmation",
+      );
     }
   });
 

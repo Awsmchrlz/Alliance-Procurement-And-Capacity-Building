@@ -1,7 +1,12 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { insertEventRegistrationSchema, insertEventSchema } from "@shared/schema";
+import {
+  insertEventRegistrationSchema,
+  insertEventSchema,
+} from "@shared/schema";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import fs from "fs";
+import path from "path";
 import {
   authenticateSupabase,
   requireSuperAdmin,
@@ -10,7 +15,7 @@ import {
   requireEventManager,
   handleRouteError,
   Roles,
-  RoleValue
+  RoleValue,
 } from "./middleware";
 
 export function registerAdminRoutes(app: Express): void {
@@ -21,7 +26,8 @@ export function registerAdminRoutes(app: Express): void {
     requireSuperAdmin,
     async (req: any, res) => {
       try {
-        const { firstName, lastName, email, phoneNumber, password, role } = req.body;
+        const { firstName, lastName, email, phoneNumber, password, role } =
+          req.body;
 
         // Validate required fields
         if (!firstName || !lastName || !email || !password || !role) {
@@ -37,7 +43,9 @@ export function registerAdminRoutes(app: Express): void {
         const supabaseUrl = process.env.SUPABASE_URL;
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         if (!supabaseUrl || !serviceRoleKey) {
-          return res.status(500).json({ message: "Server configuration error" });
+          return res
+            .status(500)
+            .json({ message: "Server configuration error" });
         }
 
         const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
@@ -58,7 +66,9 @@ export function registerAdminRoutes(app: Express): void {
 
         if (authError) {
           console.error("Supabase auth error:", authError);
-          return res.status(500).json({ message: "Failed to create user account" });
+          return res
+            .status(500)
+            .json({ message: "Failed to create user account" });
         }
 
         if (!authData.user) {
@@ -91,7 +101,7 @@ export function registerAdminRoutes(app: Express): void {
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/users/register");
       }
-    }
+    },
   );
 
   // Admin users listing (super admin only)
@@ -107,15 +117,17 @@ export function registerAdminRoutes(app: Express): void {
         const usersWithStats = await Promise.all(
           users.map(async (user) => {
             try {
-              const registrations = await storage.getEventRegistrationsByUser(user.id);
+              const registrations = await storage.getEventRegistrationsByUser(
+                user.id,
+              );
               return {
                 ...user,
                 totalRegistrations: registrations.length,
                 activeRegistrations: registrations.filter(
-                  r => r.paymentStatus !== "cancelled"
+                  (r) => r.paymentStatus !== "cancelled",
                 ).length,
                 paidRegistrations: registrations.filter(
-                  r => r.hasPaid === true
+                  (r) => r.hasPaid === true,
                 ).length,
               };
             } catch (error) {
@@ -127,13 +139,16 @@ export function registerAdminRoutes(app: Express): void {
                 paidRegistrations: 0,
               };
             }
-          })
+          }),
         );
 
-        const roleStats = usersWithStats.reduce((acc, user) => {
-          acc[user.role] = (acc[user.role] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
+        const roleStats = usersWithStats.reduce(
+          (acc, user) => {
+            acc[user.role] = (acc[user.role] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        );
 
         res.json({
           users: usersWithStats,
@@ -145,7 +160,7 @@ export function registerAdminRoutes(app: Express): void {
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/users");
       }
-    }
+    },
   );
 
   // Role updates (super admin only)
@@ -165,7 +180,7 @@ export function registerAdminRoutes(app: Express): void {
         // Prevent self-demotion from super_admin
         if (req.supabaseUser.id === userId && role !== Roles.SuperAdmin) {
           return res.status(400).json({
-            message: "Cannot change your own super admin role"
+            message: "Cannot change your own super admin role",
           });
         }
 
@@ -174,17 +189,37 @@ export function registerAdminRoutes(app: Express): void {
           return res.status(404).json({ message: "User not found" });
         }
 
-        await storage.updateUserRole(userId, role);
+        // Update user role via Supabase Auth
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          return res
+            .status(500)
+            .json({ message: "Server configuration error" });
+        }
+
+        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
+          {
+            user_metadata: { role },
+          },
+        );
+
+        if (error) {
+          console.error("Error updating user role:", error);
+          throw error;
+        }
 
         console.log(`✅ Role updated: ${user.email} -> ${role}`);
         res.json({
           message: "User role updated successfully",
-          user: { ...user, role }
+          user: { ...user, role },
         });
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/users/role");
       }
-    }
+    },
   );
 
   // Admin events listing (all admin roles)
@@ -200,23 +235,30 @@ export function registerAdminRoutes(app: Express): void {
         const eventsWithStats = await Promise.all(
           events.map(async (event) => {
             try {
-              const registrations = await storage.getEventRegistrationsByEvent(event.id);
+              const registrations = await storage.getEventRegistrationsByEvent(
+                event.id,
+              );
               const activeRegistrations = registrations.filter(
-                r => r.paymentStatus !== "cancelled"
+                (r) => r.paymentStatus !== "cancelled",
               );
 
               return {
                 ...event,
                 totalRegistrations: registrations.length,
                 activeRegistrations: activeRegistrations.length,
-                paidRegistrations: activeRegistrations.filter(r => r.hasPaid).length,
-                pendingPayments: activeRegistrations.filter(r => !r.hasPaid).length,
+                paidRegistrations: activeRegistrations.filter((r) => r.hasPaid)
+                  .length,
+                pendingPayments: activeRegistrations.filter((r) => !r.hasPaid)
+                  .length,
                 revenue: activeRegistrations
-                  .filter(r => r.hasPaid)
-                  .reduce((sum, r) => sum + (r.amountPaid || event.price || 0), 0),
+                  .filter((r) => r.hasPaid)
+                  .reduce((sum, r) => sum + (parseFloat(event.price) || 0), 0),
               };
             } catch (error) {
-              console.error(`Error getting stats for event ${event.id}:`, error);
+              console.error(
+                `Error getting stats for event ${event.id}:`,
+                error,
+              );
               return {
                 ...event,
                 totalRegistrations: 0,
@@ -226,14 +268,14 @@ export function registerAdminRoutes(app: Express): void {
                 revenue: 0,
               };
             }
-          })
+          }),
         );
 
         res.json(eventsWithStats);
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/events");
       }
-    }
+    },
   );
 
   // Admin registrations listing (all admin roles)
@@ -249,34 +291,46 @@ export function registerAdminRoutes(app: Express): void {
 
         // Apply filters
         if (status) {
-          registrations = registrations.filter(r => r.paymentStatus === status);
+          registrations = registrations.filter(
+            (r) => r.paymentStatus === status,
+          );
         }
         if (eventId) {
-          registrations = registrations.filter(r => r.eventId === eventId);
+          registrations = registrations.filter((r) => r.eventId === eventId);
         }
         if (userId) {
-          registrations = registrations.filter(r => r.userId === userId);
+          registrations = registrations.filter((r) => r.userId === userId);
         }
 
         // Sort by creation date (newest first)
-        registrations.sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        registrations.sort(
+          (a, b) =>
+            new Date(b.registeredAt || 0).getTime() -
+            new Date(a.registeredAt || 0).getTime(),
         );
 
         // Pagination
         const startIndex = (Number(page) - 1) * Number(limit);
         const endIndex = startIndex + Number(limit);
-        const paginatedRegistrations = registrations.slice(startIndex, endIndex);
+        const paginatedRegistrations = registrations.slice(
+          startIndex,
+          endIndex,
+        );
 
         // Get additional stats
         const stats = {
           total: registrations.length,
-          pending: registrations.filter(r => r.paymentStatus === "pending").length,
-          confirmed: registrations.filter(r => r.paymentStatus === "confirmed").length,
-          cancelled: registrations.filter(r => r.paymentStatus === "cancelled").length,
+          pending: registrations.filter((r) => r.paymentStatus === "pending")
+            .length,
+          confirmed: registrations.filter(
+            (r) => r.paymentStatus === "confirmed",
+          ).length,
+          cancelled: registrations.filter(
+            (r) => r.paymentStatus === "cancelled",
+          ).length,
           totalRevenue: registrations
-            .filter(r => r.hasPaid)
-            .reduce((sum, r) => sum + (r.amountPaid || 0), 0),
+            .filter((r) => r.hasPaid)
+            .reduce((sum, r) => sum + 0, 0), // TODO: Add amount field to registration
         };
 
         res.json({
@@ -292,7 +346,7 @@ export function registerAdminRoutes(app: Express): void {
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/registrations");
       }
-    }
+    },
   );
 
   // Admin event registration endpoint (event manager or super admin)
@@ -306,15 +360,17 @@ export function registerAdminRoutes(app: Express): void {
 
         // Check if user is already registered for this event
         const existingRegistrations = await storage.getEventRegistrationsByUser(
-          registrationData.userId
+          registrationData.userId,
         );
         const alreadyRegistered = existingRegistrations.some(
           (reg) =>
             reg.eventId === registrationData.eventId &&
-            reg.paymentStatus !== "cancelled"
+            reg.paymentStatus !== "cancelled",
         );
         if (alreadyRegistered) {
-          return res.status(400).json({ message: "User already registered for this event" });
+          return res
+            .status(400)
+            .json({ message: "User already registered for this event" });
         }
 
         // Check if event exists
@@ -330,12 +386,14 @@ export function registerAdminRoutes(app: Express): void {
           hasPaid: registrationData.hasPaid || false,
         });
 
-        console.log(`✅ Admin registered user ${registrationData.userId} for event ${registrationData.eventId}`);
+        console.log(
+          `✅ Admin registered user ${registrationData.userId} for event ${registrationData.eventId}`,
+        );
         res.status(201).json(registration);
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/events/register");
       }
-    }
+    },
   );
 
   // Finance-only updates: payment status and hasPaid
@@ -355,15 +413,18 @@ export function registerAdminRoutes(app: Express): void {
 
         const updatedRegistration = await storage.updateEventRegistration(
           registrationId,
-          updates
+          updates,
         );
 
-        console.log(`✅ Finance updated registration ${registrationId}:`, updates);
+        console.log(
+          `✅ Finance updated registration ${registrationId}:`,
+          updates,
+        );
         res.json(updatedRegistration);
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/registrations/update");
       }
-    }
+    },
   );
 
   // Events CRUD for admins (Super Admin and Event Manager)
@@ -376,12 +437,14 @@ export function registerAdminRoutes(app: Express): void {
         const eventData = insertEventSchema.parse(req.body);
         const event = await storage.createEvent(eventData);
 
-        console.log(`✅ Event created: ${event.title} by ${req.supabaseUser.email}`);
+        console.log(
+          `✅ Event created: ${event.title} by ${req.supabaseUser.email}`,
+        );
         res.status(201).json(event);
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/events/create");
       }
-    }
+    },
   );
 
   app.patch(
@@ -400,12 +463,14 @@ export function registerAdminRoutes(app: Express): void {
 
         const updatedEvent = await storage.updateEvent(eventId, updates);
 
-        console.log(`✅ Event updated: ${eventId} by ${req.supabaseUser.email}`);
+        console.log(
+          `✅ Event updated: ${eventId} by ${req.supabaseUser.email}`,
+        );
         res.json(updatedEvent);
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/events/update");
       }
-    }
+    },
   );
 
   app.delete(
@@ -422,24 +487,29 @@ export function registerAdminRoutes(app: Express): void {
         }
 
         // Check for existing registrations
-        const registrations = await storage.getEventRegistrationsByEvent(eventId);
-        const activeRegistrations = registrations.filter(r => r.paymentStatus !== "cancelled");
+        const registrations =
+          await storage.getEventRegistrationsByEvent(eventId);
+        const activeRegistrations = registrations.filter(
+          (r) => r.paymentStatus !== "cancelled",
+        );
 
         if (activeRegistrations.length > 0) {
           return res.status(400).json({
             message: "Cannot delete event with active registrations",
-            activeRegistrations: activeRegistrations.length
+            activeRegistrations: activeRegistrations.length,
           });
         }
 
         await storage.deleteEvent(eventId);
 
-        console.log(`✅ Event deleted: ${eventId} by ${req.supabaseUser.email}`);
+        console.log(
+          `✅ Event deleted: ${eventId} by ${req.supabaseUser.email}`,
+        );
         res.json({ message: "Event deleted successfully" });
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/events/delete");
       }
-    }
+    },
   );
 
   // Newsletter subscriptions (super admin only)
@@ -453,10 +523,10 @@ export function registerAdminRoutes(app: Express): void {
 
         const stats = {
           total: subscriptions.length,
-          recentSubscriptions: subscriptions.filter(s => {
+          recentSubscriptions: subscriptions.filter((s) => {
             const oneMonthAgo = new Date();
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-            return new Date(s.createdAt) > oneMonthAgo;
+            return new Date(s.subscribedAt || 0) > oneMonthAgo;
           }).length,
         };
 
@@ -467,7 +537,7 @@ export function registerAdminRoutes(app: Express): void {
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/newsletter-subscriptions");
       }
-    }
+    },
   );
 
   // Email blast (super admin only) - placeholder for future email functionality
@@ -480,7 +550,9 @@ export function registerAdminRoutes(app: Express): void {
         const { subject, content, recipients } = req.body;
 
         if (!subject || !content) {
-          return res.status(400).json({ message: "Subject and content required" });
+          return res
+            .status(400)
+            .json({ message: "Subject and content required" });
         }
 
         // TODO: Implement email service integration
@@ -500,7 +572,7 @@ export function registerAdminRoutes(app: Express): void {
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/email-blast");
       }
-    }
+    },
   );
 
   // Payment evidence routes for admins
@@ -515,7 +587,9 @@ export function registerAdminRoutes(app: Express): void {
         // Validate evidence path format
         const pathParts = evidencePath.split("/");
         if (pathParts.length !== 3) {
-          return res.status(400).json({ message: "Invalid evidence path format" });
+          return res
+            .status(400)
+            .json({ message: "Invalid evidence path format" });
         }
 
         const [userId, eventId, fileName] = pathParts;
@@ -528,33 +602,34 @@ export function registerAdminRoutes(app: Express): void {
           return res.status(404).json({ message: "Registration not found" });
         }
 
-        if (registration.paymentEvidencePath !== evidencePath) {
+        if (registration.paymentEvidence !== evidencePath) {
           return res.status(404).json({ message: "Evidence file not found" });
         }
 
         // Serve the file
         const filePath = `./attached_assets/${evidencePath}`;
-        const fs = require("fs");
 
         if (!fs.existsSync(filePath)) {
-          return res.status(404).json({ message: "Evidence file not found on disk" });
+          return res
+            .status(404)
+            .json({ message: "Evidence file not found on disk" });
         }
 
         const mimeType = fileName.endsWith(".pdf")
           ? "application/pdf"
           : fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")
-          ? "image/jpeg"
-          : fileName.endsWith(".png")
-          ? "image/png"
-          : "application/octet-stream";
+            ? "image/jpeg"
+            : fileName.endsWith(".png")
+              ? "image/png"
+              : "application/octet-stream";
 
         res.setHeader("Content-Type", mimeType);
         res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
-        res.sendFile(require("path").resolve(filePath));
+        res.sendFile(path.resolve(filePath));
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/payment-evidence");
       }
-    }
+    },
   );
 
   // Update payment evidence for admin (finance role)
@@ -583,18 +658,19 @@ export function registerAdminRoutes(app: Express): void {
         const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
         if (!allowedTypes.includes(evidenceFile.mimetype)) {
           return res.status(400).json({
-            message: "Invalid file type. Only JPEG, PNG, and PDF files are allowed.",
+            message:
+              "Invalid file type. Only JPEG, PNG, and PDF files are allowed.",
           });
         }
 
         const maxSize = 10 * 1024 * 1024; // 10MB
         if (evidenceFile.size > maxSize) {
-          return res.status(400).json({ message: "File too large. Maximum size is 10MB." });
+          return res
+            .status(400)
+            .json({ message: "File too large. Maximum size is 10MB." });
         }
 
         // Create directory structure
-        const fs = require("fs");
-        const path = require("path");
         const uploadDir = `./attached_assets/${registration.userId}/${registration.eventId}`;
 
         if (!fs.existsSync(uploadDir)) {
@@ -608,8 +684,8 @@ export function registerAdminRoutes(app: Express): void {
         const evidencePath = `${registration.userId}/${registration.eventId}/${fileName}`;
 
         // Remove old evidence file if exists
-        if (registration.paymentEvidencePath) {
-          const oldFilePath = `./attached_assets/${registration.paymentEvidencePath}`;
+        if (registration.paymentEvidence) {
+          const oldFilePath = `./attached_assets/${registration.paymentEvidence}`;
           if (fs.existsSync(oldFilePath)) {
             fs.unlinkSync(oldFilePath);
           }
@@ -619,12 +695,16 @@ export function registerAdminRoutes(app: Express): void {
         await evidenceFile.mv(filePath);
 
         // Update registration
-        const updatedRegistration = await storage.updateEventRegistration(registrationId, {
-          paymentEvidencePath: evidencePath,
-          paymentEvidenceOriginalName: evidenceFile.name,
-        });
+        const updatedRegistration = await storage.updateEventRegistration(
+          registrationId,
+          {
+            paymentEvidence: evidencePath,
+          },
+        );
 
-        console.log(`✅ Admin updated payment evidence for registration ${registrationId}`);
+        console.log(
+          `✅ Admin updated payment evidence for registration ${registrationId}`,
+        );
         res.json({
           message: "Payment evidence updated successfully",
           evidencePath,
@@ -633,6 +713,6 @@ export function registerAdminRoutes(app: Express): void {
       } catch (error: any) {
         handleRouteError(error, req, res, "admin/payment-evidence/update");
       }
-    }
+    },
   );
 }
