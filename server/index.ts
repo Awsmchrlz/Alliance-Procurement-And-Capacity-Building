@@ -2,49 +2,59 @@ import "dotenv/config";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import { registerRoutes } from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-// Simple logging middleware
+// Standard request parsing
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: false, limit: "10mb" }));
+
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (req.path.startsWith("/api")) {
-      console.log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
+      console.log(
+        `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`,
+      );
     }
   });
   next();
 });
 
-// Import your routes - you'll need to convert routes.ts to routes.js
-// For now, let's add a simple health check
-app.get('/api/health', (req, res) => {
+// Health check endpoint
+app.get("/api/health", (req, res) => {
   res.json({
-    status: 'ok',
+    status: "ok",
     timestamp: new Date().toISOString(),
     memory: process.memoryUsage(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
-// Add your other routes here
-// Example:
-// app.get('/api/users', (req, res) => {
-//   res.json({ users: [] });
-// });
-
 // Serve static files
 const publicPath = path.join(__dirname, "../public");
-app.use(express.static(publicPath, {
-  maxAge: '1d', // Cache static files
-  etag: false   // Disable etag to save memory
-}));
+app.use(
+  express.static(publicPath, {
+    maxAge: "1d",
+    etag: false,
+  }),
+);
+
+// Register API routes
+registerRoutes(app)
+  .then(() => {
+    console.log("✅ API routes registered successfully");
+  })
+  .catch((error: any) => {
+    console.error("❌ Failed to register routes:", error.message);
+    process.exit(1);
+  });
 
 // Catch-all for client-side routing
 app.get("*", (req, res) => {
@@ -53,35 +63,74 @@ app.get("*", (req, res) => {
   }
 
   const indexPath = path.join(publicPath, "index.html");
+
+  // Check if the built client exists
+  if (!require("fs").existsSync(indexPath)) {
+    console.error(`Client build not found at ${indexPath}`);
+    return res.status(503).json({
+      message: "Client application not built yet",
+      hint: "Run 'npm run build:client' first",
+      path: indexPath,
+    });
+  }
+
   res.sendFile(indexPath, (err) => {
     if (err) {
-      console.error("Error serving index.html:", err);
+      console.error("Error serving index.html:", err.message);
       res.status(500).json({ message: "Server error" });
     }
   });
 });
 
-// Simple error handler
-app.use((err, req, res, next) => {
+// Error handler
+app.use((err: any, req: any, res: any, next: any) => {
   console.error(`Error: ${err.message}`);
   const status = err.status || err.statusCode || 500;
-  res.status(status).json({ message: err.message || "Internal Server Error" });
+  res.status(status).json({
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Internal Server Error"
+        : err.message,
+  });
 });
 
-const port = process.env.PORT || 5005;
+const port = parseInt(process.env.PORT || "5005", 10);
 
-const server = app.listen(port, '0.0.0.0', () => {
+const server = app.listen(port, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${port}`);
-  console.log(`📁 Static files: ${publicPath}`);
-  console.log(`💾 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`);
+  console.log(`📁 Serving static files from: ${publicPath}`);
+  console.log(
+    `💾 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+  );
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
+const gracefulShutdown = (signal: string) => {
+  console.log(`${signal} received, shutting down gracefully`);
+
   server.close(() => {
-    console.log('Process terminated');
+    console.log("Process terminated");
+    process.exit(0);
   });
+
+  // Force exit after 10 seconds
+  setTimeout(() => {
+    console.log("Forcing exit...");
+    process.exit(1);
+  }, 10000);
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+  gracefulShutdown("UNCAUGHT_EXCEPTION");
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  gracefulShutdown("UNHANDLED_REJECTION");
 });
 
 export default app;
