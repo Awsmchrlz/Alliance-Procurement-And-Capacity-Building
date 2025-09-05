@@ -5,16 +5,20 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "npm run build:client && npm run build:server",
+    "build": "npm run build:client && npm run build:server:memory",
     "build:client": "vite build",
     "build:server": "esbuild server/index-production.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:dotenv --minify --tree-shaking=true --target=node18",
     "build:server:memory": "esbuild server/index-production.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:dotenv --minify --tree-shaking=true --target=node18 --define:global.gc=undefined",
+    "build:server:minimal": "esbuild server/index-minimal.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:dotenv --minify --tree-shaking=true --target=node18 --define:global.gc=undefined",
     "build:production": "npm run build:client && npm run build:server:memory",
-    "start": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=512 --optimize-for-size' node dist/index-production.js",
+    "build:minimal": "npm run build:client && npm run build:server:minimal",
+    "start": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=256 --optimize-for-size --gc-interval=100' node dist/index-production.js",
     "start:memory": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=256 --optimize-for-size --gc-interval=100' node --expose-gc dist/index-production.js",
+    "start:minimal": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=128 --optimize-for-size --gc-interval=50' node --expose-gc dist/index-minimal.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "deploy": "npm run build:production && npm run start:memory"
+    "deploy": "npm run build:production && npm run start:memory",
+    "deploy:minimal": "npm run build:minimal && npm run start:minimal"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
