@@ -1900,14 +1900,7 @@ app.use((req, res, next) => {
     serveStatic2(app);
   }
   const port = process.env.PORT || 5005;
-  server.listen(
-    {
-      port: Number(port),
-      host: "0.0.0.0",
-      reusePort: true
-    },
-    () => {
-      console.log(`serving on port ${port}`);
-    }
-  );
+  server.listen({ port: Number(port), host: "0.0.0.0" }, () => {
+    console.log(`serving on port ${port}`);
+  });
 })();

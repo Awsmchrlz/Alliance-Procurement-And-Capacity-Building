@@ -25,11 +25,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
-
       console.log(logLine);
     }
   });
@@ -49,24 +47,17 @@ app.use((req, res, next) => {
   });
 
   if (app.get("env") === "development") {
-    // 🔥 dynamically import vite setup ONLY in dev
+    // lazy import vite setup
     const { setupVite } = await import("./vite.js");
     await setupVite(app, server);
   } else {
-    // 🔥 dynamically import static serving ONLY in prod
+    // lazy import static serving only in prod
     const { serveStatic } = await import("./vite.js");
     serveStatic(app);
   }
 
   const port = process.env.PORT || 5005;
-  server.listen(
-    {
-      port: Number(port),
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      console.log(`serving on port ${port}`);
-    }
-  );
+  server.listen({ port: Number(port), host: "0.0.0.0" }, () => {
+    console.log(`serving on port ${port}`);
+  });
 })();
