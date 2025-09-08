@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-export type UserRole = 'super_admin' | 'finance_person' | 'ordinary_user';
+export type UserRole = 'super_admin' | 'finance_person' | 'event_manager' | 'ordinary_user';
 
 export function useAuth() {
   const [user, setUser] = useState<
@@ -71,9 +71,11 @@ export function useAuth() {
 
   const isSuperAdmin = user?.role === 'super_admin';
   const isFinancePerson = user?.role === 'finance_person';
-  const isAdmin = isSuperAdmin || isFinancePerson;
+  const isEventManager = user?.role === 'event_manager';
+  const isAdmin = isSuperAdmin || isFinancePerson || isEventManager;
   const canManageUsers = isSuperAdmin;
   const canManageFinance = isSuperAdmin || isFinancePerson;
+  const canManageEvents = isSuperAdmin || isEventManager;
 
   return {
     user,
@@ -82,8 +84,10 @@ export function useAuth() {
     isAuthenticated: !!user,
     isSuperAdmin,
     isFinancePerson,
+    isEventManager,
     isAdmin,
     canManageUsers,
     canManageFinance,
+    canManageEvents,
   };
 }

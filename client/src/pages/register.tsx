@@ -2,7 +2,20 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Mail, Lock, User, Phone, Handshake, ArrowRight, Shield, CheckCircle, Star, Award } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  Phone,
+  Handshake,
+  ArrowRight,
+  Shield,
+  CheckCircle,
+  Star,
+  Award,
+} from "lucide-react";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,14 +29,15 @@ const RegisterPage = () => {
     email: "",
     phoneNumber: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    acceptTerms: false,
   });
   const [errors, setErrors] = useState({});
 
   // Background images
   const backgroundImages = [
-        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
-        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858600/groupPhoto4_shvwfy.jpg"
+    "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
+    "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858600/groupPhoto4_shvwfy.jpg",
   ];
 
   // Image rotation effect
@@ -60,15 +74,18 @@ const RegisterPage = () => {
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords don't match";
     }
+    if (!formData.acceptTerms) {
+      newErrors.acceptTerms = "You must agree to the Terms and Privacy Policy";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -89,23 +106,24 @@ const RegisterPage = () => {
             first_name: formData.firstName,
             last_name: formData.lastName,
             phone_number: formData.phoneNumber,
-            role: 'ordinary_user',
+            role: "ordinary_user",
           },
         },
       });
-      
+
       if (error) throw error;
-      
-      toast({ 
-        title: "Account Created", 
-        description: "Your account has been created successfully. You can now sign in." 
+
+      toast({
+        title: "Account Created",
+        description:
+          "Your account has been created successfully. You can now sign in.",
       });
       navigate("/login");
     } catch (err: any) {
-      toast({ 
-        title: "Registration Failed", 
-        description: err.message ?? "Unable to create account", 
-        variant: "destructive" 
+      toast({
+        title: "Registration Failed",
+        description: err.message ?? "Unable to create account",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -122,30 +140,38 @@ const RegisterPage = () => {
 
   const getStrengthColor = (strength) => {
     switch (strength) {
-      case 1: return "bg-red-500";
-      case 2: return "bg-yellow-500";
-      case 3: return "bg-blue-500";
-      case 4: return "bg-green-500";
-      default: return "bg-gray-300";
+      case 1:
+        return "bg-red-500";
+      case 2:
+        return "bg-yellow-500";
+      case 3:
+        return "bg-blue-500";
+      case 4:
+        return "bg-green-500";
+      default:
+        return "bg-gray-300";
     }
   };
 
   const getStrengthText = (strength) => {
     switch (strength) {
-      case 1: return "Weak";
-      case 2: return "Fair";
-      case 3: return "Good";
-      case 4: return "Strong";
-      default: return "";
+      case 1:
+        return "Weak";
+      case 2:
+        return "Fair";
+      case 3:
+        return "Good";
+      case 4:
+        return "Strong";
+      default:
+        return "";
     }
   };
 
   return (
     <div className="min-h-screen flex relative overflow-hidden bg-gray-900">
       {/* Dark Base Background */}
-      <div
-        className="absolute inset-0 bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900"
-      />
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900" />
 
       {/* Background Images - Less opaque */}
       <div className="absolute inset-0">
@@ -153,13 +179,15 @@ const RegisterPage = () => {
           <div
             key={index}
             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentImageIndex && isImageVisible ? 'opacity-[0.15]' : 'opacity-0'
+              index === currentImageIndex && isImageVisible
+                ? "opacity-[0.15]"
+                : "opacity-0"
             }`}
             style={{
               backgroundImage: `url(${image})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
             }}
           />
         ))}
@@ -185,7 +213,9 @@ const RegisterPage = () => {
             </div>
             <div className="ml-4">
               <h1 className="text-2xl font-bold tracking-tight">APCB</h1>
-              <p className="text-blue-200 text-sm">Alliance Procurement & Capacity Building</p>
+              <p className="text-blue-200 text-sm">
+                Alliance Procurement & Capacity Building
+              </p>
             </div>
           </div>
 
@@ -197,7 +227,8 @@ const RegisterPage = () => {
           </h2>
 
           <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-            Connect with industry experts and unlock exclusive opportunities in procurement and capacity building.
+            Connect with industry experts and unlock exclusive opportunities in
+            procurement and capacity building.
           </p>
 
           {/* Benefits */}
@@ -207,8 +238,12 @@ const RegisterPage = () => {
                 <CheckCircle className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-white">Expert Training Programs</h3>
-                <p className="text-blue-200 text-sm">Access world-class professional development</p>
+                <h3 className="font-semibold text-white">
+                  Expert Training Programs
+                </h3>
+                <p className="text-blue-200 text-sm">
+                  Access world-class professional development
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -216,8 +251,12 @@ const RegisterPage = () => {
                 <Star className="w-6 h-6 text-yellow-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-white">Exclusive Networking</h3>
-                <p className="text-blue-200 text-sm">Connect with industry leaders and peers</p>
+                <h3 className="font-semibold text-white">
+                  Exclusive Networking
+                </h3>
+                <p className="text-blue-200 text-sm">
+                  Connect with industry leaders and peers
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -225,8 +264,12 @@ const RegisterPage = () => {
                 <Award className="w-6 h-6 text-blue-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-white">Certified Excellence</h3>
-                <p className="text-blue-200 text-sm">Earn recognized professional credentials</p>
+                <h3 className="font-semibold text-white">
+                  Certified Excellence
+                </h3>
+                <p className="text-blue-200 text-sm">
+                  Earn recognized professional credentials
+                </p>
               </div>
             </div>
           </div>
@@ -235,38 +278,43 @@ const RegisterPage = () => {
           <div className="mt-10 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
             <p className="text-sm text-blue-100">
               <Shield className="w-4 h-4 inline mr-2 text-green-400" />
-              Join <span className="font-semibold text-white">5,000+</span> professionals across Africa
+              Join <span className="font-semibold text-white">5,000+</span>{" "}
+              professionals across Africa
             </p>
           </div>
         </div>
       </div>
 
       {/* Right Side - Registration Form */}
-      <div className="w-full lg:w-1/2 relative z-10 flex items-center justify-center px-4 lg:px-6 py-6 min-h-screen">
-        <div className="w-full max-w-sm lg:max-w-md">
+      <div className="w-full lg:w-1/2 relative z-10 flex items-center justify-center px-4 sm:px-6 lg:px-6 py-8 sm:py-12 min-h-screen">
+        <div className="w-full max-w-xs sm:max-w-sm lg:max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-2xl">
-              <Handshake className="w-6 h-6 text-white" />
+          <div className="lg:hidden flex items-center justify-center mb-6 sm:mb-8">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-2xl">
+              <Handshake className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
             </div>
           </div>
 
           {/* Enhanced Registration Card */}
           <div className="bg-white/[0.02] backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 w-full">
             {/* Card Header with Gradient */}
-            <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 p-6 rounded-t-2xl border-b border-white/10">
+            <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 p-4 sm:p-6 rounded-t-2xl border-b border-white/10">
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-1">Create Account</h2>
-                <p className="text-gray-300 text-sm">Join APCB for professional development</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">
+                  Create Account
+                </h2>
+                <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+                  Join APCB for professional development
+                </p>
               </div>
             </div>
 
             {/* Form Content */}
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
               {/* Name Fields */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-200 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2">
                     First Name
                   </label>
                   <div className="relative group">
@@ -275,17 +323,21 @@ const RegisterPage = () => {
                     </div>
                     <input
                       value={formData.firstName}
-                      onChange={(e) => handleInputChange("firstName", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("firstName", e.target.value)
+                      }
                       placeholder="John"
-                      className="w-full pl-9 pr-3 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm hover:bg-white/10"
+                      className="w-full pl-9 pr-3 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm sm:text-base hover:bg-white/10"
                     />
                   </div>
                   {errors.firstName && (
-                    <p className="mt-1 text-xs text-red-400">{errors.firstName}</p>
+                    <p className="mt-1 text-xs text-red-400">
+                      {errors.firstName}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-200 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2">
                     Last Name
                   </label>
                   <div className="relative group">
@@ -294,20 +346,24 @@ const RegisterPage = () => {
                     </div>
                     <input
                       value={formData.lastName}
-                      onChange={(e) => handleInputChange("lastName", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("lastName", e.target.value)
+                      }
                       placeholder="Doe"
-                      className="w-full pl-9 pr-3 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm hover:bg-white/10"
+                      className="w-full pl-9 pr-3 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm sm:text-base hover:bg-white/10"
                     />
                   </div>
                   {errors.lastName && (
-                    <p className="mt-1 text-xs text-red-400">{errors.lastName}</p>
+                    <p className="mt-1 text-xs text-red-400">
+                      {errors.lastName}
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Email Field */}
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2">
                   Email Address
                 </label>
                 <div className="relative group">
@@ -319,7 +375,7 @@ const RegisterPage = () => {
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     type="email"
                     placeholder="your.email@example.com"
-                    className="w-full pl-9 pr-3 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm hover:bg-white/10"
+                    className="w-full pl-9 pr-3 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm sm:text-base hover:bg-white/10"
                   />
                 </div>
                 {errors.email && (
@@ -329,7 +385,7 @@ const RegisterPage = () => {
 
               {/* Phone Field */}
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2">
                   Phone Number
                 </label>
                 <div className="relative group">
@@ -338,20 +394,24 @@ const RegisterPage = () => {
                   </div>
                   <input
                     value={formData.phoneNumber}
-                    onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("phoneNumber", e.target.value)
+                    }
                     type="tel"
                     placeholder="+260 974 486 945"
-                    className="w-full pl-9 pr-3 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm hover:bg-white/10"
+                    className="w-full pl-9 pr-3 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm sm:text-base hover:bg-white/10"
                   />
                 </div>
                 {errors.phoneNumber && (
-                  <p className="mt-1 text-xs text-red-400">{errors.phoneNumber}</p>
+                  <p className="mt-1 text-xs text-red-400">
+                    {errors.phoneNumber}
+                  </p>
                 )}
               </div>
 
               {/* Password Field */}
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2">
                   Password
                 </label>
                 <div className="relative group">
@@ -360,10 +420,12 @@ const RegisterPage = () => {
                   </div>
                   <input
                     value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("password", e.target.value)
+                    }
                     type={showPassword ? "text" : "password"}
                     placeholder="Choose a strong password"
-                    className="w-full pl-9 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm hover:bg-white/10"
+                    className="w-full pl-9 pr-10 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm sm:text-base hover:bg-white/10"
                   />
                   <button
                     type="button"
@@ -383,12 +445,17 @@ const RegisterPage = () => {
                   <div className="mt-2 p-2 bg-white/5 rounded-lg border border-white/10">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-gray-300">Strength</span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        passwordStrength(formData.password) === 4 ? 'bg-green-500/20 text-green-400' :
-                        passwordStrength(formData.password) === 3 ? 'bg-blue-500/20 text-blue-400' :
-                        passwordStrength(formData.password) === 2 ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-red-500/20 text-red-400'
-                      }`}>
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          passwordStrength(formData.password) === 4
+                            ? "bg-green-500/20 text-green-400"
+                            : passwordStrength(formData.password) === 3
+                              ? "bg-blue-500/20 text-blue-400"
+                              : passwordStrength(formData.password) === 2
+                                ? "bg-yellow-500/20 text-yellow-400"
+                                : "bg-red-500/20 text-red-400"
+                        }`}
+                      >
                         {getStrengthText(passwordStrength(formData.password))}
                       </span>
                     </div>
@@ -398,8 +465,10 @@ const RegisterPage = () => {
                           key={level}
                           className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
                             level <= passwordStrength(formData.password)
-                              ? getStrengthColor(passwordStrength(formData.password))
-                              : 'bg-gray-700'
+                              ? getStrengthColor(
+                                  passwordStrength(formData.password),
+                                )
+                              : "bg-gray-700"
                           }`}
                         />
                       ))}
@@ -413,7 +482,7 @@ const RegisterPage = () => {
 
               {/* Confirm Password Field */}
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2">
                   Confirm Password
                 </label>
                 <div className="relative group">
@@ -422,10 +491,12 @@ const RegisterPage = () => {
                   </div>
                   <input
                     value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("confirmPassword", e.target.value)
+                    }
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
-                    className="w-full pl-9 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm hover:bg-white/10"
+                    className="w-full pl-9 pr-10 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 text-sm sm:text-base hover:bg-white/10"
                   />
                   <button
                     type="button"
@@ -440,35 +511,55 @@ const RegisterPage = () => {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <p className="mt-1 text-xs text-red-400">{errors.confirmPassword}</p>
+                  <p className="mt-1 text-xs text-red-400">
+                    {errors.confirmPassword}
+                  </p>
                 )}
               </div>
 
               {/* Terms */}
-              <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
+              <div className="flex items-start space-x-3 p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
                 <input
                   type="checkbox"
                   id="terms"
-                  className="w-4 h-4 mt-0.5 text-blue-600 bg-transparent border-gray-400 rounded focus:ring-blue-500 focus:ring-2"
+                  checked={formData.acceptTerms}
+                  onChange={(e) =>
+                    handleInputChange("acceptTerms", e.target.checked)
+                  }
+                  className="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 text-blue-600 bg-transparent border-gray-400 rounded focus:ring-blue-500 focus:ring-2"
                 />
-                <label htmlFor="terms" className="text-xs text-gray-300 leading-relaxed">
+                <label
+                  htmlFor="terms"
+                  className="text-xs sm:text-sm text-gray-300 leading-relaxed"
+                >
                   I agree to the{" "}
-                  <a href="#" className="text-blue-400 hover:text-blue-300 font-medium underline underline-offset-2">
+                  <a
+                    href="#"
+                    className="text-blue-400 hover:text-blue-300 font-medium underline underline-offset-2"
+                  >
                     Terms of Service
                   </a>{" "}
                   and{" "}
-                  <a href="#" className="text-blue-400 hover:text-blue-300 font-medium underline underline-offset-2">
+                  <a
+                    href="#"
+                    className="text-blue-400 hover:text-blue-300 font-medium underline underline-offset-2"
+                  >
                     Privacy Policy
                   </a>
                 </label>
               </div>
+              {errors.acceptTerms && (
+                <p className="mt-1 text-xs text-red-400">
+                  {errors.acceptTerms}
+                </p>
+              )}
 
               {/* Submit Button */}
               <button
                 onClick={handleSubmit}
                 disabled={isLoading}
                 style={{ background: `#1C356B` }}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 focus:ring-4 focus:ring-blue-500/50 disabled:opacity-70 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-2xl border border-blue-500/20"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 sm:py-3.5 px-6 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 focus:ring-4 focus:ring-blue-500/50 disabled:opacity-70 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-2xl border border-blue-500/20 min-h-[48px]"
               >
                 {isLoading ? (
                   <>
@@ -485,10 +576,13 @@ const RegisterPage = () => {
             </div>
 
             {/* Login Link */}
-            <div className="p-6 pt-0 border-t border-white/10">
-              <p className="text-center text-sm text-gray-300">
+            <div className="p-4 sm:p-6 pt-0 border-t border-white/10">
+              <p className="text-center text-xs sm:text-sm text-gray-300 leading-relaxed">
                 Already have an account?{" "}
-                <a href="/login" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-2">
+                <a
+                  href="/login"
+                  className="font-semibold text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-2"
+                >
                   Sign in here
                 </a>
               </p>
@@ -496,9 +590,9 @@ const RegisterPage = () => {
           </div>
 
           {/* Mobile Trust Indicator */}
-          <div className="lg:hidden mt-4 text-center">
-            <p className="text-white/60 text-xs">
-              <Shield className="w-4 h-4 inline mr-1" />
+          <div className="lg:hidden mt-4 sm:mt-6 text-center px-2">
+            <p className="text-white/60 text-xs leading-relaxed">
+              <Shield className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1" />
               Join 5,000+ professionals across Africa
             </p>
           </div>
@@ -517,8 +611,8 @@ const RegisterPage = () => {
                 }}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   index === currentImageIndex
-                    ? 'bg-yellow-400 shadow-lg'
-                    : 'bg-white/30 hover:bg-white/50'
+                    ? "bg-yellow-400 shadow-lg"
+                    : "bg-white/30 hover:bg-white/50"
                 }`}
                 aria-label={`View background image ${index + 1}`}
               />

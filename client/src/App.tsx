@@ -12,6 +12,8 @@ import Dashboard from "@/pages/dashboard";
 import Services from "@/pages/services";
 import About from "@/pages/about";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AdminDashboardDebug from "@/pages/admin-dashboard-debug";
+import AdminDashboardMinimal from "@/pages/admin-dashboard-minimal";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,16 +35,24 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/services" component={Services} />
       <Route path="/about" component={About} />
-      
+
       {/* Protected routes with role-based access */}
       <Route path="/dashboard">
-        {user ? (isAdmin ? <AdminDashboard /> : <Dashboard />) : <Login />}
+        {user ? isAdmin ? <AdminDashboard /> : <Dashboard /> : <Login />}
       </Route>
-      
+
       <Route path="/admin-dashboard">
         {isAdmin ? <AdminDashboard /> : <Login />}
       </Route>
-      
+
+      <Route path="/admin-debug">
+        {isAdmin ? <AdminDashboardDebug /> : <Login />}
+      </Route>
+
+      <Route path="/admin-minimal">
+        {isAdmin ? <AdminDashboardMinimal /> : <Login />}
+      </Route>
+
       <Route component={NotFound} />
     </Switch>
   );
