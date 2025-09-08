@@ -237,7 +237,7 @@ export default function Services() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
-              Our <span style={{ color: '#FDC123' }}>Services</span>
+              Our <span style={{ color: '#87CEEB' }}>Services</span>
             </h1>
             <p className="text-xl text-white/90 max-w-3xl mx-auto">
               Comprehensive procurement and capacity building solutions tailored to transform your organization's capabilities
@@ -278,7 +278,7 @@ export default function Services() {
           <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-10 lg:p-12 mb-8">
             <div className="flex flex-col lg:flex-row items-start gap-8">
               <div className="flex-shrink-0">
-                <div className="w-20 h-20 bg-[#FDC123] rounded-2xl flex items-center justify-center mb-4">
+                <div className="w-20 h-20 bg-[#87CEEB] rounded-2xl flex items-center justify-center mb-4">
                   <currentService.icon className="w-10 h-10 text-[#1C356B]" />
                 </div>
               </div>
@@ -291,7 +291,7 @@ export default function Services() {
                 </p>
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <div className="flex items-center text-gray-600">
-                    <Clock className="w-4 h-4 mr-2 text-[#FDC123]" />
+                    <Clock className="w-4 h-4 mr-2 text-[#87CEEB]" />
                     Duration: {currentService.duration}
                   </div>
                 </div>
@@ -306,14 +306,14 @@ export default function Services() {
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <div className="flex items-center mb-6">
                 <div className="w-12 h-12 bg-[#1C356B] rounded-xl flex items-center justify-center mr-4">
-                  <currentService.icon2 className="w-6 h-6 text-[#FDC123]" />
+                  <currentService.icon2 className="w-6 h-6 text-[#87CEEB]" />
                 </div>
                 <h3 className="text-2xl font-bold text-[#1C356B]">Key Features</h3>
               </div>
               <div className="space-y-4">
                 {currentService.keyFeatures.map((feature, index) => (
                   <div key={index} className="flex items-start space-x-3">
-                    <CheckCircle className="w-6 h-6 text-[#FDC123] flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="w-6 h-6 text-[#87CEEB] flex-shrink-0 mt-0.5" />
                     <p className="text-gray-700 leading-relaxed">{feature}</p>
                   </div>
                 ))}
@@ -323,7 +323,7 @@ export default function Services() {
             {/* Benefits */}
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-[#FDC123] rounded-xl flex items-center justify-center mr-4">
+                <div className="w-12 h-12 bg-[#87CEEB] rounded-xl flex items-center justify-center mr-4">
                   <TrendingUp className="w-6 h-6 text-[#1C356B]" />
                 </div>
                 <h3 className="text-2xl font-bold text-[#1C356B]">Benefits</h3>
@@ -343,7 +343,7 @@ export default function Services() {
           {/* Deliverables */}
           <div className="bg-white rounded-2xl shadow-lg p-8 mt-8">
             <div className="flex items-center mb-6">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#1C356B] to-[#FDC123] rounded-xl flex items-center justify-center mr-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-[#1C356B] to-[#87CEEB] rounded-xl flex items-center justify-center mr-4">
                 <Award className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-[#1C356B]">What You'll Receive</h3>
@@ -351,7 +351,7 @@ export default function Services() {
             <div className="grid sm:grid-cols-2 gap-6">
               {currentService.deliverables.map((deliverable, index) => (
                 <div key={index} className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-[#FDC123] rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-[#87CEEB] rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-[#1C356B] font-bold text-sm">{index + 1}</span>
                   </div>
                   <p className="text-gray-700 font-medium">{deliverable}</p>
@@ -367,14 +367,14 @@ export default function Services() {
 
               <div className="text-center">
                 <div className="w-16 h-16 bg-[#1C356B] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-[#FDC123]" />
+                  <Search className="w-8 h-8 text-[#87CEEB]" />
                 </div>
                 <h4 className="font-bold text-[#1C356B] mb-2">1. Assessment</h4>
                 <p className="text-gray-600 text-sm">We analyze your current situation and identify key improvement areas</p>
               </div>
 
               <div className="text-center">
-                <div className="w-16 h-16 bg-[#FDC123] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-[#87CEEB] rounded-full flex items-center justify-center mx-auto mb-4">
                   <Target className="w-8 h-8 text-[#1C356B]" />
                 </div>
                 <h4 className="font-bold text-[#1C356B] mb-2">2. Planning</h4>
@@ -383,14 +383,14 @@ export default function Services() {
 
               <div className="text-center">
                 <div className="w-16 h-16 bg-[#1C356B] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-[#FDC123]" />
+                  <Users className="w-8 h-8 text-[#87CEEB]" />
                 </div>
                 <h4 className="font-bold text-[#1C356B] mb-2">3. Execution</h4>
                 <p className="text-gray-600 text-sm">We implement solutions with your team through hands-on collaboration</p>
               </div>
 
               <div className="text-center">
-                <div className="w-16 h-16 bg-[#FDC123] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-[#87CEEB] rounded-full flex items-center justify-center mx-auto mb-4">
                   <BarChart3 className="w-8 h-8 text-[#1C356B]" />
                 </div>
                 <h4 className="font-bold text-[#1C356B] mb-2">4. Optimization</h4>
@@ -413,9 +413,9 @@ export default function Services() {
               <Button
                 size="lg"
                 className="text-[#1C356B] transition-all duration-300 font-semibold hover:scale-105 transform shadow-lg"
-                style={{ backgroundColor: '#FDC123' }}
+                style={{ backgroundColor: '#87CEEB' }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e6ae1f'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FDC123'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#87CEEB'}
               >
                 Request Consultation
               </Button>
@@ -423,9 +423,9 @@ export default function Services() {
                 size="lg"
                 variant="outline"
                 className="border-2 text-white hover:text-[#1C356B] transition-all duration-300 font-semibold hover:scale-105 transform"
-                style={{ borderColor: '#FDC123', backgroundColor: 'rgba(255,255,255,0.1)' }}
+                style={{ borderColor: '#87CEEB', backgroundColor: 'rgba(255,255,255,0.1)' }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#FDC123';
+                  e.currentTarget.style.backgroundColor = '#87CEEB';
                   e.currentTarget.style.color = '#1C356B';
                 }}
                 onMouseLeave={(e) => {
@@ -457,10 +457,10 @@ export default function Services() {
                   onClick={() => setSelectedService(service.id)}
                   className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-left group"
                 >
-                  <div className="w-12 h-12 bg-[#FDC123] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-[#87CEEB] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <service.icon className="w-6 h-6 text-[#1C356B]" />
                   </div>
-                  <h4 className="font-bold text-[#1C356B] mb-2 group-hover:text-[#FDC123] transition-colors">
+                  <h4 className="font-bold text-[#1C356B] mb-2 group-hover:text-[#87CEEB] transition-colors">
                     {service.title}
                   </h4>
                   <p className="text-gray-600 text-sm leading-relaxed">

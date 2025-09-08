@@ -1,137 +1,71 @@
 import "dotenv/config";
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
-import { registerRoutes } from "./routes.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import express, { type Request, Response, NextFunction } from "express";
+import { registerRoutes } from "./routes";
 
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-// Standard request parsing
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: false, limit: "10mb" }));
-
-// Request logging middleware
+// Simple logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (req.path.startsWith("/api")) {
-      console.log(
-        `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`,
-      );
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+      if (logLine.length > 120) {
+        logLine = logLine.slice(0, 119) + "…";
+      }
+      console.log(logLine);
     }
   });
+
   next();
 });
 
-// Health check endpoint
-app.get("/api/health", (req, res) => {
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    memory: process.memoryUsage(),
-    uptime: process.uptime(),
-  });
-});
+(async () => {
+  const server = await registerRoutes(app);
 
-// Serve static files
-const publicPath = path.join(__dirname, "../public");
-app.use(
-  express.static(publicPath, {
-    maxAge: "1d",
-    etag: false,
-  }),
-);
-
-// Register API routes
-registerRoutes(app)
-  .then(() => {
-    console.log("✅ API routes registered successfully");
-  })
-  .catch((error: any) => {
-    console.error("❌ Failed to register routes:", error.message);
-    process.exit(1);
+  // Error handler
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    res.status(status).json({ message });
+    console.error(err);
   });
 
-// Catch-all for client-side routing
-app.get("*", (req, res) => {
-  if (req.path.startsWith("/api")) {
-    return res.status(404).json({ message: "API route not found" });
-  }
-
-  const indexPath = path.join(publicPath, "index.html");
-
-  // Check if the built client exists
-  if (!fs.existsSync(indexPath)) {
-    console.error(`Client build not found at ${indexPath}`);
-    return res.status(503).json({
-      message: "Client application not built yet",
-      hint: "Run 'npm run build:client' first",
-      path: indexPath,
+  if (app.get("env") === "development") {
+    // Dynamically import vite setup only in dev
+    const { setupVite } = await import("./vite.js");
+    await setupVite(app, server);
+  } else {
+    // In production, serve built frontend from ./client
+    import("path").then((path) => {
+      import("express").then((express) => {
+        const clientPath = path.resolve(process.cwd(), "client");
+        app.use(express.static(clientPath));
+        app.get("*", (_req, res) => {
+          res.sendFile(path.join(clientPath, "index.html"));
+        });
+      });
     });
   }
 
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      console.error("Error serving index.html:", err.message);
-      res.status(500).json({ message: "Server error" });
-    }
+  // Use cPanel's expected port (5000–5005 range usually allowed)
+  const port = 5005;
+  server.listen(port, () => {
+    console.log(`🚀 Server running on port ${port}`);
   });
-});
-
-// Error handler
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error(`Error: ${err.message}`);
-  const status = err.status || err.statusCode || 500;
-  res.status(status).json({
-    message:
-      process.env.NODE_ENV === "production"
-        ? "Internal Server Error"
-        : err.message,
-  });
-});
-
-const port = parseInt(process.env.PORT || "5005", 10);
-
-const server = app.listen(port, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${port}`);
-  console.log(`📁 Serving static files from: ${publicPath}`);
-  console.log(
-    `💾 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
-  );
-});
-
-// Graceful shutdown
-const gracefulShutdown = (signal: string) => {
-  console.log(`${signal} received, shutting down gracefully`);
-
-  server.close(() => {
-    console.log("Process terminated");
-    process.exit(0);
-  });
-
-  // Force exit after 10 seconds
-  setTimeout(() => {
-    console.log("Forcing exit...");
-    process.exit(1);
-  }, 10000);
-};
-
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-process.on("SIGINT", () => gracefulShutdown("SIGINT"));
-
-process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err);
-  gracefulShutdown("UNCAUGHT_EXCEPTION");
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  gracefulShutdown("UNHANDLED_REJECTION");
-});
-
-export default app;
+})();

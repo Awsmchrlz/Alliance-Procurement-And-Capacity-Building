@@ -75,78 +75,89 @@ export default function About() {
     },
   ];
 
-  const teamMembers = [
-    {
-      name: "Consultant Kelvin M. Nsemu",
-      position: "Chairperson – Southern Africa Region",
-      image:
-        "https://res.cloudinary.com/duu5rnmeu/image/upload/e_background_removal/v1756973662/WhatsApp_Image_2025-09-02_at_12.45.31_kweji1.jpg",
-      bio: "Chairperson of Alliance Procurement and Capacity Building Ltd and Foundation. With 15 years of procurement and supply chain experience, he holds multiple advanced degrees in Procurement, Logistics, Political Science, and Materials Administration. He is recognized as a leading private sector consultancy training provider in Zambia, with deep expertise in capacity building, public sector reforms, and financial management.",
-      expertise: [
-        "Strategic Sourcing",
-        "Negotiation",
-        "Supplier Relationship Management",
-        "Regulatory Compliance",
-        "Leadership and Coaching",
-        "Business Transformation",
-      ],
-    },
-    {
-      name: "Lotson M.K. Buumba",
-      position: "Training Specialist",
-      image:
-        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756973993/WhatsApp_Image_2025-09-02_at_12.45.56_zkbshw.jpg",
-      bio: "Training specialist with 16 years of experience in research, planning, monitoring, and evaluation. Holds a Master of Arts in Human Resource Management, Bachelor of Business Administration, and a Primary Teacher’s Diploma. Recognized for strong interpersonal and leadership skills, proactive mindset, and ability to deliver under pressure.",
-      expertise: [
-        "Training & Capacity Building",
-        "Monitoring and Evaluation",
-        "Human Resource Management",
-        "Planning and Research",
-        "Leadership Development",
-      ],
-    },
-    {
-      name: "Siphiwe Mabhena",
-      position: "Director – Secretarial Services (Southern Region)",
-      image:
-        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.46.41_ymeqvm.jpg",
-      bio: "Director of Secretarial Services – Southern Region at Alliance Procurement and Capacity Building Ltd. Holds a Master’s in Public Administration, a Bachelor’s in Public Administration, and a Diploma in International Travel & Tourism. Passionate about continuous learning, personal growth, and building strong professional networks.",
-      expertise: [
-        "Public Administration",
-        "Organizational Development",
-        "Secretarial & Governance Support",
-        "Networking & Relationship Building",
-      ],
-    },
-    {
-      name: "Ms. Chomba Chileshe",
-      position: "Manager – Consultancy Services",
-      image:
-        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.48.51_tfmqm9.jpg",
-      bio: "Procurement and supply chain consultant with 12+ years of experience in procurement planning, contract management, and supply chain coordination. Holds a BSc in Purchasing & Supply Management and is pursuing an MBA in Strategic Management. A full member of the Zambia Institute of Purchasing and Supply (ZIPS). Known for her integrity, stakeholder engagement, and ability to drive efficiency and accountability.",
-      expertise: [
-        "Procurement Strategy",
-        "Contract Management",
-        "Inventory Management",
-        "Performance Supervision",
-        "Stakeholder Engagement",
-      ],
-    },
-    {
-      name: "Dr. Joseph Selisho",
-      position: "Director – Corporate Affairs (Southern Africa Region)",
-      image:
-        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974009/WhatsApp_Image_2025-09-02_at_12.51.05_wswnjq.jpg",
-      bio: "APCB Ltd’s first training specialist in 2023 and appointed Director of Corporate Affairs in 2024. Oversees corporate strategy development in capacity building, training, research, and consultancy. Key driver behind the first International Indaba in Procurement, Supply Chain, and Financial Management, advancing regional integration across Africa.",
-      expertise: [
-        "Corporate Strategy",
-        "Capacity Development",
-        "Training & Research",
-        "Consultancy Services",
-        "Regional Integration",
-      ],
-    },
-  ];
+const teamMembers = [
+  {
+    name: "Mr. Joseph Kalaluka",
+    position: "Director – Procurement & Supply / Vice Chairperson – Southern Africa Region",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757283264/WhatsApp_Image_2025-09-04_at_19.03.20_l35bu5.jpg",
+    bio: "Mr. Joseph Kalaluka is a procurement and supply chain executive with over 22 years of experience in strategic sourcing, logistics, and supply chain management across energy, development, and humanitarian sectors. He is Director of Procurement and Supply at a major Solar Energy Corporation and Vice Chairperson of Alliance Procurement and Capacity Building Ltd. He is skilled in SCM training, contract negotiation, risk mitigation, and cost-saving strategies. Previously, he held senior positions with the Road Transport & Safety Agency, Oxfam GB, Catholic Relief Services, and CARITAS Zambia. He holds an MSc in Procurement and Logistics, is a PhD candidate in Logistics and Supply Chain Management, and is certified with CIPS (UK), ZIPS, CILT (UK), and ZCILT.",
+    expertise: [
+      "Strategic Sourcing",
+      "Logistics Operations",
+      "SCM Training",
+      "Contract Negotiation",
+      "Risk Mitigation",
+      "Cost-saving Strategies",
+      "Vendor Relations"
+    ],
+  },
+  {
+    name: "Consultant Kelvin M. Nsemu",
+    position: "Chairperson – Southern Africa Region",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/e_background_removal/v1756973662/WhatsApp_Image_2025-09-02_at_12.45.31_kweji1.jpg",
+    bio: "Consultant Kelvin M. Nsemu is Chairperson of Alliance Procurement and Capacity Building Ltd and Foundation, with 15 years of experience in procurement and supply chain management. He holds advanced degrees in Procurement, Logistics, Political Science, and Materials Administration. He is recognized as a leading consultancy trainer in Zambia with expertise in capacity building, financial management, and public sector reforms, and has a proven track record of implementing strategic initiatives, leading teams, and fostering operational efficiency.",
+    expertise: [
+      "Strategic Sourcing",
+      "Negotiation",
+      "Supplier Relationship Management",
+      "Regulatory Compliance",
+      "Leadership and Coaching",
+      "Business Transformation",
+    ],
+  },
+  {
+    name: "Lotson M.K. Buumba",
+    position: "Training Specialist",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756973993/WhatsApp_Image_2025-09-02_at_12.45.56_zkbshw.jpg",
+    bio: "Lotson M.K. Buumba is a training specialist with 16 years of experience in research, planning, monitoring, and evaluation. He holds a Master of Arts in Human Resource Management, a Bachelor of Business Administration, and a Primary Teacher’s Diploma. He is recognized for strong interpersonal and leadership skills, a proactive mindset, and ability to deliver results. He has experience in designing and implementing training programs, mentoring teams, and improving organizational performance across multiple sectors.",
+    expertise: [
+      "Training & Capacity Building",
+      "Monitoring and Evaluation",
+      "Human Resource Management",
+      "Planning and Research",
+      "Leadership Development",
+    ],
+  },
+  {
+    name: "Siphiwe Mabhena",
+    position: "Director – Secretarial Services (Southern Region)",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.46.41_ymeqvm.jpg",
+    bio: "Siphiwe Mabhena is Director of Secretarial Services – Southern Region at Alliance Procurement and Capacity Building Ltd. She holds a Master’s and a Bachelor’s in Public Administration and a Diploma in International Travel & Tourism. She is dedicated to continuous learning, professional growth, and building strong networks. She has a record of enhancing administrative processes, coordinating projects, mentoring staff, and promoting efficiency, transparency, and accountability within secretarial and governance functions.",
+    expertise: [
+      "Public Administration",
+      "Organizational Development",
+      "Secretarial & Governance Support",
+      "Networking & Relationship Building",
+    ],
+  },
+  {
+    name: "Ms. Chomba Chileshe",
+    position: "Manager – Consultancy Services",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.48.51_tfmqm9.jpg",
+    bio: "Ms. Chomba Chileshe is a procurement and supply chain consultant with over 12 years of experience in procurement planning, contract management, and supply chain coordination. She holds a BSc in Purchasing & Supply Management and is pursuing an MBA in Strategic Management. A full member of ZIPS, she is recognized for integrity, stakeholder engagement, and ability to enhance efficiency and accountability. She has experience designing procurement strategies, optimizing inventory, supervising performance, and providing consultancy services that improve organizational capacity.",
+    expertise: [
+      "Procurement Strategy",
+      "Contract Management",
+      "Inventory Management",
+      "Performance Supervision",
+      "Stakeholder Engagement",
+    ],
+  },
+  {
+    name: "Dr. Joseph Selisho",
+    position: "Director – Corporate Affairs (Southern Africa Region)",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974009/WhatsApp_Image_2025-09-02_at_12.51.05_wswnjq.jpg",
+    bio: "Dr. Joseph Selisho, APCB Ltd’s first training specialist in 2023, was appointed Director of Corporate Affairs in 2024. He oversees corporate strategy, capacity building, training, research, and consultancy initiatives. He was a key driver of the first International Indaba in Procurement, Supply Chain, and Financial Management, advancing regional integration. He is recognized for implementing strategic initiatives, mentoring staff, promoting best practices, and fostering innovation and research in corporate affairs to maintain high standards of professionalism, efficiency, and sustainable growth.",
+    expertise: [
+      "Corporate Strategy",
+      "Capacity Development",
+      "Training & Research",
+      "Consultancy Services",
+      "Regional Integration",
+    ],
+  },
+];
+
 
   const journey = {
     past: {
@@ -269,7 +280,7 @@ export default function About() {
         </div>
 
         {/* Animated Gradient Orbs */}
-        <div className="absolute top-20 left-20 w-32 h-32 bg-[#FDC123]/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-20 left-20 w-32 h-32 bg-[#87CEEB]/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-20 right-20 w-40 h-40 bg-blue-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
         <div className="relative z-10 px-4 py-20 sm:py-24 lg:py-32">
@@ -283,7 +294,7 @@ export default function About() {
                 Who We Are
               </Badge>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-8 bg-gradient-to-r from-white via-blue-100 to-[#FDC123] bg-clip-text text-transparent leading-tight">
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-8 bg-gradient-to-r from-white via-blue-100 to-[#87CEEB] bg-clip-text text-transparent leading-tight">
                 About Alliance
               </h1>
 
@@ -295,7 +306,7 @@ export default function About() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Button
                   size="lg"
-                  className="bg-[#FDC123] hover:bg-[#FDC123]/90 text-[#1C356B] font-semibold px-8 py-3 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                  className="bg-[#87CEEB] hover:bg-[#87CEEB]/90 text-[#1C356B] font-semibold px-8 py-3 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
                 >
                   Discover Our Story
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -324,7 +335,7 @@ export default function About() {
               >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#FDC123] to-[#f1b000] flex items-center justify-center flex-shrink-0">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#87CEEB] to-[#f1b000] flex items-center justify-center flex-shrink-0">
                       <stat.icon className="w-7 h-7 text-[#1C356B]" />
                     </div>
                     <div>
@@ -359,7 +370,7 @@ export default function About() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`group relative flex items-center space-x-3 px-6 py-5 border-b-3 transition-all duration-300 whitespace-nowrap ${
                   activeTab === tab.id
-                    ? "border-[#FDC123] text-[#1C356B] dark:text-[#FDC123] bg-[#FDC123]/5"
+                    ? "border-[#87CEEB] text-[#1C356B] dark:text-[#87CEEB] bg-[#87CEEB]/5"
                     : "border-transparent text-gray-600 dark:text-gray-300 hover:text-[#1C356B] dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 }`}
               >
@@ -388,13 +399,13 @@ export default function About() {
             <div className="text-center mb-12">
               <Badge
                 variant="outline"
-                className="mb-4 border-[#FDC123] text-[#1C356B]"
+                className="mb-4 border-[#87CEEB] text-[#1C356B]"
               >
                 <BookOpen className="w-4 h-4 mr-2" />
                 Our Foundation
               </Badge>
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1C356B] dark:text-white mb-6">
-                Who Is <span className="text-[#FDC123]">Alliance</span>
+                Who Is <span className="text-[#87CEEB]">Alliance</span>
               </h2>
             </div>
 
@@ -415,9 +426,9 @@ export default function About() {
                   </p>
                 </Card>
 
-                <Card className="p-8 bg-gradient-to-br from-[#FDC123]/10 to-yellow-50 dark:from-yellow-900/20 dark:to-gray-800 border-l-4 border-[#FDC123] shadow-xl">
+                <Card className="p-8 bg-gradient-to-br from-[#87CEEB]/10 to-yellow-50 dark:from-yellow-900/20 dark:to-gray-800 border-l-4 border-[#87CEEB] shadow-xl">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#FDC123] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 bg-[#87CEEB] rounded-xl flex items-center justify-center flex-shrink-0">
                       <Lightbulb className="w-6 h-6 text-[#1C356B]" />
                     </div>
                     <div>
@@ -461,7 +472,7 @@ export default function About() {
               </div>
 
               <div className="relative order-1 lg:order-2">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#FDC123]/20 to-[#1C356B]/20 rounded-3xl blur-3xl transform rotate-6"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#87CEEB]/20 to-[#1C356B]/20 rounded-3xl blur-3xl transform rotate-6"></div>
                 <Card className="relative overflow-hidden bg-white dark:bg-gray-800 border-0 shadow-2xl">
                   <img
                     src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg"
@@ -472,7 +483,7 @@ export default function About() {
                   <div className="absolute bottom-6 left-6 right-6">
                     <Card className="p-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-0">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-[#FDC123] rounded-xl flex items-center justify-center flex-shrink-0">
+                        <div className="w-14 h-14 bg-[#87CEEB] rounded-xl flex items-center justify-center flex-shrink-0">
                           <Calendar className="w-7 h-7 text-[#1C356B]" />
                         </div>
                         <div>
@@ -498,13 +509,13 @@ export default function About() {
             <div className="text-center">
               <Badge
                 variant="outline"
-                className="mb-4 border-[#FDC123] text-[#1C356B]"
+                className="mb-4 border-[#87CEEB] text-[#1C356B]"
               >
                 <Heart className="w-4 h-4 mr-2" />
                 Our Foundation
               </Badge>
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1C356B] dark:text-white mb-6">
-                Our Core <span className="text-[#FDC123]">Values</span>
+                Our Core <span className="text-[#87CEEB]">Values</span>
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed">
                 Our values are the bedrock of our identity. They guide every
@@ -520,19 +531,19 @@ export default function About() {
                   key={index}
                   className="group relative overflow-hidden bg-white dark:bg-gray-800 border-0 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#FDC123]/5 to-[#1C356B]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#87CEEB]/5 to-[#1C356B]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <CardContent className="relative p-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#FDC123] to-[#f1b000] rounded-2xl flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#87CEEB] to-[#f1b000] rounded-2xl flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
                       <value.icon className="w-8 h-8 text-[#1C356B]" />
                     </div>
-                    <h3 className="text-xl font-bold text-[#1C356B] dark:text-white mb-4 group-hover:text-[#FDC123] transition-colors duration-300">
+                    <h3 className="text-xl font-bold text-[#1C356B] dark:text-white mb-4 group-hover:text-[#87CEEB] transition-colors duration-300">
                       {value.title}
                     </h3>
                     <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                       {value.description}
                     </p>
                   </CardContent>
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FDC123] to-[#1C356B] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#87CEEB] to-[#1C356B] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
                 </Card>
               ))}
             </div>

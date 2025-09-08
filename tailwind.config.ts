@@ -52,7 +52,7 @@ export default {
           "5": "var(--chart-5)",
         },
         // Custom colors from design - exact hex values
-        "primary-yellow": "#FDC123",
+        "primary-yellow": "#87CEEB",
         "primary-blue": "#1C356B",
         "light-blue": "#EFF8FF", 
         "custom-white": "#FEFFFE",

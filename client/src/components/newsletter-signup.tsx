@@ -55,7 +55,7 @@ export function NewsletterSignup() {
     <section className="py-20" style={{ backgroundColor: '#1C356B' }}>
       <div className="container mx-auto px-4 text-center">
         <div className="max-w-2xl mx-auto">
-          <Mail className="w-12 h-12 mx-auto mb-6" style={{ color: '#FDC123' }} />
+          <Mail className="w-12 h-12 mx-auto mb-6" style={{ color: '#87CEEB' }} />
           <h2 className="text-3xl font-bold text-white mb-4" data-testid="newsletter-title">
             STAY UPDATED
           </h2>
@@ -76,9 +76,9 @@ export function NewsletterSignup() {
               type="submit"
               disabled={subscribeMutation.isPending}
               className="font-semibold px-8"
-              style={{ backgroundColor: '#FDC123', color: '#1C356B' }}
+              style={{ backgroundColor: '#87CEEB', color: '#1C356B' }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e6ae1f'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FDC123'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#87CEEB'}
               data-testid="newsletter-subscribe-button"
             >
               {subscribeMutation.isPending ? "SUBSCRIBING..." : "SUBSCRIBE"}

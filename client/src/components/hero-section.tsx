@@ -81,7 +81,7 @@ export function HeroSection() {
                 onError={(e) => {
                   // Fallback styling if image fails to load
                   e.currentTarget.className = "w-full h-full bg-white/10 rounded-lg flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-[#FDC123] text-2xl font-bold">APCB</span>';
+                  e.currentTarget.innerHTML = '<span class="text-[#87CEEB] text-2xl font-bold">APCB</span>';
                 }}
               />
             </div>
@@ -95,7 +95,7 @@ export function HeroSection() {
               style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
             >
               WELCOME TO <br />
-              <span style={{ color: '#FDC123' }}>ALLIANCE</span><br />
+              <span style={{ color: '#87CEEB' }}>ALLIANCE</span><br />
               PROCUREMENT &<br />
               CAPACITY BUILDING
             </h1>
@@ -105,9 +105,9 @@ export function HeroSection() {
               <Button
                 size="lg"
                 className="text-[#1C356B] transition-all duration-300 font-semibold hover:scale-105 transform shadow-lg hover:shadow-xl"
-                style={{ backgroundColor: '#FDC123' }}
+                style={{ backgroundColor: '#87CEEB' }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e6ae1f'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FDC123'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#87CEEB'}
                 data-testid="hero-events-button"
                 onClick={() => {
                   if (latestEvent) {
@@ -132,9 +132,9 @@ export function HeroSection() {
                 size="lg"
                 variant="outline"
                 className="border-2 text-white hover:text-[#1C356B] transition-all duration-300 font-semibold hover:scale-105 transform shadow-lg hover:shadow-xl backdrop-blur-sm"
-                style={{ borderColor: '#FDC123', backgroundColor: 'rgba(255,255,255,0.1)' }}
+                style={{ borderColor: '#87CEEB', backgroundColor: 'rgba(255,255,255,0.1)' }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#FDC123';
+                  e.currentTarget.style.backgroundColor = '#87CEEB';
                   e.currentTarget.style.color = '#1C356B';
                 }}
                 onMouseLeave={(e) => {
@@ -162,7 +162,7 @@ export function HeroSection() {
             <div className="mt-8 lg:mt-12">
               <div className="flex flex-col sm:flex-row gap-8 sm:gap-12 justify-center lg:justify-start">
                 <div className="text-center lg:text-left">
-                  <p className="text-[#FDC123] text-sm sm:text-base font-medium mb-2">Upcoming</p>
+                  <p className="text-[#87CEEB] text-sm sm:text-base font-medium mb-2">Upcoming</p>
                   <h2
                     className="text-2xl sm:text-3xl lg:text-4xl font-bold"
                     style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
@@ -171,7 +171,7 @@ export function HeroSection() {
                   </h2>
                 </div>
                 <div className="text-center lg:text-left">
-                  <p className="text-[#FDC123] text-sm sm:text-base font-medium mb-2">Current</p>
+                  <p className="text-[#87CEEB] text-sm sm:text-base font-medium mb-2">Current</p>
                   <h2
                     className="text-2xl sm:text-3xl lg:text-4xl font-bold"
                     style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
@@ -200,7 +200,7 @@ export function HeroSection() {
             }}
             className={`w-3 h-3 rounded-full transition-all duration-300 ${
               index === currentImageIndex
-                ? 'bg-[#FDC123] shadow-lg'
+                ? 'bg-[#87CEEB] shadow-lg'
                 : 'bg-white/40 hover:bg-white/60'
             }`}
             aria-label={`View background image ${index + 1}`}

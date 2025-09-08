@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,29 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { EventRegistration, Event } from "@shared/schema";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiRequest } from "@/lib/queryClient";
-import {
-  Calendar,
-  MapPin,
-  DollarSign,
-  Users,
+import { 
+  Calendar, 
+  MapPin, 
+  DollarSign, 
+  Users, 
   TrendingUp,
   CheckCircle,
-  Clock,
-  LogOut,
-  Building2,
+  Clock, 
+  LogOut, 
+  Building2, 
   User,
   Upload,
   FileText,
@@ -37,7 +31,7 @@ import {
   AlertCircle,
   Star,
   ArrowRight,
-  Home,
+  Home
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -51,9 +45,7 @@ export default function Dashboard() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"active" | "paid" | "cancelled">(
-    "active",
-  );
+  const [activeTab, setActiveTab] = useState<'active' | 'paid' | 'cancelled'>('active');
 
   const [uploadDialog, setUploadDialog] = useState<{
     open: boolean;
@@ -74,89 +66,61 @@ export default function Dashboard() {
     }
   }, [loading, isAuthenticated, navigate]);
 
-  const {
-    data: registrations,
-    isLoading,
-    refetch,
-  } = useQuery<RegistrationWithEvent[]>({
+  const { data: registrations, isLoading, refetch } = useQuery<RegistrationWithEvent[]>({
     queryKey: ["/api/users", user?.id, "registrations"],
     queryFn: async () => {
-      const response = await apiRequest(
-        "GET",
-        `/api/users/${user?.id}/registrations`,
-      );
+      const response = await apiRequest("GET", `/api/users/${user?.id}/registrations`);
       return response.json();
     },
     enabled: !!user,
   });
 
-  const { paidRegistrations, pendingRegistrations, cancelledRegistrations } =
-    useMemo(() => {
-      return {
-        paidRegistrations:
-          registrations?.filter((r) => r.paymentStatus === "paid") || [],
-        pendingRegistrations:
-          registrations?.filter((r) => r.paymentStatus === "pending") || [],
-        cancelledRegistrations:
-          registrations?.filter((r) => r.paymentStatus === "cancelled") || [],
-      };
-    }, [registrations]);
+  const { paidRegistrations, pendingRegistrations, cancelledRegistrations } = useMemo(() => {
+    return {
+      paidRegistrations: registrations?.filter(r => r.paymentStatus === "paid") || [],
+      pendingRegistrations: registrations?.filter(r => r.paymentStatus === "pending") || [],
+      cancelledRegistrations: registrations?.filter(r => r.paymentStatus === "cancelled") || [],
+    }
+  }, [registrations]);
 
   const handleEvidenceUpload = async () => {
     if (!evidenceFile || !uploadDialog.registration) return;
 
-    // Check if registration is cancelled
-    if (uploadDialog.registration.paymentStatus === "cancelled") {
-      toast({
-        title: "Upload Not Allowed",
-        description: "Cannot upload evidence for cancelled registrations.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("evidence", evidenceFile);
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      formData.append('evidence', evidenceFile);
+      
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        throw new Error("No active session found");
+        throw new Error('No active session found');
       }
 
-      const response = await fetch(
-        `/api/users/payment-evidence/${uploadDialog.registration.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: formData,
+      const response = await fetch(`/api/users/payment-evidence/${uploadDialog.registration.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
         },
-      );
+        body: formData,
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to upload evidence");
+        throw new Error(errorData.message || 'Failed to upload evidence');
       }
-
+      
       toast({
         title: "Evidence Uploaded",
         description: "Payment evidence has been uploaded successfully.",
       });
-
+      
       setUploadDialog({ open: false, registration: null });
       setEvidenceFile(null);
       refetch();
     } catch (error: any) {
       toast({
         title: "Upload Failed",
-        description:
-          error.message ||
-          "Failed to upload payment evidence. Please try again.",
+        description: error.message || "Failed to upload payment evidence. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -164,19 +128,10 @@ export default function Dashboard() {
     }
   };
 
-  const handleCancelRegistration = async (
-    registration: RegistrationWithEvent,
-  ) => {
-    if (
-      confirm(
-        "Are you sure you want to cancel this registration? You can still view it in your cancelled registrations.",
-      )
-    ) {
+  const handleCancelRegistration = async (registration: RegistrationWithEvent) => {
+    if (confirm("Are you sure you want to cancel this registration? You can still view it in your cancelled registrations.")) {
       try {
-        await apiRequest(
-          "PATCH",
-          `/api/users/${user?.id}/registrations/${registration.id}/cancel`,
-        );
+        await apiRequest("DELETE", `/api/users/${user?.id}/registrations/${registration.id}`);
         toast({
           title: "Registration Cancelled",
           description: "Your registration has been cancelled successfully.",
@@ -194,59 +149,29 @@ export default function Dashboard() {
 
   const getStatusConfig = (status: string) => {
     switch (status) {
-      case "paid":
-        return {
-          variant: "default" as const,
-          class: "bg-emerald-100 text-emerald-700 border-emerald-200",
-          icon: CheckCircle,
-          label: "PAID",
-        };
-      case "pending":
-        return {
-          variant: "secondary" as const,
-          class: "bg-amber-100 text-amber-700 border-amber-200",
-          icon: Clock,
-          label: "PENDING",
-        };
-      case "cancelled":
-        return {
-          variant: "destructive" as const,
-          class: "bg-red-100 text-red-700 border-red-200",
-          icon: X,
-          label: "CANCELLED",
-        };
-      default:
-        return {
-          variant: "outline" as const,
-          class: "bg-gray-100 text-gray-700 border-gray-200",
-          icon: AlertCircle,
-          label: status.toUpperCase(),
-        };
+      case "paid": return { variant: "default" as const, class: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle, label: "PAID" };
+      case "pending": return { variant: "secondary" as const, class: "bg-amber-100 text-amber-700 border-amber-200", icon: Clock, label: "PENDING" };
+      case "cancelled": return { variant: "destructive" as const, class: "bg-red-100 text-red-700 border-red-200", icon: X, label: "CANCELLED" };
+      default: return { variant: "outline" as const, class: "bg-gray-100 text-gray-700 border-gray-200", icon: AlertCircle, label: status.toUpperCase() };
     }
   };
 
-  const renderRegistrationList = (
-    list: RegistrationWithEvent[],
-    emptyMessage: string,
-  ) => {
+  const renderRegistrationList = (list: RegistrationWithEvent[], emptyMessage: string) => {
     if (list.length === 0) {
       return (
         <div className="text-center py-12">
           <p className="text-gray-500">{emptyMessage}</p>
         </div>
-      );
+      )
     }
     return (
       <div className="space-y-6">
         {list.map((registration) => {
           const statusConfig = getStatusConfig(registration.paymentStatus);
           const StatusIcon = statusConfig.icon;
-
+          
           return (
-            <Card
-              key={registration.id}
-              className={`bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden transition-all ${registration.paymentStatus === "cancelled" ? "opacity-70" : ""}`}
-            >
+            <Card key={registration.id} className={`bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden transition-all ${registration.paymentStatus === 'cancelled' ? 'opacity-70' : ''}`}>
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row gap-6">
                   {/* Event Info */}
@@ -254,46 +179,17 @@ export default function Dashboard() {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          {registration.event.featured && (
-                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                          )}
-                          <h3 className="text-xl font-bold text-gray-900">
-                            {registration.event.title}
-                          </h3>
+                          {registration.event.featured && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
+                          <h3 className="text-xl font-bold text-gray-900">{registration.event.title}</h3>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-primary-blue" />
-                            <span>
-                              {format(
-                                new Date(registration.event.startDate),
-                                "MMM d, yyyy",
-                              )}
-                            </span>
-                          </div>
-                          {registration.event.location && (
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-primary-blue" />
-                              <span>{registration.event.location}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="w-4 h-4 text-primary-blue" />
-                            <span>
-                              K{Number(registration.event.price).toFixed(2)}
-                            </span>
-                          </div>
-                          {registration.organization && (
-                            <div className="flex items-center gap-2">
-                              <Building2 className="w-4 h-4 text-primary-blue" />
-                              <span>{registration.organization}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-primary-blue" /><span>{format(new Date(registration.event.startDate), "MMM d, yyyy")}</span></div>
+                          {registration.event.location && <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-primary-blue" /><span>{registration.event.location}</span></div>}
+                          <div className="flex items-center gap-2"><DollarSign className="w-4 h-4 text-primary-blue" /><span>K{Number(registration.event.price).toFixed(2)}</span></div>
+                          {registration.organization && <div className="flex items-center gap-2"><Building2 className="w-4 h-4 text-primary-blue" /><span>{registration.organization}</span></div>}
                         </div>
                       </div>
-                      <Badge
-                        className={`${statusConfig.class} px-3 py-1 text-sm font-medium flex items-center gap-1 self-start`}
-                      >
+                      <Badge className={`${statusConfig.class} px-3 py-1 text-sm font-medium flex items-center gap-1 self-start`}>
                         <StatusIcon className="w-3 h-3" />
                         {statusConfig.label}
                       </Badge>
@@ -303,30 +199,8 @@ export default function Dashboard() {
                     {registration.paymentEvidence && (
                       <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm text-blue-800">
-                              Payment Evidence Uploaded
-                            </span>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                            onClick={() =>
-                              setEvidenceViewer({
-                                open: true,
-                                evidencePath: registration.paymentEvidence,
-                                fileName: registration.paymentEvidence
-                                  ?.split("/")
-                                  .pop(),
-                                registrationId: registration.id,
-                              })
-                            }
-                          >
-                            <Eye className="w-3 h-3 mr-1" />
-                            View
-                          </Button>
+                          <div className="flex items-center gap-2"><FileText className="w-4 h-4 text-blue-600" /><span className="text-sm text-blue-800">Payment Evidence Uploaded</span></div>
+                          <Button size="sm" variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50" onClick={() => setEvidenceViewer({ open: true, evidencePath: registration.paymentEvidence, fileName: registration.paymentEvidence?.split('/').pop(), registrationId: registration.id })}><Eye className="w-3 h-3 mr-1" />View</Button>
                         </div>
                       </div>
                     )}
@@ -336,14 +210,9 @@ export default function Dashboard() {
                   <div className="flex flex-col sm:flex-row lg:flex-col gap-3 lg:w-40 flex-shrink-0">
                     {registration.paymentStatus === "pending" && (
                       <>
-                        <Button
-                          variant="outline"
-                          className="border-red-200 text-red-600 hover:bg-red-50 w-full"
-                          onClick={() => handleCancelRegistration(registration)}
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Cancel
-                        </Button>
+                        <Button onClick={() => setUploadDialog({ open: true, registration })} className="bg-primary-yellow text-primary-blue hover:bg-yellow-400 font-semibold w-full"><Upload className="w-4 h-4 mr-2" />Upload Evidence</Button>
+                        <Button variant="outline" className="border-green-200 text-green-600 hover:bg-green-50 w-full"><DollarSign className="w-4 h-4 mr-2" />Pay Now</Button>
+                        <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 w-full" onClick={() => handleCancelRegistration(registration)}><X className="w-4 h-4 mr-2" />Cancel</Button>
                       </>
                     )}
                   </div>
@@ -354,16 +223,14 @@ export default function Dashboard() {
         })}
       </div>
     );
-  };
+  }
 
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-blue mx-auto mb-4"></div>
-          <p className="text-lg font-semibold text-primary-blue">
-            Loading your dashboard...
-          </p>
+          <p className="text-lg font-semibold text-primary-blue">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -375,7 +242,7 @@ export default function Dashboard() {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-[#1C356B] via-[#1C356B] to-[#2d4a7a]" />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22m36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-10" />
-
+        
         <div className="relative container mx-auto px-4 py-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div className="flex items-center space-x-6 text-center lg:text-left">
@@ -383,50 +250,18 @@ export default function Dashboard() {
                 <User className="w-10 h-10 text-[#FDC123]" />
               </div>
               <div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2">
-                  Welcome back, {user?.firstName}!
-                </h1>
-                <p className="text-blue-100 text-lg">
-                  Manage your event registrations and track your learning
-                  journey
-                </p>
+                <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2">Welcome back, {user?.firstName}!</h1>
+                <p className="text-blue-100 text-lg">Manage your event registrations and track your learning journey</p>
                 <div className="flex items-center gap-4 mt-3">
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <CheckCircle className="w-4 h-4 text-[#FDC123]" />
-                    <span className="text-white text-sm font-medium">
-                      {paidRegistrations.length} Paid
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <Clock className="w-4 h-4 text-[#FDC123]" />
-                    <span className="text-white text-sm font-medium">
-                      {pendingRegistrations.length} Pending
-                    </span>
-                  </div>
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full"><CheckCircle className="w-4 h-4 text-[#FDC123]" /><span className="text-white text-sm font-medium">{paidRegistrations.length} Paid</span></div>
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full"><Clock className="w-4 h-4 text-[#FDC123]" /><span className="text-white text-sm font-medium">{pendingRegistrations.length} Pending</span></div>
                 </div>
               </div>
             </div>
-
+            
             <div className="flex flex-col sm:flex-row items-center gap-3">
-              <Button
-                onClick={() => navigate("/")}
-                variant="outline"
-                className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm"
-              >
-                <Home className="w-4 h-4 mr-2" />
-                Browse Events
-              </Button>
-              <Button
-                onClick={async () => {
-                  await logout();
-                  navigate("/");
-                }}
-                variant="outline"
-                className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+              <Button onClick={() => navigate("/")} variant="outline" className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm"><Home className="w-4 h-4 mr-2" />Browse Events</Button>
+              <Button onClick={async () => { await logout(); navigate("/"); }} variant="outline" className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm"><LogOut className="w-4 h-4 mr-2" />Logout</Button>
             </div>
           </div>
         </div>
@@ -435,57 +270,9 @@ export default function Dashboard() {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">
-                    Total Events
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {registrations?.length || 0}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-blue to-[#2d4a7a] rounded-xl flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">
-                    Paid Events
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {paidRegistrations.length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">
-                    Pending
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {pendingRegistrations.length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden"><CardContent className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm font-medium text-gray-600 mb-1">Total Events</p><p className="text-3xl font-bold text-gray-900">{registrations?.length || 0}</p></div><div className="w-12 h-12 bg-gradient-to-br from-primary-blue to-[#2d4a7a] rounded-xl flex items-center justify-center"><Calendar className="w-6 h-6 text-white" /></div></div></CardContent></Card>
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden"><CardContent className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm font-medium text-gray-600 mb-1">Paid Events</p><p className="text-3xl font-bold text-gray-900">{paidRegistrations.length}</p></div><div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center"><CheckCircle className="w-6 h-6 text-white" /></div></div></CardContent></Card>
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden"><CardContent className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm font-medium text-gray-600 mb-1">Pending</p><p className="text-3xl font-bold text-gray-900">{pendingRegistrations.length}</p></div><div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center"><Clock className="w-6 h-6 text-white" /></div></div></CardContent></Card>
         </div>
 
         {/* Registrations Section */}
@@ -495,24 +282,9 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mt-2">
               <div className="border-b border-gray-200">
                 <nav className="-mb-px flex space-x-4" aria-label="Tabs">
-                  <Button
-                    variant={activeTab === "active" ? "secondary" : "ghost"}
-                    onClick={() => setActiveTab("active")}
-                  >
-                    Active ({pendingRegistrations.length})
-                  </Button>
-                  <Button
-                    variant={activeTab === "paid" ? "secondary" : "ghost"}
-                    onClick={() => setActiveTab("paid")}
-                  >
-                    Paid ({paidRegistrations.length})
-                  </Button>
-                  <Button
-                    variant={activeTab === "cancelled" ? "secondary" : "ghost"}
-                    onClick={() => setActiveTab("cancelled")}
-                  >
-                    Cancelled ({cancelledRegistrations.length})
-                  </Button>
+                  <Button variant={activeTab === 'active' ? 'secondary' : 'ghost'} onClick={() => setActiveTab('active')}>Active ({pendingRegistrations.length})</Button>
+                  <Button variant={activeTab === 'paid' ? 'secondary' : 'ghost'} onClick={() => setActiveTab('paid')}>Paid ({paidRegistrations.length})</Button>
+                  <Button variant={activeTab === 'cancelled' ? 'secondary' : 'ghost'} onClick={() => setActiveTab('cancelled')}>Cancelled ({cancelledRegistrations.length})</Button>
                 </nav>
               </div>
             </div>
@@ -522,21 +294,9 @@ export default function Dashboard() {
               <div className="text-center py-12">Loading...</div>
             ) : (
               <>
-                {activeTab === "active" &&
-                  renderRegistrationList(
-                    pendingRegistrations,
-                    "You have no active registrations.",
-                  )}
-                {activeTab === "paid" &&
-                  renderRegistrationList(
-                    paidRegistrations,
-                    "You have no paid registrations.",
-                  )}
-                {activeTab === "cancelled" &&
-                  renderRegistrationList(
-                    cancelledRegistrations,
-                    "You have no cancelled registrations.",
-                  )}
+                {activeTab === 'active' && renderRegistrationList(pendingRegistrations, "You have no active registrations.")}
+                {activeTab === 'paid' && renderRegistrationList(paidRegistrations, "You have no paid registrations.")}
+                {activeTab === 'cancelled' && renderRegistrationList(cancelledRegistrations, "You have no cancelled registrations.")}
               </>
             )}
           </CardContent>
@@ -544,66 +304,29 @@ export default function Dashboard() {
       </div>
 
       {/* Evidence Upload Dialog */}
-      <Dialog
-        open={uploadDialog.open}
-        onOpenChange={(open) => setUploadDialog({ open, registration: null })}
-      >
+      <Dialog open={uploadDialog.open} onOpenChange={(open) => setUploadDialog({ open, registration: null })}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Upload Payment Evidence</DialogTitle>
-            <DialogDescription>
-              Upload proof of payment for{" "}
-              {uploadDialog.registration?.event.title}
-            </DialogDescription>
+            <DialogDescription>Upload proof of payment for {uploadDialog.registration?.event.title}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label htmlFor="evidence">Payment Evidence</Label>
-              <Input
-                id="evidence"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                className="mt-1"
-              />
+              <Input id="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)} className="mt-1" />
             </div>
             {evidenceFile && (
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm text-blue-800">
-                      {evidenceFile.name}
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEvidenceFile(null)}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
+                  <div className="flex items-center gap-2"><FileText className="w-4 h-4 text-blue-600" /><span className="text-sm text-blue-800">{evidenceFile.name}</span></div>
+                  <Button size="sm" variant="outline" onClick={() => setEvidenceFile(null)} className="border-blue-200 text-blue-600 hover:bg-blue-50"><X className="w-3 h-3" /></Button>
                 </div>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() =>
-                setUploadDialog({ open: false, registration: null })
-              }
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleEvidenceUpload}
-              disabled={!evidenceFile || uploading}
-              className="bg-primary-blue text-white hover:bg-[#2d4a7a]"
-            >
-              {uploading ? "Uploading..." : "Upload Evidence"}
-            </Button>
+            <Button variant="outline" onClick={() => setUploadDialog({ open: false, registration: null })}>Cancel</Button>
+            <Button onClick={handleEvidenceUpload} disabled={!evidenceFile || uploading} className="bg-primary-blue text-white hover:bg-[#2d4a7a]">{uploading ? "Uploading..." : "Upload Evidence"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -617,11 +340,7 @@ export default function Dashboard() {
         registrationId={evidenceViewer.registrationId}
         canUpdate={true}
         onEvidenceUpdate={(newPath) => {
-          setEvidenceViewer({
-            ...evidenceViewer,
-            evidencePath: newPath,
-            open: true,
-          });
+          setEvidenceViewer({ ...evidenceViewer, evidencePath: newPath, open: true });
           refetch();
         }}
       />

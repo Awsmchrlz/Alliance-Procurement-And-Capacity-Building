@@ -85,7 +85,7 @@ export const useEmailService = () => {
             z-index: 1;
           }
           .header p {
-            color: #FDC123;
+            color: #87CEEB;
             margin: 8px 0 0 0;
             font-size: 16px;
             font-weight: 600;
@@ -110,7 +110,7 @@ export const useEmailService = () => {
             padding: 25px;
             border-radius: 12px;
             margin: 25px 0;
-            border-left: 4px solid #FDC123;
+            border-left: 4px solid #87CEEB;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
           }
           .event-details h3 {
@@ -138,7 +138,7 @@ export const useEmailService = () => {
             display: inline-block;
           }
           .highlight {
-            background: #FDC123;
+            background: #87CEEB;
             color: #1C356B;
             padding: 2px 8px;
             border-radius: 4px;
@@ -155,7 +155,7 @@ export const useEmailService = () => {
           }
           .footer strong { color: #1C356B; font-size: 16px; }
           .footer-links { margin-top: 15px; }
-          .footer-links a { color: #FDC123; text-decoration: none; margin: 0 10px; }
+          .footer-links a { color: #87CEEB; text-decoration: none; margin: 0 10px; }
           .icon { display: inline-block; margin-right: 8px; }
           .divider { height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 25px 0; }
         </style>
@@ -267,7 +267,7 @@ export const useEmailService = () => {
             font-weight: 700;
           }
           .header p {
-            color: #FDC123;
+            color: #87CEEB;
             margin: 8px 0 0 0;
             font-size: 16px;
             font-weight: 600;
@@ -286,7 +286,7 @@ export const useEmailService = () => {
             top: 0;
             width: 4px;
             height: 100%;
-            background: linear-gradient(180deg, #FDC123, #f59e0b);
+            background: linear-gradient(180deg, #87CEEB, #f59e0b);
             border-radius: 2px;
           }
           .news-item h2 {
@@ -302,7 +302,7 @@ export const useEmailService = () => {
             line-height: 1.7;
           }
           .news-item a {
-            color: #FDC123;
+            color: #87CEEB;
             text-decoration: none;
             font-weight: 600;
             margin-left: 15px;

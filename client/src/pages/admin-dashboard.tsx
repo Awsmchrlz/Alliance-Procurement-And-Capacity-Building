@@ -84,7 +84,6 @@ import {
   Phone,
   MapPin,
   CreditCard,
-  RefreshCw,
 } from "lucide-react";
 
 import { EvidenceViewer } from "@/components/evidence-viewer";
@@ -135,12 +134,6 @@ interface NewsletterSubscription {
 
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const {
-    user: authUser,
-    isSuperAdmin,
-    canManageFinance,
-    canManageUsers,
-  } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -170,7 +163,6 @@ export default function AdminDashboard() {
     evidencePath: string;
     fileName?: string;
     registrationId?: string;
-    paymentStatus?: string;
   }>({
     open: false,
     evidencePath: "",
@@ -212,7 +204,6 @@ export default function AdminDashboard() {
 
   // Search functionality
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [filteredRegistrations, setFilteredRegistrations] = useState<
@@ -232,12 +223,7 @@ export default function AdminDashboard() {
     if (searchTerm.trim() === "") {
       setFilteredUsers(users);
       setFilteredEvents(events);
-      // Apply status filter even when search is empty
-      const statusFilteredRegistrations =
-        statusFilter === "all"
-          ? registrations
-          : registrations.filter((reg) => reg.paymentStatus === statusFilter);
-      setFilteredRegistrations(statusFilteredRegistrations);
+      setFilteredRegistrations(registrations);
       setFilteredNewsletter(newsletterSubscriptions);
     } else {
       const term = searchTerm.toLowerCase();
@@ -267,13 +253,11 @@ export default function AdminDashboard() {
       setFilteredRegistrations(
         registrations.filter(
           (registration) =>
-            (registration.user?.firstName.toLowerCase().includes(term) ||
-              registration.user?.lastName.toLowerCase().includes(term) ||
-              registration.user?.email.toLowerCase().includes(term) ||
-              registration.event?.title.toLowerCase().includes(term) ||
-              registration.paymentStatus.toLowerCase().includes(term)) &&
-            (statusFilter === "all" ||
-              registration.paymentStatus === statusFilter),
+            registration.user?.firstName.toLowerCase().includes(term) ||
+            registration.user?.lastName.toLowerCase().includes(term) ||
+            registration.user?.email.toLowerCase().includes(term) ||
+            registration.event?.title.toLowerCase().includes(term) ||
+            registration.paymentStatus.toLowerCase().includes(term),
         ),
       );
 
@@ -284,14 +268,7 @@ export default function AdminDashboard() {
         ),
       );
     }
-  }, [
-    searchTerm,
-    statusFilter,
-    users,
-    events,
-    registrations,
-    newsletterSubscriptions,
-  ]);
+  }, [searchTerm, users, events, registrations, newsletterSubscriptions]);
 
   const fetchData = async () => {
     try {
@@ -344,7 +321,11 @@ export default function AdminDashboard() {
       }
 
       // Only fetch admin data if user has admin role
-      if (userRole === "super_admin" || userRole === "finance_person") {
+      if (
+        userRole === "super_admin" ||
+        userRole === "finance_person" ||
+        userRole === "event_manager"
+      ) {
         // Fetch users
         try {
           const usersResponse = await fetch(`/api/admin/users`, {
@@ -423,102 +404,17 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Payment status update handler
-  const handlePaymentStatusUpdate = async (
-    registrationId: string,
-    newStatus: string,
-  ) => {
-    if (!canManageFinance) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to update payment status.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error("No active session");
-      }
-
-      const response = await fetch(
-        `/api/admin/registrations/${registrationId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            paymentStatus: newStatus,
-            hasPaid: newStatus === "paid" || newStatus === "completed",
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to update payment status");
-      }
-
-      // Refresh registrations
-      await fetchData();
-
-      toast({
-        title: "Status Updated",
-        description: `Payment status updated to ${newStatus}.`,
-      });
-    } catch (error) {
-      console.error("Error updating payment status:", error);
-      toast({
-        title: "Update Failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to update payment status.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Reactivate cancelled registration (super admin only)
-  const handleReactivateRegistration = async (registrationId: string) => {
-    if (!isSuperAdmin) {
-      toast({
-        title: "Access Denied",
-        description:
-          "Only super admins can reactivate cancelled registrations.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      await handlePaymentStatusUpdate(registrationId, "pending");
-
-      toast({
-        title: "Registration Reactivated",
-        description: "The registration has been reactivated successfully.",
-      });
-    } catch (error) {
-      console.error("Error reactivating registration:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Get auth permissions
+  const {
+    isSuperAdmin,
+    isFinancePerson,
+    isEventManager,
+    canManageUsers,
+    canManageFinance,
+    canUpdatePaymentStatus,
+    canRegisterUsers,
+    canManageEvents,
+  } = useAuth();
 
   // Calculate analytics
   const totalRevenue = registrations
@@ -536,8 +432,11 @@ export default function AdminDashboard() {
   ).length;
   const superAdminUsers = users.filter((u) => u.role === "super_admin").length;
   const financeUsers = users.filter((u) => u.role === "finance_person").length;
+  const eventManagerUsers = users.filter(
+    (u) => u.role === "event_manager",
+  ).length;
 
-  const handleRoleChange = (
+  const handleRoleChangeRequest = (
     userId: string,
     newRole: string,
     userName: string,
@@ -549,13 +448,12 @@ export default function AdminDashboard() {
     if (!confirmRoleChange) return;
 
     setIsLoading(true);
-
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("No authentication session");
+      if (!session?.access_token) {
+        throw new Error("No active session found");
       }
 
       const response = await fetch(
@@ -577,31 +475,27 @@ export default function AdminDashboard() {
         throw new Error(errorData.message || "Failed to update user role");
       }
 
-      // Update the users array locally
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === confirmRoleChange.userId
-            ? { ...user, role: confirmRoleChange.role }
-            : user,
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === confirmRoleChange.userId
+            ? { ...u, role: confirmRoleChange.role as any }
+            : u,
         ),
       );
 
       toast({
-        title: "Role Updated",
-        description: `Successfully updated ${confirmRoleChange.userName}'s role to ${confirmRoleChange.role.replace("_", " ")}`,
+        title: "Role Updated Successfully",
+        description: `${confirmRoleChange.userName}'s role has been changed to ${confirmRoleChange.role.replace("_", " ")}.`,
       });
 
       setConfirmRoleChange(null);
-
-      // Refresh all data to ensure UI reflects changes
-      await fetchData();
-    } catch (error) {
-      console.error("Error updating user role:", error);
+    } catch (err: any) {
       toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to update user role",
         variant: "destructive",
+        title: "Role Update Failed",
+        description:
+          err.message || "Failed to update user role. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -622,35 +516,29 @@ export default function AdminDashboard() {
     }, 2000);
   };
 
-  const getPaymentStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string) => {
     const statusConfig = {
       completed: {
-        variant: "default" as const,
+        variant: "default",
         color: "bg-emerald-500 text-white",
         icon: CheckCircle,
         label: "Completed",
       },
       paid: {
-        variant: "default" as const,
+        variant: "default",
         color: "bg-emerald-500 text-white",
         icon: CheckCircle,
         label: "Paid",
       },
       pending: {
-        variant: "secondary" as const,
+        variant: "secondary",
         color:
           "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
         icon: Clock,
         label: "Pending",
       },
-      cancelled: {
-        variant: "destructive" as const,
-        color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-        icon: XCircle,
-        label: "Cancelled",
-      },
       failed: {
-        variant: "destructive" as const,
+        variant: "destructive",
         color: "bg-red-500 text-white",
         icon: XCircle,
         label: "Failed",
@@ -662,7 +550,12 @@ export default function AdminDashboard() {
     const IconComponent = config.icon;
 
     return (
-      <Badge variant={config.variant} className={config.color}>
+      <Badge
+        variant={
+          config.variant as "default" | "destructive" | "secondary" | "outline"
+        }
+        className={config.color}
+      >
         <IconComponent className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -673,14 +566,12 @@ export default function AdminDashboard() {
     evidencePath: string,
     fileName?: string,
     registrationId?: string,
-    paymentStatus?: string,
   ) => {
     setEvidenceViewer({
       open: true,
       evidencePath,
       fileName,
       registrationId,
-      paymentStatus,
     });
   };
 
@@ -721,7 +612,7 @@ export default function AdminDashboard() {
             Email: user.email,
             "Phone Number": user.phoneNumber || "N/A",
             Role: user.role,
-            "Created At": formatDateTime(user.createdAt),
+            "Created At": formatTime(user.createdAt),
           }));
           filename = `users_export_${new Date().toISOString().split("T")[0]}.csv`;
           headers = [
@@ -751,7 +642,7 @@ export default function AdminDashboard() {
             "Payment Amount": registration.event?.price
               ? `K${registration.event.price}`
               : "N/A",
-            "Registered At": formatDateTime(registration.registeredAt),
+            "Registered At": formatTime(registration.registeredAt),
             "Has Evidence": registration.paymentEvidence ? "Yes" : "No",
           }));
           filename = `registrations_export_${new Date().toISOString().split("T")[0]}.csv`;
@@ -801,7 +692,7 @@ export default function AdminDashboard() {
           data = newsletterSubscriptions.map((subscription) => ({
             "Subscription ID": subscription.id,
             Email: subscription.email,
-            "Subscribed At": formatDateTime(subscription.subscribedAt),
+            "Subscribed At": formatTime(subscription.subscribedAt),
           }));
           filename = `newsletter_subscriptions_export_${new Date().toISOString().split("T")[0]}.csv`;
           headers = ["Subscription ID", "Email", "Subscribed At"];
@@ -877,7 +768,7 @@ export default function AdminDashboard() {
     });
   };
 
-  const formatDateTime = (dateString: string) => {
+  const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleString("en-US", {
       year: "numeric",
       month: "short",
@@ -947,7 +838,9 @@ export default function AdminDashboard() {
   // Check if user can access admin dashboard
   if (
     !user ||
-    (user.role !== "super_admin" && user.role !== "finance_person")
+    (user.role !== "super_admin" &&
+      user.role !== "finance_person" &&
+      user.role !== "event_manager")
   ) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
@@ -1163,7 +1056,8 @@ export default function AdminDashboard() {
                   <div className="flex items-center mt-2">
                     <Target className="w-4 h-4 text-blue-500 mr-1" />
                     <span className="text-sm text-blue-600 font-medium">
-                      {superAdminUsers} Super Admins, {financeUsers} Finance
+                      {superAdminUsers} Super Admins, {financeUsers} Finance,{" "}
+                      {eventManagerUsers} Event Managers
                     </span>
                   </div>
                 </div>
@@ -1394,20 +1288,25 @@ export default function AdminDashboard() {
                     </CardDescription>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Button
-                      onClick={() => setShowUserRegistrationDialog(true)}
-                      className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                    >
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Register New User
-                    </Button>
-                    <Button
-                      onClick={() => setShowEventRegistrationDialog(true)}
-                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                    >
-                      <CalendarPlus className="w-4 h-4 mr-2" />
-                      Register for Event
-                    </Button>
+                    {canRegisterUsers && (
+                      <Button
+                        onClick={() => setShowUserRegistrationDialog(true)}
+                        className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Add New User
+                      </Button>
+                    )}
+                    {canRegisterUsers && (
+                      <Button
+                        onClick={() => setShowEventRegistrationDialog(true)}
+                        variant="outline"
+                        className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                      >
+                        <CalendarPlus className="w-4 h-4 mr-2" />
+                        Register for Event
+                      </Button>
+                    )}
                     <Button
                       onClick={() => exportToExcel("users")}
                       variant="outline"
@@ -1461,7 +1360,7 @@ export default function AdminDashboard() {
                                   {userData.firstName} {userData.lastName}
                                 </div>
                                 <div className="text-sm text-gray-500">
-                                  ID: {userData.id.slice(0, 8)}
+                                  ID: {userData.id?.slice(0, 8) || "N/A"}
                                 </div>
                               </div>
                             </div>
@@ -1483,9 +1382,14 @@ export default function AdminDashboard() {
                                 Super Admin
                               </Badge>
                             ) : userData.role === "finance_person" ? (
-                              <Badge className="bg-gradient-to-r from-green-600 to-green-700 text-white">
+                              <Badge className="bg-emerald-500 text-white">
                                 <DollarSign className="w-3 h-3 mr-1" />
                                 Finance Person
+                              </Badge>
+                            ) : userData.role === "event_manager" ? (
+                              <Badge className="bg-blue-500 text-white">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                Event Manager
                               </Badge>
                             ) : (
                               <Badge
@@ -1519,14 +1423,14 @@ export default function AdminDashboard() {
                                 align="end"
                                 className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
                               >
-                                {canManageUsers &&
-                                  authUser &&
-                                  userData.id !== authUser.id && (
+                                {isSuperAdmin &&
+                                  user &&
+                                  userData.id !== user.id && (
                                     <>
                                       {userData.role !== "super_admin" && (
                                         <DropdownMenuItem
                                           onClick={() =>
-                                            handleRoleChange(
+                                            handleRoleChangeRequest(
                                               userData.id,
                                               "super_admin",
                                               `${userData.firstName} ${userData.lastName}`,
@@ -1541,7 +1445,7 @@ export default function AdminDashboard() {
                                       {userData.role !== "finance_person" && (
                                         <DropdownMenuItem
                                           onClick={() =>
-                                            handleRoleChange(
+                                            handleRoleChangeRequest(
                                               userData.id,
                                               "finance_person",
                                               `${userData.firstName} ${userData.lastName}`,
@@ -1553,10 +1457,25 @@ export default function AdminDashboard() {
                                           Make Finance Person
                                         </DropdownMenuItem>
                                       )}
+                                      {userData.role !== "event_manager" && (
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleRoleChangeRequest(
+                                              userData.id,
+                                              "event_manager",
+                                              `${userData.firstName} ${userData.lastName}`,
+                                            )
+                                          }
+                                          className="text-blue-600"
+                                        >
+                                          <Calendar className="w-4 h-4 mr-2" />
+                                          Make Event Manager
+                                        </DropdownMenuItem>
+                                      )}
                                       {userData.role !== "ordinary_user" && (
                                         <DropdownMenuItem
                                           onClick={() =>
-                                            handleRoleChange(
+                                            handleRoleChangeRequest(
                                               userData.id,
                                               "ordinary_user",
                                               `${userData.firstName} ${userData.lastName}`,
@@ -1732,188 +1651,10 @@ export default function AdminDashboard() {
                     >
                       Download Registrations as Excel
                     </Button>
-                    {/* Temporary test button - remove in production */}
-                    {process.env.NODE_ENV === "development" && isSuperAdmin && (
-                      <Button
-                        onClick={async () => {
-                          try {
-                            // Find a pending registration to cancel for testing
-                            const pendingReg = registrations.find(
-                              (r) => r.paymentStatus === "pending",
-                            );
-                            if (pendingReg) {
-                              await handlePaymentStatusUpdate(
-                                pendingReg.id,
-                                "cancelled",
-                              );
-                              toast({
-                                title: "Test Registration Cancelled",
-                                description: `Registration ${pendingReg.registrationNumber} cancelled for testing`,
-                              });
-                            } else {
-                              toast({
-                                title: "No Pending Registrations",
-                                description:
-                                  "Create a pending registration first to test cancellation",
-                                variant: "destructive",
-                              });
-                            }
-                          } catch (error) {
-                            toast({
-                              title: "Test Failed",
-                              description:
-                                "Could not create test cancelled registration",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        variant="destructive"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        🧪 Test Cancel Registration
-                      </Button>
-                    )}
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Debug Info - Remove in production */}
-                {process.env.NODE_ENV === "development" && (
-                  <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <h4 className="font-semibold mb-2">Debug Info:</h4>
-                    <div className="text-sm grid grid-cols-2 md:grid-cols-5 gap-2">
-                      <div>Total: {registrations.length}</div>
-                      <div>
-                        Pending:{" "}
-                        {
-                          registrations.filter(
-                            (r) => r.paymentStatus === "pending",
-                          ).length
-                        }
-                      </div>
-                      <div>
-                        Paid:{" "}
-                        {
-                          registrations.filter(
-                            (r) =>
-                              r.paymentStatus === "paid" ||
-                              r.paymentStatus === "completed",
-                          ).length
-                        }
-                      </div>
-                      <div className="font-bold text-red-600">
-                        Cancelled:{" "}
-                        {
-                          registrations.filter(
-                            (r) => r.paymentStatus === "cancelled",
-                          ).length
-                        }
-                      </div>
-                      <div>
-                        Failed:{" "}
-                        {
-                          registrations.filter(
-                            (r) => r.paymentStatus === "failed",
-                          ).length
-                        }
-                      </div>
-                    </div>
-                    <div className="mt-2 text-xs">
-                      Filtered showing: {filteredRegistrations.length}{" "}
-                      registrations
-                    </div>
-                    {registrations.filter(
-                      (r) => r.paymentStatus === "cancelled",
-                    ).length > 0 && (
-                      <div className="mt-2">
-                        <strong>Cancelled Registrations:</strong>
-                        <ul className="text-xs ml-4">
-                          {registrations
-                            .filter((r) => r.paymentStatus === "cancelled")
-                            .map((reg) => (
-                              <li key={reg.id}>
-                                #{reg.registrationNumber} -{" "}
-                                {reg.user?.firstName} {reg.user?.lastName} -{" "}
-                                {reg.event?.title}
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Status Filter Tabs */}
-                <div className="mb-6 flex flex-wrap gap-2">
-                  <Button
-                    variant={statusFilter === "all" ? "default" : "outline"}
-                    onClick={() => setStatusFilter("all")}
-                    size="sm"
-                    className="text-xs"
-                  >
-                    All ({registrations.length})
-                  </Button>
-                  <Button
-                    variant={statusFilter === "pending" ? "default" : "outline"}
-                    onClick={() => setStatusFilter("pending")}
-                    size="sm"
-                    className="text-xs"
-                  >
-                    Pending (
-                    {
-                      registrations.filter((r) => r.paymentStatus === "pending")
-                        .length
-                    }
-                    )
-                  </Button>
-                  <Button
-                    variant={statusFilter === "paid" ? "default" : "outline"}
-                    onClick={() => setStatusFilter("paid")}
-                    size="sm"
-                    className="text-xs"
-                  >
-                    Paid (
-                    {
-                      registrations.filter(
-                        (r) =>
-                          r.paymentStatus === "paid" ||
-                          r.paymentStatus === "completed",
-                      ).length
-                    }
-                    )
-                  </Button>
-                  <Button
-                    variant={
-                      statusFilter === "cancelled" ? "default" : "outline"
-                    }
-                    onClick={() => setStatusFilter("cancelled")}
-                    size="sm"
-                    className="text-xs"
-                  >
-                    Cancelled (
-                    {
-                      registrations.filter(
-                        (r) => r.paymentStatus === "cancelled",
-                      ).length
-                    }
-                    )
-                  </Button>
-                  <Button
-                    variant={statusFilter === "failed" ? "default" : "outline"}
-                    onClick={() => setStatusFilter("failed")}
-                    size="sm"
-                    className="text-xs"
-                  >
-                    Failed (
-                    {
-                      registrations.filter((r) => r.paymentStatus === "failed")
-                        .length
-                    }
-                    )
-                  </Button>
-                </div>
-
                 <div className="rounded-lg border border-slate-200 overflow-hidden">
                   <Table>
                     <TableHeader className="bg-slate-50">
@@ -1941,11 +1682,7 @@ export default function AdminDashboard() {
                         <TableRow
                           key={registration.id}
                           className={
-                            registration.paymentStatus === "cancelled"
-                              ? "bg-red-50/50 dark:bg-red-900/20 opacity-70"
-                              : index % 2 === 0
-                                ? "bg-white"
-                                : "bg-slate-50/30"
+                            index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
                           }
                         >
                           <TableCell>
@@ -1990,7 +1727,7 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {getPaymentStatusBadge(registration.paymentStatus)}
+                            {getStatusBadge(registration.paymentStatus)}
                           </TableCell>
                           <TableCell>
                             <div className="font-semibold text-lg text-[#1C356B]">
@@ -2006,12 +1743,11 @@ export default function AdminDashboard() {
                                   size="sm"
                                   onClick={() =>
                                     handleViewPaymentEvidence(
-                                      registration.paymentEvidence!,
+                                      registration.paymentEvidence || "",
                                       registration.paymentEvidence
                                         ?.split("/")
                                         .pop(),
                                       registration.id,
-                                      registration.paymentStatus,
                                     )
                                   }
                                   className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
@@ -2041,78 +1777,48 @@ export default function AdminDashboard() {
                                 align="end"
                                 className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
                               >
-                                {registration.paymentStatus !== "cancelled" &&
-                                  canManageFinance && (
-                                    <>
-                                      <DropdownMenuItem
-                                        disabled={
-                                          registration.paymentStatus ===
-                                            "completed" ||
-                                          registration.paymentStatus ===
-                                            "paid" ||
-                                          isLoading
-                                        }
-                                        onClick={() =>
-                                          handlePaymentStatusUpdate(
-                                            registration.id,
-                                            "paid",
-                                          )
-                                        }
-                                        className="text-emerald-600"
-                                      >
-                                        <CheckCircle className="w-4 h-4 mr-2" />
-                                        Mark as Paid
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        disabled={
-                                          registration.paymentStatus ===
-                                            "pending" || isLoading
-                                        }
-                                        onClick={() =>
-                                          handlePaymentStatusUpdate(
-                                            registration.id,
-                                            "pending",
-                                          )
-                                        }
-                                        className="text-amber-600"
-                                      >
-                                        <Clock className="w-4 h-4 mr-2" />
-                                        Mark as Pending
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        disabled={
-                                          registration.paymentStatus ===
-                                            "failed" || isLoading
-                                        }
-                                        onClick={() =>
-                                          handlePaymentStatusUpdate(
-                                            registration.id,
-                                            "failed",
-                                          )
-                                        }
-                                        className="text-red-600"
-                                      >
-                                        <XCircle className="w-4 h-4 mr-2" />
-                                        Mark as Failed
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-
-                                {registration.paymentStatus === "cancelled" &&
-                                  isSuperAdmin && (
+                                {canUpdatePaymentStatus && (
+                                  <>
                                     <DropdownMenuItem
-                                      disabled={isLoading}
-                                      onClick={() =>
-                                        handleReactivateRegistration(
-                                          registration.id,
-                                        )
+                                      disabled={
+                                        registration.paymentStatus ===
+                                          "completed" ||
+                                        registration.paymentStatus === "paid"
                                       }
-                                      className="text-blue-600"
+                                      className="text-emerald-600"
                                     >
-                                      <RefreshCw className="w-4 h-4 mr-2" />
-                                      Reactivate Registration
+                                      <CheckCircle className="w-4 h-4 mr-2" />
+                                      Mark as Paid
                                     </DropdownMenuItem>
-                                  )}
+                                    <DropdownMenuItem
+                                      disabled={
+                                        registration.paymentStatus === "pending"
+                                      }
+                                      className="text-amber-600"
+                                    >
+                                      <Clock className="w-4 h-4 mr-2" />
+                                      Mark as Pending
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      disabled={
+                                        registration.paymentStatus === "failed"
+                                      }
+                                      className="text-red-600"
+                                    >
+                                      <XCircle className="w-4 h-4 mr-2" />
+                                      Mark as Failed
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {!canUpdatePaymentStatus && (
+                                  <DropdownMenuItem
+                                    disabled
+                                    className="text-gray-400"
+                                  >
+                                    <Shield className="w-4 h-4 mr-2" />
+                                    Payment actions restricted
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -2157,7 +1863,7 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <h3 className="text-2xl font-bold text-purple-900">
-                            {String(newsletterSubscriptions.length)}
+                            {newsletterSubscriptions.length}
                           </h3>
                           <p className="text-purple-700 font-medium">
                             Active Subscribers
@@ -2210,7 +1916,7 @@ export default function AdminDashboard() {
                             <TableCell>
                               <div className="text-gray-900">
                                 {"name" in subscription
-                                  ? subscription.name
+                                  ? String(subscription.name)
                                   : "Anonymous Subscriber"}
                               </div>
                             </TableCell>
@@ -2380,6 +2086,11 @@ export default function AdminDashboard() {
                   <span className="text-green-600 font-medium">
                     grant finance management privileges
                   </span>
+                ) : confirmRoleChange?.role === "event_manager" ? (
+                  <span className="text-blue-600 font-medium">
+                    grant event management privileges (user registration and
+                    event management)
+                  </span>
                 ) : (
                   <span className="text-amber-600 font-medium">
                     remove administrative privileges
@@ -2418,60 +2129,64 @@ export default function AdminDashboard() {
           open={showUserRegistrationDialog}
           onOpenChange={setShowUserRegistrationDialog}
         >
-          <DialogContent className="w-[95vw] max-w-md sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto bg-white border-0 shadow-2xl">
-            <DialogHeader className="pb-4 sm:pb-6">
+          <DialogContent className="sm:max-w-4xl bg-white border-0 shadow-2xl">
+            <DialogHeader className="pb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-lg sm:text-xl font-bold text-gray-900">
+                  <DialogTitle className="text-xl font-bold text-gray-900">
                     Register New User
                   </DialogTitle>
-                  <DialogDescription className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                  <DialogDescription className="text-gray-600 text-sm">
                     Create a new user account with administrative privileges
                   </DialogDescription>
                 </div>
               </div>
             </DialogHeader>
 
-            <div className="space-y-4 sm:space-y-5">
-              {/* Role Selection - Full Width on Mobile */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="user-role"
-                  className="text-xs sm:text-sm font-medium text-gray-700"
-                >
-                  Role *
-                </Label>
-                <Select
-                  onValueChange={(value) =>
-                    setUserRegistrationData((prev) => ({
-                      ...prev,
-                      role: value,
-                    }))
-                  }
-                  value={userRegistrationData.role}
-                >
-                  <SelectTrigger className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="super_admin">Super Admin</SelectItem>
-                    <SelectItem value="finance_person">
-                      Finance Person
-                    </SelectItem>
-                    <SelectItem value="ordinary_user">Ordinary User</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-4">
+              {/* Row 1: Role and Name */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="user-role"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Role *
+                  </Label>
+                  <Select
+                    onValueChange={(value) =>
+                      setUserRegistrationData((prev) => ({
+                        ...prev,
+                        role: value,
+                      }))
+                    }
+                    value={userRegistrationData.role}
+                  >
+                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                      <SelectItem value="finance_person">
+                        Finance Person
+                      </SelectItem>
+                      <SelectItem value="event_manager">
+                        Event Manager
+                      </SelectItem>
+                      <SelectItem value="ordinary_user">
+                        Ordinary User
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Name Fields - Responsive Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="user-firstName"
-                    className="text-xs sm:text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-gray-700"
                   >
                     First Name *
                   </Label>
@@ -2485,14 +2200,14 @@ export default function AdminDashboard() {
                         firstName: e.target.value,
                       }))
                     }
-                    className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label
                     htmlFor="user-lastName"
-                    className="text-xs sm:text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-gray-700"
                   >
                     Last Name *
                   </Label>
@@ -2506,19 +2221,16 @@ export default function AdminDashboard() {
                         lastName: e.target.value,
                       }))
                     }
-                    className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
-              </div>
 
-              {/* Contact Fields - Responsive Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="user-phone"
-                    className="text-xs sm:text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-gray-700"
                   >
-                    Phone (optional)
+                    Phone Number
                   </Label>
                   <Input
                     id="user-phone"
@@ -2530,16 +2242,19 @@ export default function AdminDashboard() {
                         phoneNumber: e.target.value,
                       }))
                     }
-                    className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
+              </div>
 
+              {/* Row 2: Email and Password */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="user-email"
-                    className="text-xs sm:text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-gray-700"
                   >
-                    Email *
+                    Email Address *
                   </Label>
                   <Input
                     id="user-email"
@@ -2552,45 +2267,42 @@ export default function AdminDashboard() {
                         email: e.target.value,
                       }))
                     }
-                    className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="user-password"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Password *
+                  </Label>
+                  <Input
+                    id="user-password"
+                    type="password"
+                    placeholder="Enter secure password"
+                    value={userRegistrationData.password}
+                    onChange={(e) =>
+                      setUserRegistrationData((prev) => ({
+                        ...prev,
+                        password: e.target.value,
+                      }))
+                    }
+                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
               </div>
 
-              {/* Password Field - Full Width on Mobile */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="user-password"
-                  className="text-xs sm:text-sm font-medium text-gray-700"
-                >
-                  Password *
-                </Label>
-                <Input
-                  id="user-password"
-                  type="password"
-                  placeholder="Enter secure password"
-                  value={userRegistrationData.password}
-                  onChange={(e) =>
-                    setUserRegistrationData((prev) => ({
-                      ...prev,
-                      password: e.target.value,
-                    }))
-                  }
-                  className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
-                />
-              </div>
-
-              {/* Info Section */}
-              <div className="bg-blue-50/50 p-3 sm:p-4 rounded-lg border border-blue-200/30">
-                <div className="flex items-start space-x-3">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              {/* Info Box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-white text-xs font-bold">i</span>
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-700">
-                    <p className="font-medium text-blue-700 mb-1">
-                      Registration Information
-                    </p>
-                    <p className="leading-relaxed">
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Registration Information</p>
+                    <p>
                       New users will receive a sequential registration ID (0001,
                       0002, etc.) and can log in immediately with their email
                       and password.
@@ -2600,9 +2312,8 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4 sm:pt-6 border-t border-gray-200/50">
+            <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200">
               <Button
-                type="button"
                 variant="outline"
                 onClick={() => {
                   setShowUserRegistrationDialog(false);
@@ -2615,7 +2326,7 @@ export default function AdminDashboard() {
                     role: "ordinary_user",
                   });
                 }}
-                className="w-full sm:w-auto order-2 sm:order-1 border-slate-300 text-gray-700 hover:bg-gray-50 h-10 sm:h-11"
+                className="px-6"
               >
                 Cancel
               </Button>
@@ -2678,20 +2389,24 @@ export default function AdminDashboard() {
                     setUserRegistrationLoading(false);
                   }
                 }}
-                disabled={userRegistrationLoading}
-                className="w-full sm:w-auto order-1 sm:order-2 bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white h-10 sm:h-11 text-sm font-medium min-h-[44px] transition-all duration-200"
+                disabled={
+                  userRegistrationLoading ||
+                  !userRegistrationData.firstName ||
+                  !userRegistrationData.lastName ||
+                  !userRegistrationData.email ||
+                  !userRegistrationData.password
+                }
+                className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {userRegistrationLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    <span className="hidden sm:inline">Registering...</span>
-                    <span className="sm:hidden">Please wait...</span>
+                    Creating User...
                   </>
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Register User</span>
-                    <span className="sm:hidden">Register</span>
+                    Create User
                   </>
                 )}
               </Button>
@@ -2704,30 +2419,30 @@ export default function AdminDashboard() {
           open={showEventRegistrationDialog}
           onOpenChange={setShowEventRegistrationDialog}
         >
-          <DialogContent className="w-[95vw] max-w-md sm:max-w-2xl lg:max-w-5xl max-h-[90vh] overflow-y-auto bg-white border-0 shadow-2xl">
-            <DialogHeader className="pb-4 sm:pb-6">
+          <DialogContent className="sm:max-w-5xl bg-white border-0 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl flex items-center justify-center">
-                  <CalendarPlus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl flex items-center justify-center">
+                  <CalendarPlus className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-lg sm:text-xl font-bold text-gray-900">
+                  <DialogTitle className="text-xl font-bold text-gray-900">
                     Register User for Event
                   </DialogTitle>
-                  <DialogDescription className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                  <DialogDescription className="text-gray-600 text-sm">
                     Register an existing user for a training event
                   </DialogDescription>
                 </div>
               </div>
             </DialogHeader>
 
-            <div className="space-y-4 sm:space-y-5">
-              {/* User and Event Selection - Responsive Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-4">
+              {/* Row 1: User and Event Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="event-user"
-                    className="text-xs sm:text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-gray-700"
                   >
                     Select User *
                   </Label>
@@ -2736,10 +2451,10 @@ export default function AdminDashboard() {
                       placeholder="Search users by name or email..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="h-10 sm:h-11 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                      className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                     />
                     {searchTerm && (
-                      <div className="absolute z-10 w-full mt-1 max-h-32 sm:max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-lg">
+                      <div className="absolute z-10 w-full mt-1 max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-lg">
                         {filteredUsers.slice(0, 5).map((user) => (
                           <div
                             key={user.id}
@@ -2747,29 +2462,29 @@ export default function AdminDashboard() {
                               setSelectedUser(user);
                               setSearchTerm("");
                             }}
-                            className="p-3 sm:p-2 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors"
+                            className="p-2 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
                           >
-                            <div className="font-medium text-gray-900 text-sm sm:text-base">
+                            <div className="font-medium text-gray-900 text-sm">
                               {user.firstName} {user.lastName}
                             </div>
-                            <div className="text-xs sm:text-sm text-gray-600">
+                            <div className="text-xs text-gray-600">
                               {user.email}
                             </div>
                           </div>
                         ))}
                         {filteredUsers.length === 0 && (
-                          <div className="p-3 sm:p-2 text-gray-500 text-center text-sm">
+                          <div className="p-2 text-gray-500 text-center text-sm">
                             No users found
                           </div>
                         )}
                       </div>
                     )}
                     {selectedUser && (
-                      <div className="mt-2 p-3 sm:p-2 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="text-sm sm:text-base font-medium text-green-800">
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="text-sm font-medium text-green-800">
                           ✓ {selectedUser.firstName} {selectedUser.lastName}
                         </div>
-                        <div className="text-xs sm:text-sm text-green-600">
+                        <div className="text-xs text-green-600">
                           {selectedUser.email}
                         </div>
                       </div>
@@ -3074,7 +2789,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4 sm:pt-6 border-t border-gray-200/50">
+            <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -3096,7 +2811,7 @@ export default function AdminDashboard() {
                   setSelectedEvent(null);
                   setSearchTerm("");
                 }}
-                className="w-full sm:w-auto order-2 sm:order-1 border-slate-300 text-gray-700 hover:bg-gray-50 h-10 sm:h-11"
+                className="px-6"
               >
                 Cancel
               </Button>
@@ -3176,7 +2891,7 @@ export default function AdminDashboard() {
                         err.message ||
                         "An error occurred during event registration",
                     });
-                    console.error("Event registration error:", err);
+                    console.error("Registration error:", err);
                   } finally {
                     setEventRegistrationLoading(false);
                   }
@@ -3185,26 +2900,21 @@ export default function AdminDashboard() {
                   eventRegistrationLoading ||
                   !selectedUser ||
                   !selectedEvent ||
-                  !eventRegistrationData.title ||
-                  !eventRegistrationData.gender ||
                   !eventRegistrationData.country ||
-                  !eventRegistrationData.organization
+                  !eventRegistrationData.organization ||
+                  !eventRegistrationData.position
                 }
-                className="w-full sm:w-auto order-1 sm:order-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white h-10 sm:h-11 text-sm font-medium min-h-[44px] transition-all duration-200"
+                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {eventRegistrationLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    <span className="hidden sm:inline">Registering...</span>
-                    <span className="sm:hidden">Please wait...</span>
+                    Creating Registration...
                   </>
                 ) : (
                   <>
                     <CalendarPlus className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">
-                      Register User for Event
-                    </span>
-                    <span className="sm:hidden">Register</span>
+                    Register User for Event
                   </>
                 )}
               </Button>

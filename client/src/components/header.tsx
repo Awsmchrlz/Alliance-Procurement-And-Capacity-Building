@@ -32,10 +32,11 @@ export function Header() {
 
       {/* Yellow section overlaid on top */}
       <div
-        className="absolute right-0 top-0 h-full bg-yellow-400 flex items-center justify-center"
+        className="absolute right-0 top-0 h-full flex items-center justify-center"
         style={{
           width: '50%',
-          clipPath: 'polygon(5% 0%, 100% 0%, 100% 100%, 0% 100%)'
+          clipPath: 'polygon(5% 0%, 100% 0%, 100% 100%, 0% 100%)',
+          backgroundColor:'#87CEEB'
         }}
       >
         <div className="flex flex-col items-center space-y-1 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3 ml-4 sm:ml-16 pr-4 sm:pr-4">

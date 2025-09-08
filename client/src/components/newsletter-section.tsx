@@ -59,7 +59,7 @@ export function NewsletterSection() {
 
           {/* Left Side - Text Content */}
           <div className="flex items-center gap-4">
-            <div className="p-2 bg-yellow-500 rounded-lg">
+            <div className="p-2 rounded-lg" style={{background:`#87CEEB`}}>
               <Mail className="w-6 h-6 text-slate-900" />
             </div>
             <div>

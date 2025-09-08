@@ -85,7 +85,7 @@ export function TestimonialsSection() {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`w-5 h-5 ${i < rating ? 'text-[#FDC123] fill-current' : 'text-gray-300'}`}
+        className={`w-5 h-5 ${i < rating ? 'text-[#87CEEB] fill-current' : 'text-gray-300'}`}
       />
     ));
   };
@@ -100,13 +100,13 @@ export function TestimonialsSection() {
 
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-64 h-64 bg-[#1C356B]/5 rounded-full -translate-x-32 -translate-y-32" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#FDC123]/10 rounded-full translate-x-48 translate-y-48" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#87CEEB]/10 rounded-full translate-x-48 translate-y-48" />
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
         <div className="text-center mb-12 lg:mb-16">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#1C356B] rounded-full mb-6">
-            <Quote className="w-8 h-8 text-[#FDC123]" />
+            <Quote className="w-8 h-8 text-[#87CEEB]" />
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1C356B] mb-4">
             What Our Clients Say
@@ -128,7 +128,7 @@ export function TestimonialsSection() {
               <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
                 {/* Client Image */}
                 <div className="flex-shrink-0">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden ring-4 ring-[#FDC123]/20">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden ring-4 ring-[#87CEEB]/20">
                     <img
                       src={testimonials[currentIndex].image}
                       alt={testimonials[currentIndex].name}
@@ -157,7 +157,7 @@ export function TestimonialsSection() {
                     <h4 className="text-xl font-bold text-[#1C356B] mb-1">
                       {testimonials[currentIndex].name}
                     </h4>
-                    <p className="text-[#FDC123] font-medium mb-1">
+                    <p className="text-[#87CEEB] font-medium mb-1">
                       {testimonials[currentIndex].position}
                     </p>
                     <p className="text-gray-600">
