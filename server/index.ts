@@ -35,6 +35,7 @@ app.use((req, res, next) => {
   next();
 });
 
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -47,24 +48,20 @@ app.use((req, res, next) => {
   });
 
   if (app.get("env") === "development") {
-    // Dynamically import vite setup only in dev
+    // Dev mode — use Vite middleware
     const { setupVite } = await import("./vite.js");
     await setupVite(app, server);
   } else {
-    // In production, serve built frontend from ./client
-    import("path").then((path) => {
-      import("express").then((express) => {
-        const clientPath = path.resolve(process.cwd(), "client");
-        app.use(express.static(clientPath));
-        app.get("*", (_req, res) => {
-          res.sendFile(path.join(clientPath, "index.html"));
-        });
-      });
+    // ✅ Production — serve built frontend from dist/public
+    const publicPath = path.resolve(__dirname, "public");
+    app.use(express.static(publicPath));
+
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(publicPath, "index.html"));
     });
   }
 
-  // Use cPanel's expected port (5000–5005 range usually allowed)
-  const port = 5005;
+  const port = process.env.PORT || 5005;
   server.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);
   });
