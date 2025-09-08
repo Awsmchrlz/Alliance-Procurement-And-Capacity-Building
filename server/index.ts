@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+import path from "path";
 import { registerRoutes } from "./routes";
 
 const app = express();
@@ -35,7 +36,6 @@ app.use((req, res, next) => {
   next();
 });
 
-
 (async () => {
   const server = await registerRoutes(app);
 
@@ -53,7 +53,7 @@ app.use((req, res, next) => {
     await setupVite(app, server);
   } else {
     // ✅ Production — serve built frontend from dist/public
-    const publicPath = path.resolve(__dirname, "public");
+    const publicPath = path.resolve(import.meta.dirname, "public");
     app.use(express.static(publicPath));
 
     app.get("*", (_req, res) => {
