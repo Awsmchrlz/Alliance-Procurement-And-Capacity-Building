@@ -1,6 +1,12 @@
-import React from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { UserRole, Permission, hasPermission, hasAnyPermission, hasAllPermissions } from '@/lib/rbac';
+import React from "react";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  UserRole,
+  Permission,
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermissions,
+} from "@/lib/rbac";
 
 interface PermissionGuardProps {
   children: React.ReactNode;
@@ -100,7 +106,11 @@ export function PermissionGuard({
 }
 
 // Convenience components for common use cases
-export function AdminGuard({ children, fallback, showFallback = false }: {
+export function AdminGuard({
+  children,
+  fallback,
+  showFallback = false,
+}: {
   children: React.ReactNode;
   fallback?: React.ReactNode;
   showFallback?: boolean;
@@ -116,14 +126,18 @@ export function AdminGuard({ children, fallback, showFallback = false }: {
   );
 }
 
-export function EventManagerGuard({ children, fallback, showFallback = false }: {
+export function EventManagerGuard({
+  children,
+  fallback,
+  showFallback = false,
+}: {
   children: React.ReactNode;
   fallback?: React.ReactNode;
   showFallback?: boolean;
 }) {
   return (
     <PermissionGuard
-      roles={['super_admin', 'event_manager']}
+      roles={["super_admin", "event_manager"]}
       fallback={fallback}
       showFallback={showFallback}
     >
@@ -132,14 +146,18 @@ export function EventManagerGuard({ children, fallback, showFallback = false }: 
   );
 }
 
-export function FinanceGuard({ children, fallback, showFallback = false }: {
+export function FinanceGuard({
+  children,
+  fallback,
+  showFallback = false,
+}: {
   children: React.ReactNode;
   fallback?: React.ReactNode;
   showFallback?: boolean;
 }) {
   return (
     <PermissionGuard
-      roles={['super_admin', 'finance_person']}
+      roles={["super_admin", "finance_person"]}
       fallback={fallback}
       showFallback={showFallback}
     >
@@ -148,7 +166,11 @@ export function FinanceGuard({ children, fallback, showFallback = false }: {
   );
 }
 
-export function SuperAdminGuard({ children, fallback, showFallback = false }: {
+export function SuperAdminGuard({
+  children,
+  fallback,
+  showFallback = false,
+}: {
   children: React.ReactNode;
   fallback?: React.ReactNode;
   showFallback?: boolean;
@@ -166,14 +188,14 @@ export function SuperAdminGuard({ children, fallback, showFallback = false }: {
 
 // Hook for checking permissions in components
 export function usePermissions() {
-  const { user, permissions } = useAuth();
+  const { user } = useAuth();
 
   return {
-    ...permissions,
     userRole: user?.role,
     hasRole: (role: UserRole) => user?.role === role,
     hasAnyRole: (roles: UserRole[]) => roles.includes(user?.role as UserRole),
-    canAccess: (permission: Permission) => hasPermission(user?.role, permission),
+    canAccess: (permission: Permission) =>
+      hasPermission(user?.role, permission),
     canAccessAny: (perms: Permission[]) => hasAnyPermission(user?.role, perms),
     canAccessAll: (perms: Permission[]) => hasAllPermissions(user?.role, perms),
   };

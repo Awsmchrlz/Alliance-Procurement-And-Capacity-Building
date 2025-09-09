@@ -1,4 +1,13 @@
-import { Mail, Phone, MapPin, Handshake, Facebook, Twitter, Linkedin, Youtube } from "lucide-react";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Handshake,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Youtube,
+} from "lucide-react";
 
 export function Footer() {
   const quickLinks = [
@@ -18,7 +27,10 @@ export function Footer() {
   ];
 
   return (
-    <footer id="contact" className="bg-dark-gray dark:bg-gray-900 text-white py-16 transition-colors duration-300">
+    <footer
+      id="contact"
+      className="bg-dark-gray dark:bg-gray-900 text-white py-16 transition-colors duration-300"
+    >
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
@@ -27,23 +39,52 @@ export function Footer() {
                 <Handshake className="text-primary-blue w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold" data-testid="footer-logo-title">APCB Ltd</h1>
-                <p className="text-sm text-gray-400" data-testid="footer-logo-subtitle">Supply Chain Matters</p>
+                <h1
+                  className="text-xl font-bold"
+                  data-testid="footer-logo-title"
+                >
+                  APCB Ltd
+                </h1>
+                <p
+                  className="text-sm text-gray-400"
+                  data-testid="footer-logo-subtitle"
+                >
+                  Supply Chain Matters
+                </p>
               </div>
             </div>
             <p className="text-gray-300 mb-6" data-testid="footer-description">
-              Leading procurement and capacity building solutions across Southern Africa, empowering professionals with world-class training and consultancy services.
+              Leading procurement and capacity building solutions across
+              Southern Africa, empowering professionals with world-class
+              training and consultancy services.
             </p>
             <div className="flex space-x-4">
-              <Facebook className="text-gray-400 hover:text-primary-yellow cursor-pointer transition-colors w-5 h-5" data-testid="footer-social-facebook" />
-              <Twitter className="text-gray-400 hover:text-primary-yellow cursor-pointer transition-colors w-5 h-5" data-testid="footer-social-twitter" />
-              <Linkedin className="text-gray-400 hover:text-primary-yellow cursor-pointer transition-colors w-5 h-5" data-testid="footer-social-linkedin" />
-              <Youtube className="text-gray-400 hover:text-primary-yellow cursor-pointer transition-colors w-5 h-5" data-testid="footer-social-youtube" />
+              <Facebook
+                className="text-gray-400 hover:text-primary-yellow cursor-pointer transition-colors w-5 h-5"
+                data-testid="footer-social-facebook"
+              />
+              <Twitter
+                className="text-gray-400 hover:text-primary-yellow cursor-pointer transition-colors w-5 h-5"
+                data-testid="footer-social-twitter"
+              />
+              <Linkedin
+                className="text-gray-400 hover:text-primary-yellow cursor-pointer transition-colors w-5 h-5"
+                data-testid="footer-social-linkedin"
+              />
+              <Youtube
+                className="text-gray-400 hover:text-primary-yellow cursor-pointer transition-colors w-5 h-5"
+                data-testid="footer-social-youtube"
+              />
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold mb-6" data-testid="footer-quick-links-title">Quick Links</h3>
+            <h3
+              className="text-lg font-semibold mb-6"
+              data-testid="footer-quick-links-title"
+            >
+              Quick Links
+            </h3>
             <ul className="space-y-3">
               {quickLinks.map((link, index) => (
                 <li key={index}>
@@ -60,7 +101,12 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold mb-6" data-testid="footer-services-title">Services</h3>
+            <h3
+              className="text-lg font-semibold mb-6"
+              data-testid="footer-services-title"
+            >
+              Services
+            </h3>
             <ul className="space-y-3">
               {servicesLinks.map((service, index) => (
                 <li key={index}>
@@ -77,26 +123,56 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold mb-6" data-testid="footer-contact-title">Contact Info</h3>
+            <h3
+              className="text-lg font-semibold mb-6"
+              data-testid="footer-contact-title"
+            >
+              Contact Info
+            </h3>
             <div className="space-y-4">
               <div className="flex items-start">
                 <Mail className="text-primary-yellow mr-3 mt-1 w-4 h-4" />
                 <div>
-                  <p className="text-gray-300" data-testid="footer-contact-email">globaltrainingalliance@gmail.com</p>
+                  <p
+                    className="text-gray-300"
+                    data-testid="footer-contact-email"
+                  >
+                    globaltrainingalliance@gmail.com
+                  </p>
                 </div>
               </div>
               <div className="flex items-start">
                 <Phone className="text-primary-yellow mr-3 mt-1 w-4 h-4" />
                 <div>
-                  <p className="text-gray-300" data-testid="footer-contact-phone-1">+260 974486945</p>
-                  <p className="text-gray-300" data-testid="footer-contact-phone-2">+260 974318440</p>
-                  <p className="text-gray-300" data-testid="footer-contact-phone-3">+260 973284834</p>
+                  <p
+                    className="text-gray-300"
+                    data-testid="footer-contact-phone-1"
+                  >
+                    +260 974486945
+                  </p>
+                  <p
+                    className="text-gray-300"
+                    data-testid="footer-contact-phone-2"
+                  >
+                    +260977897943
+                  </p>
+                  <p
+                    className="text-gray-300"
+                    data-testid="footer-contact-phone-3"
+                  >
+                    +260977414203
+                  </p>
                 </div>
               </div>
               <div className="flex items-start">
                 <MapPin className="text-primary-yellow mr-3 mt-1 w-4 h-4" />
                 <div>
-                  <p className="text-gray-300" data-testid="footer-contact-location">Lusaka, Zambia</p>
+                  <p
+                    className="text-gray-300"
+                    data-testid="footer-contact-location"
+                  >
+                    Lusaka, Zambia
+                  </p>
                 </div>
               </div>
             </div>
@@ -105,7 +181,10 @@ export function Footer() {
 
         <div className="border-t border-gray-700 pt-8">
           <div className="text-center text-gray-400">
-            <p data-testid="footer-copyright">&copy; 2024 Alliance Procurement & Capacity Building Ltd. All rights reserved.</p>
+            <p data-testid="footer-copyright">
+              &copy; 2024 Alliance Procurement & Capacity Building Ltd. All
+              rights reserved.
+            </p>
           </div>
         </div>
       </div>

@@ -8,12 +8,13 @@ import {
   EyeOff,
   Mail,
   Lock,
-  Handshake,
   ArrowRight,
   Shield,
-  Users,
-  Target,
+  CheckCircle,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -86,274 +87,254 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden bg-gray-900">
-      {/* Dark Base Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900" />
+    <div className="min-h-screen flex">
+      {/* Left Side - Background Image (Hidden on Mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        {/* Background Gradient */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, #1C356B 0%, #0f1e3d 100%)`,
+          }}
+        />
 
-      {/* Background Images - Less opaque */}
-      <div className="absolute inset-0">
-        {backgroundImages.map((image, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentImageIndex && isImageVisible
-                ? "opacity-[0.15]"
-                : "opacity-0"
-            }`}
-            style={{
-              backgroundImage: `url(${image})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-        ))}
-      </div>
+        {/* Dynamic Background Images */}
+        <div className="absolute inset-0">
+          {backgroundImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                index === currentImageIndex && isImageVisible
+                  ? "opacity-40"
+                  : "opacity-0"
+              }`}
+              style={{
+                backgroundImage: `url(${image})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+              }}
+            />
+          ))}
+        </div>
 
-      {/* Dark Overlay - reduced for less opacity */}
-      <div className="absolute inset-0 bg-black/20" />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/30" />
 
-      {/* Subtle Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-500/5 to-purple-600/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-indigo-500/5 to-blue-600/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-r from-slate-600/3 to-indigo-600/3 rounded-full blur-3xl animate-pulse delay-2000"></div>
-      </div>
-
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-center px-12 xl:px-16 text-white">
-        <div className="max-w-lg">
-          {/* Logo */}
-          <div className="flex items-center mb-8">
-            <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-2xl">
-              <Handshake className="w-8 h-8 text-white" />
-            </div>
-            <div className="ml-4">
-              <h1 className="text-2xl font-bold tracking-tight">APCB</h1>
-              <p className="text-blue-200 text-sm">
-                Alliance Procurement & Capacity Building
-              </p>
-            </div>
+        {/* Content Overlay */}
+        <div className="relative z-10 flex flex-col justify-center p-12 text-white">
+          <div className="mb-8">
+            <img
+              src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+              alt="Alliance Procurement Logo"
+              className="w-32 h-32 object-contain mb-6"
+            />
           </div>
-
-          {/* Main Content */}
-          <h2 className="text-4xl xl:text-5xl font-bold mb-6 leading-tight">
-            Building
-            <span className="text-yellow-400"> Strategic </span>
-            Partnerships
+          <h2 className="text-4xl font-bold mb-4">
+            Welcome Back to <span style={{ color: "#87CEEB" }}>Alliance</span>
           </h2>
-
-          <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-            Empowering organizations through expert procurement solutions and
-            capacity building initiatives.
+          <p className="text-xl text-white/90 mb-8 leading-relaxed">
+            Continue your procurement and capacity building journey with us.
           </p>
-
-          {/* Features */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                <Shield className="w-5 h-5 text-yellow-400" />
-              </div>
-              <span className="text-blue-100">Secure & Trusted Platform</span>
+              <CheckCircle className="w-5 h-5" style={{ color: "#87CEEB" }} />
+              <span>Access your personalized dashboard</span>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                <Users className="w-5 h-5 text-yellow-400" />
-              </div>
-              <span className="text-blue-100">Expert Team Support</span>
+              <CheckCircle className="w-5 h-5" style={{ color: "#87CEEB" }} />
+              <span>Manage your event registrations</span>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                <Target className="w-5 h-5 text-yellow-400" />
-              </div>
-              <span className="text-blue-100">Strategic Outcomes</span>
+              <CheckCircle className="w-5 h-5" style={{ color: "#87CEEB" }} />
+              <span>Track your professional development</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 relative z-10 flex items-center justify-center px-4 sm:px-6 lg:px-6 py-8 sm:py-12 min-h-screen">
-        <div className="w-full max-w-xs sm:max-w-sm lg:max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center mb-6 sm:mb-8">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-2xl">
-              <Handshake className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-            </div>
-          </div>
-
-          {/* Enhanced Login Card */}
-          <div className="bg-white/[0.02] backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 w-full">
-            {/* Card Header with Gradient */}
-            <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 p-4 sm:p-6 rounded-t-2xl border-b border-white/10">
-              <div className="text-center">
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">
-                  Welcome Back
-                </h2>
-                <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
-                  Sign in to access your APCB dashboard
-                </p>
-              </div>
-            </div>
-
-            {/* Form Content */}
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
-              {/* Email Field */}
-              <div>
-                <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2 sm:mb-2">
-                  Email Address
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-4 w-4 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
-                  </div>
-                  <input
-                    {...register("email", {
-                      required: "Email is required",
-                      pattern: {
-                        value: /^\S+@\S+$/i,
-                        message: "Please enter a valid email",
-                      },
-                    })}
-                    type="email"
-                    placeholder="your.email@example.com"
-                    className="w-full pl-10 pr-4 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 hover:bg-white/10 text-sm sm:text-base"
-                  />
-                </div>
-                {errors.email && (
-                  <p className="mt-1 text-xs text-red-400">
-                    {errors.email.message as string}
-                  </p>
-                )}
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="block text-xs sm:text-sm font-semibold text-gray-200 mb-2">
-                  Password
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-4 w-4 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
-                  </div>
-                  <input
-                    {...register("password", {
-                      required: "Password is required",
-                      minLength: {
-                        value: 6,
-                        message: "Password must be at least 6 characters",
-                      },
-                    })}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    className="w-full pl-10 pr-12 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-white placeholder-gray-400 hover:bg-white/10 text-sm sm:text-base"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-blue-400 transition-colors"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="mt-1 text-xs text-red-400">
-                    {errors.password.message as string}
-                  </p>
-                )}
-              </div>
-
-              {/* Remember & Forgot Password */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 text-xs sm:text-sm">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-transparent border-gray-400 rounded focus:ring-blue-500 focus:ring-2"
-                  />
-                  <span className="ml-2 text-gray-300">Remember me</span>
-                </label>
-                <a
-                  href="#"
-                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors underline underline-offset-2"
-                >
-                  Forgot password?
-                </a>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                onClick={handleSubmit(onSubmit)}
-                disabled={isLoading}
-                style={{ background: `#1C356B` }}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 sm:py-3.5 px-6 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 focus:ring-4 focus:ring-blue-500/50 disabled:opacity-70 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-2xl border border-blue-500/20 min-h-[48px]"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                    Signing In...
-                  </>
-                ) : (
-                  <>
-                    Sign In
-                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Create Account Link */}
-            <div className="p-4 sm:p-6 pt-0 border-t border-white/10">
-              <p className="text-center text-xs sm:text-sm text-gray-300 leading-relaxed">
-                Don't have an account?{" "}
-                <a
-                  href="/register"
-                  className="font-semibold text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-2"
-                >
-                  Create account
-                </a>
-              </p>
-            </div>
-
-            {/* Security Badge */}
-            <div className="pb-4 sm:pb-6 flex items-center justify-center text-xs text-gray-400">
-              <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-              <span>Your information is secure and encrypted</span>
-            </div>
-          </div>
-
-          {/* Mobile Features */}
-          <div className="lg:hidden mt-4 sm:mt-6 text-center px-2">
-            <p className="text-white/60 text-xs leading-relaxed">
-              Trusted by organizations worldwide for strategic procurement
-              solutions
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-gray-50">
+        <div className="w-full max-w-md">
+          {/* Mobile Header */}
+          <div className="lg:hidden text-center mb-8">
+            <img
+              src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+              alt="Alliance Procurement Logo"
+              className="w-20 h-20 object-contain mx-auto mb-4"
+            />
+            <h1 className="text-2xl font-bold" style={{ color: "#1C356B" }}>
+              Welcome Back
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Sign in to your Alliance account
             </p>
           </div>
 
-          {/* Background Image Indicators */}
-          <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
-            {backgroundImages.map((_, index) => (
+          {/* Desktop Header */}
+          <div className="hidden lg:block text-center mb-8">
+            <h1
+              className="text-3xl font-bold mb-2"
+              style={{ color: "#1C356B" }}
+            >
+              Sign In
+            </h1>
+            <p className="text-gray-600">
+              Don't have an account?{" "}
               <button
-                key={index}
-                onClick={() => {
-                  setIsImageVisible(false);
-                  setTimeout(() => {
-                    setCurrentImageIndex(index);
-                    setIsImageVisible(true);
-                  }, 400);
-                }}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === currentImageIndex
-                    ? "bg-yellow-400 shadow-lg"
-                    : "bg-white/30 hover:bg-white/50"
-                }`}
-                aria-label={`View background image ${index + 1}`}
-              />
-            ))}
+                onClick={() => navigate("/register")}
+                className="font-medium hover:underline"
+                style={{ color: "#87CEEB" }}
+              >
+                Create one
+              </button>
+            </p>
           </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Email */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="email"
+                className="text-sm font-medium"
+                style={{ color: "#1C356B" }}
+              >
+                Email Address
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^\S+@\S+$/i,
+                      message: "Please enter a valid email",
+                    },
+                  })}
+                  className="pl-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                />
+              </div>
+              {errors.email && (
+                <p className="text-red-500 text-sm">
+                  {errors.email.message as string}
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="password"
+                className="text-sm font-medium"
+                style={{ color: "#1C356B" }}
+              >
+                Password
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be at least 6 characters",
+                    },
+                  })}
+                  className="pl-10 pr-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff /> : <Eye />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm">
+                  {errors.password.message as string}
+                </p>
+              )}
+            </div>
+
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <button
+                type="button"
+                className="text-sm font-medium hover:underline"
+                style={{ color: "#87CEEB" }}
+                onClick={() => {
+                  toast({
+                    title: "Password Reset",
+                    description:
+                      "Password reset functionality will be available soon.",
+                  });
+                }}
+              >
+                Forgot your password?
+              </button>
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-12 text-white font-semibold text-base transition-all duration-300 hover:shadow-lg"
+              style={{
+                backgroundColor: "#87CEEB",
+                borderColor: "#87CEEB",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#e6ae1f")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#87CEEB")
+              }
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Signing In...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center space-x-2">
+                  <span>Sign In</span>
+                  <ArrowRight className="w-4 h-4" />
+                </div>
+              )}
+            </Button>
+
+            {/* Mobile Create Account Link */}
+            <div className="lg:hidden text-center pt-4">
+              <p className="text-gray-600">
+                Don't have an account?{" "}
+                <button
+                  onClick={() => navigate("/register")}
+                  className="font-medium hover:underline"
+                  style={{ color: "#87CEEB" }}
+                >
+                  Create one
+                </button>
+              </p>
+            </div>
+
+            {/* Security Notice */}
+            <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <Shield className="w-5 h-5 mt-0.5" style={{ color: "#87CEEB" }} />
+              <div className="text-sm text-gray-700">
+                <p className="font-medium mb-1">Secure Login</p>
+                <p className="text-gray-600">
+                  Your login credentials are encrypted and secure.
+                </p>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>

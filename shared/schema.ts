@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   phoneNumber: text("phone_number"),
+  gender: text("gender"),
   role: text("role").notNull().default("ordinary_user"), // super_admin, finance_person, event_manager, ordinary_user
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -56,15 +57,16 @@ export const eventRegistrations = pgTable("event_registrations", {
   paymentStatus: text("payment_status").notNull().default("pending"), // pending, paid, cancelled
   registeredAt: timestamp("registered_at").defaultNow(),
   // Additional registration fields
-  title: text("title"), // mr, dr, etc.
-  gender: text("gender"),
   country: text("country"),
   organization: text("organization"),
-  organizationType: text("organization_type"),
   position: text("position"),
   notes: text("notes"),
   hasPaid: boolean("has_paid").default(false),
   paymentEvidence: text("payment_evidence"), // URL to uploaded file
+  paymentMethod: text("payment_method"), // mobile, bank, cash
+  currency: text("currency"), // ZMW, USD
+  pricePaid: decimal("price_paid", { precision: 10, scale: 2 }),
+  delegateType: text("delegate_type"), // private, public, international
 });
 
 export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
@@ -90,11 +92,8 @@ export const insertEventSchema = createInsertSchema(events).omit({
 export const insertEventRegistrationSchema = z.object({
   eventId: z.string(),
   userId: z.string(),
-  title: z.string(),
-  gender: z.string(),
   country: z.string(),
   organization: z.string(),
-  organizationType: z.string(),
   position: z.string(),
   notes: z.string().optional().nullable(),
   hasPaid: z.boolean().optional().default(false),
@@ -102,10 +101,14 @@ export const insertEventRegistrationSchema = z.object({
     .enum(["pending", "paid", "cancelled"])
     .optional()
     .default("pending"),
-  paymentMethod: z.string().optional().nullable(),
+  paymentMethod: z.enum(["mobile", "bank", "cash"]).optional().nullable(),
   currency: z.string().optional().nullable(),
   pricePaid: z.number().optional().nullable(),
   paymentEvidence: z.string().optional().nullable(),
+  delegateType: z
+    .enum(["private", "public", "international"])
+    .optional()
+    .nullable(),
 });
 
 export const insertNewsletterSubscriptionSchema = z.object({

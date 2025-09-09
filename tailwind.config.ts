@@ -5,6 +5,9 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      screens: {
+        xs: "475px",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -54,7 +57,7 @@ export default {
         // Custom colors from design - exact hex values
         "primary-yellow": "#87CEEB",
         "primary-blue": "#1C356B",
-        "light-blue": "#EFF8FF", 
+        "light-blue": "#EFF8FF",
         "custom-white": "#FEFFFE",
         "dark-gray": "#282827",
       },

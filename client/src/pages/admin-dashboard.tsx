@@ -87,8 +87,11 @@ import {
 } from "lucide-react";
 
 import { EvidenceViewer } from "@/components/evidence-viewer";
+
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 // Real data interfaces
 interface Event {
@@ -110,6 +113,7 @@ interface User {
   lastName: string;
   email: string;
   phoneNumber: string;
+  title: string | null;
   role: string;
   createdAt: string;
 }
@@ -121,26 +125,31 @@ interface Registration {
   eventId: string;
   paymentStatus: string;
   paymentEvidence: string | null;
+  paymentMethod: string | null;
+  currency: string | null;
+  pricePaid: string | null;
+  delegateType: string | null;
+
+  gender: string | null;
+  country: string | null;
+  organization: string | null;
+
+  position: string | null;
+  notes: string | null;
+  hasPaid: boolean;
   registeredAt: string;
   event?: Event;
   user?: User;
 }
 
-interface NewsletterSubscription {
-  id: string;
-  email: string;
-  subscribedAt: string;
-}
-
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
+
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [newsletterSubscriptions, setNewsletterSubscriptions] = useState<
-    NewsletterSubscription[]
-  >([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -187,11 +196,9 @@ export default function AdminDashboard() {
   const [eventRegistrationData, setEventRegistrationData] = useState({
     userId: "",
     eventId: "",
-    title: "Mr",
-    gender: "Male",
     country: "",
     organization: "",
-    organizationType: "Government",
+
     position: "",
     notes: "",
     hasPaid: false,
@@ -209,9 +216,6 @@ export default function AdminDashboard() {
   const [filteredRegistrations, setFilteredRegistrations] = useState<
     Registration[]
   >([]);
-  const [filteredNewsletter, setFilteredNewsletter] = useState<
-    NewsletterSubscription[]
-  >([]);
 
   // Fetch real data from Supabase
   useEffect(() => {
@@ -224,7 +228,6 @@ export default function AdminDashboard() {
       setFilteredUsers(users);
       setFilteredEvents(events);
       setFilteredRegistrations(registrations);
-      setFilteredNewsletter(newsletterSubscriptions);
     } else {
       const term = searchTerm.toLowerCase();
 
@@ -260,17 +263,10 @@ export default function AdminDashboard() {
             registration.paymentStatus.toLowerCase().includes(term),
         ),
       );
-
-      // Filter newsletter subscriptions
-      setFilteredNewsletter(
-        newsletterSubscriptions.filter((subscription) =>
-          subscription.email.toLowerCase().includes(term),
-        ),
-      );
     }
-  }, [searchTerm, users, events, registrations, newsletterSubscriptions]);
+  }, [searchTerm, users, events, registrations]);
 
-  const fetchData = async () => {
+  const refreshData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -297,17 +293,6 @@ export default function AdminDashboard() {
       const userRole = currentUser.user_metadata?.role || "ordinary_user";
       console.log("Current user role:", userRole);
       console.log("Current user metadata:", currentUser.user_metadata);
-
-      const tempUser = {
-        id: currentUser.id,
-        firstName: currentUser.user_metadata?.first_name || "",
-        lastName: currentUser.user_metadata?.last_name || "",
-        email: currentUser.email || "",
-        phoneNumber: currentUser.user_metadata?.phone_number || "",
-        role: userRole,
-        createdAt: currentUser.created_at || new Date().toISOString(),
-      };
-      setUser(tempUser);
 
       // Fetch events (public endpoint)
       try {
@@ -371,30 +356,6 @@ export default function AdminDashboard() {
         } catch (err) {
           console.error("Error fetching registrations:", err);
         }
-
-        // Fetch newsletter subscriptions
-        try {
-          const newsletterResponse = await fetch(
-            `/api/admin/newsletter-subscriptions`,
-            {
-              headers: {
-                Authorization: `Bearer ${session.access_token}`,
-              },
-            },
-          );
-          if (newsletterResponse.ok) {
-            const newsletterData = await newsletterResponse.json();
-            setNewsletterSubscriptions(newsletterData);
-          } else {
-            console.error(
-              "Failed to fetch newsletter subscriptions:",
-              newsletterResponse.status,
-              newsletterResponse.statusText,
-            );
-          }
-        } catch (err) {
-          console.error("Error fetching newsletter subscriptions:", err);
-        }
       }
     } catch (err: any) {
       console.error("Error fetching data:", err);
@@ -404,17 +365,60 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchData = async () => {
+    await refreshData();
+  };
+
   // Get auth permissions
   const {
+    user,
     isSuperAdmin,
     isFinancePerson,
     isEventManager,
+    isAdmin,
     canManageUsers,
     canManageFinance,
     canUpdatePaymentStatus,
     canRegisterUsers,
     canManageEvents,
   } = useAuth();
+
+  // Redirect ordinary users to user dashboard
+  useEffect(() => {
+    if (user && !isAdmin) {
+      window.location.href = "/dashboard";
+    }
+  }, [user, isAdmin]);
+
+  // Payment status update handler
+  const handlePaymentStatusUpdate = async (
+    registrationId: string,
+    newStatus: string,
+  ) => {
+    try {
+      const hasPaid = newStatus === "paid";
+
+      await apiRequest("PATCH", `/api/admin/registrations/${registrationId}`, {
+        paymentStatus: newStatus,
+        hasPaid,
+      });
+
+      toast({
+        title: "Payment Status Updated",
+        description: `Registration marked as ${newStatus}`,
+      });
+
+      // Refresh the data
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error updating payment status:", error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Calculate analytics
   const totalRevenue = registrations
@@ -502,18 +506,69 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSendEmailBlast = () => {
+  const handleSendEmailBlast = async () => {
     if (!emailSubject.trim() || !emailMessage.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide both subject and message",
+        variant: "destructive",
+      });
       return;
     }
+
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Error",
+          description: "Authentication required",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch("/api/admin/email-blast", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          subject: emailSubject,
+          message: emailMessage,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Success",
+          description: result.message,
+        });
+        setEmailSubject("");
+        setEmailMessage("");
+        setShowEmailDialog(false);
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.message || "Failed to send email",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-      setEmailSubject("");
-      setEmailMessage("");
-      setShowEmailDialog(false);
-    }, 2000);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -629,34 +684,54 @@ export default function AdminDashboard() {
         case "registrations":
           data = registrations.map((registration) => ({
             "Registration ID": registration.id,
+            "Registration Number": registration.registrationNumber || "N/A",
             "User Name": registration.user
               ? `${registration.user.firstName} ${registration.user.lastName}`
               : "Unknown User",
             "User Email": registration.user?.email || "N/A",
+
+            Gender: registration.gender || "N/A",
+            Country: registration.country || "N/A",
+            Organization: registration.organization || "N/A",
+            Position: registration.position || "N/A",
             "Event Title": registration.event?.title || "Unknown Event",
             "Event Location": registration.event?.location || "N/A",
             "Event Date": registration.event?.startDate
               ? formatDate(registration.event.startDate)
               : "N/A",
+            "Delegate Type": registration.delegateType || "N/A",
             "Payment Status": registration.paymentStatus,
-            "Payment Amount": registration.event?.price
-              ? `K${registration.event.price}`
-              : "N/A",
+            "Payment Method": registration.paymentMethod || "N/A",
+            Currency: registration.currency || "N/A",
+            "Price Paid":
+              registration.pricePaid || registration.event?.price || "N/A",
+            "Has Paid": registration.hasPaid ? "Yes" : "No",
+            "Payment Evidence": registration.paymentEvidence ? "Yes" : "No",
+            Notes: registration.notes || "N/A",
             "Registered At": formatTime(registration.registeredAt),
-            "Has Evidence": registration.paymentEvidence ? "Yes" : "No",
           }));
           filename = `registrations_export_${new Date().toISOString().split("T")[0]}.csv`;
           headers = [
             "Registration ID",
+            "Registration Number",
             "User Name",
             "User Email",
+            "Gender",
+            "Country",
+            "Organization",
+            "Position",
             "Event Title",
             "Event Location",
             "Event Date",
+            "Delegate Type",
             "Payment Status",
-            "Payment Amount",
+            "Payment Method",
+            "Currency",
+            "Price Paid",
+            "Has Paid",
+            "Payment Evidence",
+            "Notes",
             "Registered At",
-            "Has Evidence",
           ];
           break;
 
@@ -689,13 +764,23 @@ export default function AdminDashboard() {
           break;
 
         case "newsletter":
-          data = newsletterSubscriptions.map((subscription) => ({
-            "Subscription ID": subscription.id,
-            Email: subscription.email,
-            "Subscribed At": formatTime(subscription.subscribedAt),
+          data = users.map((user) => ({
+            "User ID": user.id,
+            Name: `${user.firstName} ${user.lastName}`,
+            Email: user.email,
+            "Phone Number": user.phoneNumber || "N/A",
+            Role: user.role,
+            "Created At": formatTime(user.createdAt),
           }));
-          filename = `newsletter_subscriptions_export_${new Date().toISOString().split("T")[0]}.csv`;
-          headers = ["Subscription ID", "Email", "Subscribed At"];
+          filename = `users_email_list_export_${new Date().toISOString().split("T")[0]}.csv`;
+          headers = [
+            "User ID",
+            "Name",
+            "Email",
+            "Phone Number",
+            "Role",
+            "Created At",
+          ];
           break;
 
         default:
@@ -877,26 +962,26 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Enhanced Header */}
         <div className="mb-8">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#1C356B] via-[#1C356B] to-[#2d4a7a] px-8 py-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                    <Building2 className="w-8 h-8 text-[#FDC123]" />
+            <div className="bg-gradient-to-r from-[#1C356B] via-[#1C356B] to-[#2d4a7a] px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                    <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-[#FDC123]" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-white mb-1">
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1">
                       Admin Dashboard
                     </h1>
-                    <p className="text-blue-100 text-lg">
+                    <p className="text-blue-100 text-sm sm:text-base lg:text-lg">
                       Alliance Procurement & Capacity Building Ltd
                     </p>
                   </div>
                 </div>
-                <div className="hidden sm:flex items-center space-x-6 text-right">
+                <div className="hidden lg:flex items-center space-x-6 text-right">
                   <Button
                     onClick={() => (window.location.href = "/")}
                     variant="outline"
@@ -916,32 +1001,34 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-white/20">
-              <div className="flex items-center justify-between">
+            <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-white/20">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center space-x-3">
-                  <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
+                  <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-white shadow-sm">
                     <AvatarFallback className="bg-[#1C356B] text-white text-lg font-semibold">
                       {user?.firstName?.charAt(0)}
                       {user?.lastName?.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                       Welcome back, {user?.firstName} {user?.lastName}
                     </h2>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-600 text-xs sm:text-sm">
                       System Administrator • Last login: Today
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <Crown className="w-8 h-8 text-[#FDC123]" />
+                <div className="flex items-center space-x-2 sm:space-x-4">
+                  <Crown className="w-6 h-6 sm:w-8 sm:h-8 text-[#FDC123]" />
                   <Button
                     onClick={() => (window.location.href = "/")}
                     variant="outline"
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors mr-2"
+                    size="sm"
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors"
                   >
-                    Home
+                    <span className="hidden sm:inline">Home</span>
+                    <span className="sm:hidden">🏠</span>
                   </Button>
                   <Button
                     onClick={async () => {
@@ -949,10 +1036,11 @@ export default function AdminDashboard() {
                       window.location.href = "/";
                     }}
                     variant="outline"
+                    size="sm"
                     className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
                   >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
+                    <LogOut className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Logout</span>
                   </Button>
                 </div>
               </div>
@@ -977,7 +1065,7 @@ export default function AdminDashboard() {
                   </div>
                   <Input
                     type="text"
-                    placeholder="Search users, events, registrations, or newsletter subscribers..."
+                    placeholder="Search users, events, registrations..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-4 py-3 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] rounded-xl shadow-sm"
@@ -1006,8 +1094,7 @@ export default function AdminDashboard() {
                 {searchTerm && (
                   <div className="mt-2 text-sm text-gray-600">
                     Found {filteredUsers.length} users, {filteredEvents.length}{" "}
-                    events, {filteredRegistrations.length} registrations,{" "}
-                    {filteredNewsletter.length} newsletter subscribers
+                    events, {filteredRegistrations.length} registrations
                   </div>
                 )}
               </div>
@@ -1016,7 +1103,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Enhanced Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardContent className="p-6 relative">
@@ -1092,154 +1179,169 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardContent className="p-6 relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">
-                    Newsletter
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {newsletterSubscriptions.length}
-                  </p>
-                  <div className="flex items-center mt-2">
-                    <Activity className="w-4 h-4 text-purple-500 mr-1" />
-                    <span className="text-sm text-purple-600 font-medium">
-                      Subscribers
-                    </span>
-                  </div>
-                </div>
-                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Mail className="w-7 h-7 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Enhanced Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <div className="bg-white rounded-xl border border-slate-200/60 p-1 shadow-sm">
-            <TabsList className="grid w-full grid-cols-5 bg-transparent gap-1">
+          <div className="bg-white rounded-xl border border-slate-200/60 p-1 shadow-sm overflow-x-auto">
+            <TabsList
+              className={`grid w-full ${canManageUsers && canManageEvents ? "grid-cols-4" : canManageUsers || canManageEvents ? "grid-cols-3" : "grid-cols-2"} bg-transparent gap-1 min-w-[480px] sm:min-w-0`}
+            >
+              {/* Overview - All admin roles can see */}
               <TabsTrigger
                 value="overview"
-                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm"
+                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
               >
-                <Activity className="w-4 h-4 mr-2 hidden sm:block" />
-                Overview
+                <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Overview</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="users"
-                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm"
-              >
-                <Users className="w-4 h-4 mr-2 hidden sm:block" />
-                Users
-              </TabsTrigger>
-              <TabsTrigger
-                value="events"
-                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm"
-              >
-                <Calendar className="w-4 h-4 mr-2 hidden sm:block" />
-                Events
-              </TabsTrigger>
+
+              {/* Users - Only super_admin can manage users */}
+              {canManageUsers && (
+                <TabsTrigger
+                  value="users"
+                  className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+                >
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Users</span>
+                </TabsTrigger>
+              )}
+
+              {/* Events - super_admin and event_manager can manage events */}
+              {canManageEvents && (
+                <TabsTrigger
+                  value="events"
+                  className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+                >
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Events</span>
+                </TabsTrigger>
+              )}
+
+              {/* Registrations - All admin roles can see */}
               <TabsTrigger
                 value="registrations"
-                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm"
+                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
               >
-                <UserCog className="w-4 h-4 mr-2 hidden sm:block" />
-                Registrations
-              </TabsTrigger>
-              <TabsTrigger
-                value="newsletter"
-                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm"
-              >
-                <Mail className="w-4 h-4 mr-2 hidden sm:block" />
-                Newsletter
+                <UserCog className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Regs</span>
               </TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <TrendingUp className="w-5 h-5 text-emerald-500" />
-                    Payment Analytics
-                  </CardTitle>
-                  <CardDescription>
-                    Overview of payment statuses and revenue
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-white" />
+              {canManageFinance && (
+                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <TrendingUp className="w-5 h-5 text-emerald-500" />
+                      Payment Analytics
+                    </CardTitle>
+                    <CardDescription>
+                      Overview of payment statuses and revenue
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-emerald-900">
+                              Completed Payments
+                            </p>
+                            <p className="text-sm text-emerald-700">
+                              K{totalRevenue.toFixed(2)} revenue
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-emerald-900">
-                            Completed Payments
-                          </p>
-                          <p className="text-sm text-emerald-700">
-                            K{totalRevenue.toFixed(2)} revenue
-                          </p>
-                        </div>
+                        <Badge className="bg-emerald-500 text-white text-lg px-3 py-1">
+                          {completedPayments}
+                        </Badge>
                       </div>
-                      <Badge className="bg-emerald-500 text-white text-lg px-3 py-1">
-                        {completedPayments}
-                      </Badge>
-                    </div>
 
-                    <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-100">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
-                          <Clock className="w-5 h-5 text-white" />
+                      <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-100">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
+                            <Clock className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-amber-900">
+                              Pending Payments
+                            </p>
+                            <p className="text-sm text-amber-700">
+                              Awaiting confirmation
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-amber-900">
-                            Pending Payments
-                          </p>
-                          <p className="text-sm text-amber-700">
-                            Awaiting confirmation
-                          </p>
-                        </div>
+                        <Badge
+                          variant="secondary"
+                          className="bg-amber-200 text-amber-800 text-lg px-3 py-1"
+                        >
+                          {pendingPayments}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant="secondary"
-                        className="bg-amber-200 text-amber-800 text-lg px-3 py-1"
-                      >
-                        {pendingPayments}
-                      </Badge>
-                    </div>
 
-                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                          <Activity className="w-5 h-5 text-white" />
+                      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                            <Activity className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-blue-900">
+                              Total Registrations
+                            </p>
+                            <p className="text-sm text-blue-700">
+                              All event registrations
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-blue-900">
-                            Total Registrations
-                          </p>
-                          <p className="text-sm text-blue-700">
-                            All event registrations
-                          </p>
-                        </div>
+                        <Badge
+                          variant="outline"
+                          className="text-lg px-3 py-1 border-blue-200 text-blue-800"
+                        >
+                          {registrations.length}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant="outline"
-                        className="text-lg px-3 py-1 border-blue-200 text-blue-800"
-                      >
-                        {registrations.length}
-                      </Badge>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {!canManageFinance && (
+                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Shield className="w-5 h-5 text-amber-500" />
+                      Financial Analytics
+                    </CardTitle>
+                    <CardDescription>
+                      Financial information access restricted
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                        <Shield className="w-8 h-8 text-amber-600" />
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        Access Restricted
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Financial analytics are only available to Super Admins
+                        and Finance Persons.
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Contact your administrator if you need access to
+                        financial data.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
                 <CardHeader className="pb-4">
@@ -1248,7 +1350,7 @@ export default function AdminDashboard() {
                     Communication Center
                   </CardTitle>
                   <CardDescription>
-                    Manage newsletters and email campaigns
+                    Send emails to all registered users
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1258,15 +1360,14 @@ export default function AdminDashboard() {
                       Ready to Send
                     </h3>
                     <p className="text-purple-700 text-sm mb-4">
-                      {newsletterSubscriptions.length} active subscribers
-                      waiting for your updates
+                      {users.length} registered users waiting for your updates
                     </p>
                     <Button
                       onClick={() => setShowEmailDialog(true)}
                       className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       <Send className="w-4 h-4 mr-2" />
-                      Send Newsletter
+                      Send Email to Users
                     </Button>
                   </div>
                 </CardContent>
@@ -1274,159 +1375,321 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="users">
-            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <Users className="w-6 h-6 text-[#1C356B]" />
-                      User Management
-                    </CardTitle>
-                    <CardDescription>
-                      Manage user accounts, roles, and permissions
-                    </CardDescription>
+          {!canManageUsers && (
+            <TabsContent value="users">
+              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                <CardContent className="p-8">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                      <Users className="w-10 h-10 text-red-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                      User Management Restricted
+                    </h3>
+                    <p className="text-gray-600 mb-4 max-w-md">
+                      User management is only available to Super Admins. This
+                      includes creating users, changing roles, and managing user
+                      accounts.
+                    </p>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <p className="text-sm text-blue-800">
+                        <strong>Your current role:</strong>{" "}
+                        {user?.role
+                          ?.replace("_", " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    {canRegisterUsers && (
-                      <Button
-                        onClick={() => setShowUserRegistrationDialog(true)}
-                        className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                      >
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add New User
-                      </Button>
-                    )}
-                    {canRegisterUsers && (
-                      <Button
-                        onClick={() => setShowEventRegistrationDialog(true)}
-                        variant="outline"
-                        className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
-                      >
-                        <CalendarPlus className="w-4 h-4 mr-2" />
-                        Register for Event
-                      </Button>
-                    )}
-                    <Button
-                      onClick={() => exportToExcel("users")}
-                      variant="outline"
-                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
-                    >
-                      Download Users as Excel
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-lg border border-slate-200 overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-slate-50">
-                      <TableRow>
-                        <TableHead className="font-semibold">
-                          User Details
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Contact Info
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Role & Status
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Join Date
-                        </TableHead>
-                        <TableHead className="font-semibold text-center">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.map((userData, index) => (
-                        <TableRow
-                          key={userData.id}
-                          className={
-                            index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
-                          }
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {canManageUsers && (
+            <TabsContent value="users">
+              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                <CardHeader className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
+                        User Management
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        Manage user accounts, roles, and permissions
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-3">
+                      {canRegisterUsers && (
+                        <Button
+                          onClick={() => setShowUserRegistrationDialog(true)}
+                          className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg hover:shadow-xl transition-all duration-300 min-h-[44px]"
                         >
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="border-2 border-slate-200">
-                                <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
-                                  {userData.firstName?.charAt(0)?.toUpperCase()}
-                                  {userData.lastName?.charAt(0)?.toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-semibold text-gray-900">
-                                  {userData.firstName} {userData.lastName}
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          <span className="hidden sm:inline">Add New User</span>
+                          <span className="sm:hidden">Add User</span>
+                        </Button>
+                      )}
+                      {canRegisterUsers && (
+                        <Button
+                          onClick={() => setShowEventRegistrationDialog(true)}
+                          variant="outline"
+                          className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
+                        >
+                          <CalendarPlus className="w-4 h-4 mr-2" />
+                          <span className="hidden sm:inline">
+                            Register for Event
+                          </span>
+                          <span className="sm:hidden">Event Reg</span>
+                        </Button>
+                      )}
+                      <Button
+                        onClick={() => exportToExcel("users")}
+                        variant="outline"
+                        className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
+                      >
+                        <span className="hidden sm:inline">
+                          Download Users as Excel
+                        </span>
+                        <span className="sm:hidden">Export</span>
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block rounded-lg border border-slate-200 overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="font-semibold">
+                            User Details
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Contact Info
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Role & Status
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Join Date
+                          </TableHead>
+                          <TableHead className="font-semibold text-center">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUsers.map((userData, index) => (
+                          <TableRow
+                            key={userData.id}
+                            className={
+                              index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                            }
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="border-2 border-slate-200">
+                                  <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
+                                    {userData.firstName
+                                      ?.charAt(0)
+                                      ?.toUpperCase()}
+                                    {userData.lastName
+                                      ?.charAt(0)
+                                      ?.toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-semibold text-gray-900">
+                                    {userData.firstName} {userData.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    ID: {userData.id?.slice(0, 8) || "N/A"}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="text-sm text-gray-900">
+                                  {userData.email}
                                 </div>
                                 <div className="text-sm text-gray-500">
-                                  ID: {userData.id?.slice(0, 8) || "N/A"}
+                                  {userData.phoneNumber || "No phone"}
                                 </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="text-sm text-gray-900">
-                                {userData.email}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {userData.phoneNumber || "No phone"}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {userData.role === "super_admin" ? (
-                              <Badge className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
-                                <Crown className="w-3 h-3 mr-1" />
-                                Super Admin
-                              </Badge>
-                            ) : userData.role === "finance_person" ? (
-                              <Badge className="bg-emerald-500 text-white">
-                                <DollarSign className="w-3 h-3 mr-1" />
-                                Finance Person
-                              </Badge>
-                            ) : userData.role === "event_manager" ? (
-                              <Badge className="bg-blue-500 text-white">
-                                <Calendar className="w-3 h-3 mr-1" />
-                                Event Manager
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="border-gray-300"
-                              >
-                                <UserCheck className="w-3 h-3 mr-1" />
-                                Ordinary User
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {userData.createdAt
-                                ? formatDate(userData.createdAt)
-                                : "Unknown"}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="hover:bg-slate-100"
+                            </TableCell>
+                            <TableCell>
+                              {userData.role === "super_admin" ? (
+                                <Badge className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
+                                  <Crown className="w-3 h-3 mr-1" />
+                                  Super Admin
+                                </Badge>
+                              ) : userData.role === "finance_person" ? (
+                                <Badge className="bg-emerald-500 text-white">
+                                  <DollarSign className="w-3 h-3 mr-1" />
+                                  Finance Person
+                                </Badge>
+                              ) : userData.role === "event_manager" ? (
+                                <Badge className="bg-blue-500 text-white">
+                                  <Calendar className="w-3 h-3 mr-1" />
+                                  Event Manager
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="border-gray-300"
                                 >
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
-                              >
-                                {isSuperAdmin &&
-                                  user &&
-                                  userData.id !== user.id && (
-                                    <>
+                                  <UserCheck className="w-3 h-3 mr-1" />
+                                  Ordinary User
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {userData.createdAt
+                                  ? formatDate(userData.createdAt)
+                                  : "Unknown"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="hover:bg-slate-100"
+                                  >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
+                                >
+                                  {isSuperAdmin &&
+                                    user &&
+                                    userData.id !== user.id && (
+                                      <>
+                                        {userData.role !== "super_admin" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleRoleChangeRequest(
+                                                userData.id,
+                                                "super_admin",
+                                                `${userData.firstName} ${userData.lastName}`,
+                                              )
+                                            }
+                                            className="text-purple-600"
+                                          >
+                                            <Crown className="w-4 h-4 mr-2" />
+                                            Make Super Admin
+                                          </DropdownMenuItem>
+                                        )}
+                                        {userData.role !== "finance_person" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleRoleChangeRequest(
+                                                userData.id,
+                                                "finance_person",
+                                                `${userData.firstName} ${userData.lastName}`,
+                                              )
+                                            }
+                                            className="text-green-600"
+                                          >
+                                            <DollarSign className="w-4 h-4 mr-2" />
+                                            Make Finance Person
+                                          </DropdownMenuItem>
+                                        )}
+                                        {userData.role !== "event_manager" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleRoleChangeRequest(
+                                                userData.id,
+                                                "event_manager",
+                                                `${userData.firstName} ${userData.lastName}`,
+                                              )
+                                            }
+                                            className="text-blue-600"
+                                          >
+                                            <Calendar className="w-4 h-4 mr-2" />
+                                            Make Event Manager
+                                          </DropdownMenuItem>
+                                        )}
+                                        {userData.role !== "ordinary_user" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleRoleChangeRequest(
+                                                userData.id,
+                                                "ordinary_user",
+                                                `${userData.firstName} ${userData.lastName}`,
+                                              )
+                                            }
+                                            className="text-amber-600"
+                                          >
+                                            <UserCheck className="w-4 h-4 mr-2" />
+                                            Make Ordinary User
+                                          </DropdownMenuItem>
+                                        )}
+                                      </>
+                                    )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {filteredUsers.map((userData, index) => (
+                      <Card
+                        key={userData.id}
+                        className="border border-slate-200 shadow-sm"
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* User Header */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="border-2 border-slate-200 w-12 h-12">
+                                  <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
+                                    {userData.firstName
+                                      ?.charAt(0)
+                                      ?.toUpperCase()}
+                                    {userData.lastName
+                                      ?.charAt(0)
+                                      ?.toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-semibold text-gray-900 text-lg">
+                                    {userData.firstName} {userData.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    ID: {userData.id?.slice(0, 8) || "N/A"}
+                                  </div>
+                                </div>
+                              </div>
+                              {isSuperAdmin &&
+                                user &&
+                                userData.id !== user.id && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-10 w-10 p-0"
+                                      >
+                                        <MoreHorizontal className="w-5 h-5" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                      align="end"
+                                      className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
+                                    >
                                       {userData.role !== "super_admin" && (
                                         <DropdownMenuItem
                                           onClick={() =>
@@ -1487,175 +1750,368 @@ export default function AdminDashboard() {
                                           Make Ordinary User
                                         </DropdownMenuItem>
                                       )}
-                                    </>
-                                  )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="events">
-            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <Calendar className="w-6 h-6 text-[#1C356B]" />
-                      Event Management
-                    </CardTitle>
-                    <CardDescription>
-                      Overview and management of all training events
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={() => exportToExcel("events")}
-                    variant="outline"
-                    className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
-                  >
-                    Download Events as Excel
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-lg border border-slate-200 overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-slate-50">
-                      <TableRow>
-                        <TableHead className="font-semibold">
-                          Event Details
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Schedule
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Location
-                        </TableHead>
-                        <TableHead className="font-semibold">Pricing</TableHead>
-                        <TableHead className="font-semibold">
-                          Attendance
-                        </TableHead>
-                        <TableHead className="font-semibold">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredEvents.map((event, index) => (
-                        <TableRow
-                          key={event.id}
-                          className={
-                            index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
-                          }
-                        >
-                          <TableCell>
-                            <div className="space-y-2">
-                              <div className="font-semibold text-gray-900 text-base">
-                                {event.title}
-                              </div>
-                              <div className="text-sm text-gray-600 max-w-xs line-clamp-2">
-                                {event.description}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="text-sm font-medium">
-                                {formatDate(event.startDate)}
-                              </div>
-                              {event.endDate &&
-                                event.startDate &&
-                                event.endDate !== event.startDate && (
-                                  <div className="text-sm text-gray-500">
-                                    to {formatDate(event.endDate)}
-                                  </div>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 )}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm text-gray-900">
-                              {event.location || "To be announced"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold text-lg text-[#1C356B]">
-                              K{event.price}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-gray-900">
-                                {event.currentAttendees || 0}
+
+                            {/* Contact Info */}
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Mail className="w-4 h-4 text-gray-500" />
+                                <span className="text-sm text-gray-900">
+                                  {userData.email}
+                                </span>
                               </div>
-                              {event.maxAttendees && (
-                                <div className="text-sm text-gray-500">
-                                  of {event.maxAttendees}
+                              {userData.phoneNumber && (
+                                <div className="flex items-center gap-2">
+                                  <Phone className="w-4 h-4 text-gray-500" />
+                                  <span className="text-sm text-gray-900">
+                                    {userData.phoneNumber}
+                                  </span>
                                 </div>
                               )}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            {event.featured ? (
-                              <Badge className="bg-gradient-to-r from-[#FDC123] to-amber-500 text-[#1C356B] font-semibold">
-                                <Star className="w-3 h-3 mr-1" />
-                                Featured
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="border-emerald-300 text-emerald-700 bg-emerald-50"
-                              >
-                                Active
-                              </Badge>
-                            )}
-                          </TableCell>
+
+                            {/* Role and Date */}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                              <div>
+                                {userData.role === "super_admin" ? (
+                                  <Badge className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
+                                    <Crown className="w-3 h-3 mr-1" />
+                                    Super Admin
+                                  </Badge>
+                                ) : userData.role === "finance_person" ? (
+                                  <Badge className="bg-emerald-500 text-white">
+                                    <DollarSign className="w-3 h-3 mr-1" />
+                                    Finance Person
+                                  </Badge>
+                                ) : userData.role === "event_manager" ? (
+                                  <Badge className="bg-blue-500 text-white">
+                                    <Calendar className="w-3 h-3 mr-1" />
+                                    Event Manager
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-gray-300"
+                                  >
+                                    <UserCheck className="w-3 h-3 mr-1" />
+                                    Ordinary User
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Joined:{" "}
+                                {userData.createdAt
+                                  ? formatDate(userData.createdAt)
+                                  : "Unknown"}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {!canManageEvents && (
+            <TabsContent value="events">
+              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                <CardContent className="p-8">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-6">
+                      <Calendar className="w-10 h-10 text-purple-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                      Event Management Restricted
+                    </h3>
+                    <p className="text-gray-600 mb-4 max-w-md">
+                      Event management is only available to Super Admins and
+                      Event Managers. This includes creating events, editing
+                      event details, and managing event settings.
+                    </p>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <p className="text-sm text-blue-800">
+                        <strong>Your current role:</strong>{" "}
+                        {user?.role
+                          ?.replace("_", " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {canManageEvents && (
+            <TabsContent value="events">
+              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                <CardHeader className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
+                        Event Management
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        Overview and management of all training events
+                      </CardDescription>
+                    </div>
+                    <Button
+                      onClick={() => exportToExcel("events")}
+                      variant="outline"
+                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
+                    >
+                      <span className="hidden sm:inline">
+                        Download Events as Excel
+                      </span>
+                      <span className="sm:hidden">Export</span>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block rounded-lg border border-slate-200 overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="font-semibold">
+                            Event Details
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Schedule
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Location
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Pricing
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Attendance
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Status
+                          </TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredEvents.map((event, index) => (
+                          <TableRow
+                            key={event.id}
+                            className={
+                              index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                            }
+                          >
+                            <TableCell>
+                              <div className="space-y-2">
+                                <div className="font-semibold text-gray-900 text-base">
+                                  {event.title}
+                                </div>
+                                <div className="text-sm text-gray-600 max-w-xs line-clamp-2">
+                                  {event.description}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="text-sm font-medium">
+                                  {formatDate(event.startDate)}
+                                </div>
+                                {event.endDate &&
+                                  event.startDate &&
+                                  event.endDate !== event.startDate && (
+                                    <div className="text-sm text-gray-500">
+                                      to {formatDate(event.endDate)}
+                                    </div>
+                                  )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm text-gray-900">
+                                {event.location || "To be announced"}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-semibold text-lg text-[#1C356B]">
+                                K{event.price}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-gray-900">
+                                  {event.currentAttendees || 0}
+                                </div>
+                                {event.maxAttendees && (
+                                  <div className="text-sm text-gray-500">
+                                    of {event.maxAttendees}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {event.featured ? (
+                                <Badge className="bg-gradient-to-r from-[#FDC123] to-amber-500 text-[#1C356B] font-semibold">
+                                  <Star className="w-3 h-3 mr-1" />
+                                  Featured
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="border-emerald-300 text-emerald-700 bg-emerald-50"
+                                >
+                                  Active
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {filteredEvents.map((event, index) => (
+                      <Card
+                        key={event.id}
+                        className="border border-slate-200 shadow-sm"
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* Event Header */}
+                            <div className="space-y-2">
+                              <div className="font-semibold text-gray-900 text-lg">
+                                {event.title}
+                              </div>
+                              <div className="text-sm text-gray-600 line-clamp-2">
+                                {event.description}
+                              </div>
+                            </div>
+
+                            {/* Event Details Grid */}
+                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Schedule
+                                </div>
+                                <div className="text-sm font-medium">
+                                  {formatDate(event.startDate)}
+                                </div>
+                                {event.endDate &&
+                                  event.startDate &&
+                                  event.endDate !== event.startDate && (
+                                    <div className="text-xs text-gray-500">
+                                      to {formatDate(event.endDate)}
+                                    </div>
+                                  )}
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Price
+                                </div>
+                                <div className="font-semibold text-lg text-[#1C356B]">
+                                  K{event.price}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Location and Attendance */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Location
+                                </div>
+                                <div className="text-sm text-gray-900">
+                                  {event.location || "To be announced"}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Attendance
+                                </div>
+                                <div className="text-sm font-medium">
+                                  {event.currentAttendees || 0}
+                                  {event.maxAttendees &&
+                                    ` of ${event.maxAttendees}`}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Status */}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                              <div>
+                                {event.featured ? (
+                                  <Badge className="bg-gradient-to-r from-[#FDC123] to-amber-500 text-[#1C356B] font-semibold">
+                                    <Star className="w-3 h-3 mr-1" />
+                                    Featured
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-emerald-300 text-emerald-700 bg-emerald-50"
+                                  >
+                                    Active
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           <TabsContent value="registrations">
             <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-              <CardHeader>
-                <div className="flex justify-between items-center">
+              <CardHeader className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                   <div>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <UserCog className="w-6 h-6 text-[#1C356B]" />
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <UserCog className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
                       Registration Management
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-sm">
                       Monitor and manage event registrations and payment
                       statuses
                     </CardDescription>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-3">
                     <Button
                       onClick={() => setShowEventRegistrationDialog(true)}
-                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 min-h-[44px]"
                     >
                       <CalendarPlus className="w-4 h-4 mr-2" />
-                      Register User for Event
+                      <span className="hidden sm:inline">
+                        Register User for Event
+                      </span>
+                      <span className="sm:hidden">Register User</span>
                     </Button>
                     <Button
                       onClick={() => exportToExcel("registrations")}
                       variant="outline"
-                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
                     >
-                      Download Registrations as Excel
+                      <span className="hidden sm:inline">
+                        Download Registrations as Excel
+                      </span>
+                      <span className="sm:hidden">Export</span>
                     </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="rounded-lg border border-slate-200 overflow-hidden">
+                {/* Desktop Table View */}
+                <div className="hidden lg:block rounded-lg border border-slate-200 overflow-hidden">
                   <Table>
                     <TableHeader className="bg-slate-50">
                       <TableRow>
@@ -1663,11 +2119,19 @@ export default function AdminDashboard() {
                         <TableHead className="font-semibold">
                           Participant
                         </TableHead>
+                        <TableHead className="font-semibold">Country</TableHead>
+                        <TableHead className="font-semibold">
+                          Organization
+                        </TableHead>
+                        <TableHead className="font-semibold">
+                          Delegate Type
+                        </TableHead>
                         <TableHead className="font-semibold">Event</TableHead>
                         <TableHead className="font-semibold">
                           Registration
                         </TableHead>
                         <TableHead className="font-semibold">Payment</TableHead>
+                        <TableHead className="font-semibold">Method</TableHead>
                         <TableHead className="font-semibold">Amount</TableHead>
                         <TableHead className="font-semibold">
                           Evidence
@@ -1686,13 +2150,13 @@ export default function AdminDashboard() {
                           }
                         >
                           <TableCell>
-                            <div className="font-mono font-bold text-[#1C356B] text-lg">
-                              #{registration.registrationNumber || "N/A"}
+                            <div className="font-mono text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                              {registration.registrationNumber || "N/A"}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <Avatar className="border-2 border-slate-200">
+                              <Avatar className="w-8 h-8">
                                 <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
                                   {registration.user?.firstName
                                     ?.charAt(0)
@@ -1709,14 +2173,53 @@ export default function AdminDashboard() {
                                     : "Unknown User"}
                                 </div>
                                 <div className="text-sm text-gray-500">
-                                  {registration.user?.email}
+                                  {registration.user?.email || "No email"}
                                 </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium text-gray-900 max-w-xs truncate">
-                              {registration.event?.title}
+                            <div className="text-sm text-gray-700">
+                              {registration.country || "N/A"}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {registration.organization || "N/A"}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                registration.delegateType === "international"
+                                  ? "border-blue-300 text-blue-700 bg-blue-50"
+                                  : registration.delegateType === "private"
+                                    ? "border-green-300 text-green-700 bg-green-50"
+                                    : "border-purple-300 text-purple-700 bg-purple-50"
+                              }
+                            >
+                              {registration.delegateType === "international"
+                                ? "International"
+                                : registration.delegateType === "private"
+                                  ? "Private"
+                                  : registration.delegateType === "public"
+                                    ? "Public"
+                                    : "N/A"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-semibold text-gray-900 text-sm">
+                                {registration.event?.title || "Unknown Event"}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {registration.event?.startDate
+                                  ? formatDate(registration.event.startDate)
+                                  : "No date"}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -1730,8 +2233,43 @@ export default function AdminDashboard() {
                             {getStatusBadge(registration.paymentStatus)}
                           </TableCell>
                           <TableCell>
+                            <div className="text-sm">
+                              {registration.paymentMethod === "mobile" && (
+                                <Badge
+                                  variant="outline"
+                                  className="border-green-300 text-green-700 bg-green-50"
+                                >
+                                  Mobile Money
+                                </Badge>
+                              )}
+                              {registration.paymentMethod === "bank" && (
+                                <Badge
+                                  variant="outline"
+                                  className="border-blue-300 text-blue-700 bg-blue-50"
+                                >
+                                  Bank Transfer
+                                </Badge>
+                              )}
+                              {registration.paymentMethod === "cash" && (
+                                <Badge
+                                  variant="outline"
+                                  className="border-amber-300 text-amber-700 bg-amber-50"
+                                >
+                                  Cash
+                                </Badge>
+                              )}
+                              {!registration.paymentMethod && (
+                                <span className="text-gray-400">N/A</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <div className="font-semibold text-lg text-[#1C356B]">
-                              K{registration.event?.price || "0"}
+                              {registration.currency && registration.pricePaid
+                                ? `${registration.currency} ${registration.pricePaid}`
+                                : registration.event?.price
+                                  ? `K${registration.event.price}`
+                                  : "N/A"}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -1786,6 +2324,12 @@ export default function AdminDashboard() {
                                         registration.paymentStatus === "paid"
                                       }
                                       className="text-emerald-600"
+                                      onSelect={() =>
+                                        handlePaymentStatusUpdate(
+                                          registration.id,
+                                          "paid",
+                                        )
+                                      }
                                     >
                                       <CheckCircle className="w-4 h-4 mr-2" />
                                       Mark as Paid
@@ -1795,18 +2339,31 @@ export default function AdminDashboard() {
                                         registration.paymentStatus === "pending"
                                       }
                                       className="text-amber-600"
+                                      onSelect={() =>
+                                        handlePaymentStatusUpdate(
+                                          registration.id,
+                                          "pending",
+                                        )
+                                      }
                                     >
                                       <Clock className="w-4 h-4 mr-2" />
                                       Mark as Pending
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                       disabled={
-                                        registration.paymentStatus === "failed"
+                                        registration.paymentStatus ===
+                                        "cancelled"
                                       }
                                       className="text-red-600"
+                                      onSelect={() =>
+                                        handlePaymentStatusUpdate(
+                                          registration.id,
+                                          "cancelled",
+                                        )
+                                      }
                                     >
                                       <XCircle className="w-4 h-4 mr-2" />
-                                      Mark as Failed
+                                      Mark as Cancelled
                                     </DropdownMenuItem>
                                   </>
                                 )}
@@ -1827,126 +2384,206 @@ export default function AdminDashboard() {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="lg:hidden space-y-4">
+                  {filteredRegistrations.map((registration, index) => (
+                    <Card
+                      key={registration.id}
+                      className="border border-slate-200 shadow-sm"
+                    >
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* Registration Header */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-10 h-10">
+                                <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
+                                  {registration.user?.firstName
+                                    ?.charAt(0)
+                                    ?.toUpperCase() || "U"}
+                                  {registration.user?.lastName
+                                    ?.charAt(0)
+                                    ?.toUpperCase() || ""}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {registration.user
+                                    ? `${registration.user.firstName} ${registration.user.lastName}`
+                                    : "Unknown User"}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  #{registration.registrationNumber || "N/A"}
+                                </div>
+                              </div>
+                            </div>
+                            {getStatusBadge(registration.paymentStatus)}
+                          </div>
+
+                          {/* Event Info */}
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <div className="font-semibold text-gray-900 text-sm mb-1">
+                              {registration.event?.title || "Unknown Event"}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {registration.event?.startDate
+                                ? formatDate(registration.event.startDate)
+                                : "No date"}
+                            </div>
+                          </div>
+
+                          {/* Details Grid */}
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">
+                                Country
+                              </div>
+                              <div className="text-gray-900">
+                                {registration.country || "N/A"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">
+                                Delegate Type
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  registration.delegateType === "international"
+                                    ? "border-blue-300 text-blue-700 bg-blue-50 text-xs"
+                                    : registration.delegateType === "private"
+                                      ? "border-green-300 text-green-700 bg-green-50 text-xs"
+                                      : "border-purple-300 text-purple-700 bg-purple-50 text-xs"
+                                }
+                              >
+                                {registration.delegateType === "international"
+                                  ? "Intl"
+                                  : registration.delegateType === "private"
+                                    ? "Private"
+                                    : registration.delegateType === "public"
+                                      ? "Public"
+                                      : "N/A"}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-2 text-sm">
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">
+                                Organization
+                              </div>
+                              <div className="font-medium text-gray-900">
+                                {registration.organization || ""}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Payment Info */}
+                          <div className="pt-2 border-t border-slate-100">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm">
+                                <div className="font-medium">
+                                  K{registration.event?.price || 0}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {registration.paymentMethod === "mobile"
+                                    ? "Mobile Money"
+                                    : registration.paymentMethod === "bank"
+                                      ? "Bank Transfer"
+                                      : registration.paymentMethod || "N/A"}
+                                </div>
+                              </div>
+                              {registration.paymentEvidence && (
+                                <Button
+                                  onClick={() =>
+                                    setEvidenceViewer({
+                                      open: true,
+                                      evidencePath:
+                                        registration.paymentEvidence || "",
+                                      fileName: `${registration.user?.firstName}_${registration.user?.lastName}_payment_evidence`,
+                                      registrationId: registration.id,
+                                    })
+                                  }
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                                >
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  Evidence
+                                </Button>
+                              )}
+                            </div>
+
+                            {/* Payment Status Update Buttons */}
+                            {canUpdatePaymentStatus && (
+                              <div className="flex flex-wrap gap-2 mt-3">
+                                <Button
+                                  onClick={() =>
+                                    handlePaymentStatusUpdate(
+                                      registration.id,
+                                      "paid",
+                                    )
+                                  }
+                                  disabled={
+                                    registration.paymentStatus === "paid"
+                                  }
+                                  size="sm"
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                >
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Mark Paid
+                                </Button>
+                                <Button
+                                  onClick={() =>
+                                    handlePaymentStatusUpdate(
+                                      registration.id,
+                                      "pending",
+                                    )
+                                  }
+                                  disabled={
+                                    registration.paymentStatus === "pending"
+                                  }
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-amber-600 text-amber-600 hover:bg-amber-50"
+                                >
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Mark Pending
+                                </Button>
+                                <Button
+                                  onClick={() =>
+                                    handlePaymentStatusUpdate(
+                                      registration.id,
+                                      "cancelled",
+                                    )
+                                  }
+                                  disabled={
+                                    registration.paymentStatus === "cancelled"
+                                  }
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-red-600 text-red-600 hover:bg-red-50"
+                                >
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="newsletter">
-            <div className="space-y-6">
-              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <Mail className="w-6 h-6 text-[#1C356B]" />
-                        Newsletter Management
-                      </CardTitle>
-                      <CardDescription>
-                        Manage subscribers and send targeted email campaigns
-                      </CardDescription>
-                    </div>
-                    <Button
-                      onClick={() => exportToExcel("newsletter")}
-                      variant="outline"
-                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
-                    >
-                      Download Newsletter as Excel
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center">
-                          <MessageCircle className="w-8 h-8 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-purple-900">
-                            {newsletterSubscriptions.length}
-                          </h3>
-                          <p className="text-purple-700 font-medium">
-                            Active Subscribers
-                          </p>
-                          <p className="text-purple-600 text-sm">
-                            Ready to receive your updates
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => setShowEmailDialog(true)}
-                        size="lg"
-                        className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                      >
-                        <Send className="w-5 h-5 mr-2" />
-                        Send Campaign
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-slate-200 overflow-hidden">
-                    <Table>
-                      <TableHeader className="bg-slate-50">
-                        <TableRow>
-                          <TableHead className="font-semibold">
-                            Email Address
-                          </TableHead>
-                          <TableHead className="font-semibold">
-                            Subscriber Name
-                          </TableHead>
-                          <TableHead className="font-semibold">
-                            Subscribe Date
-                          </TableHead>
-                          <TableHead className="font-semibold">
-                            Status
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredNewsletter.map((subscription, index) => (
-                          <TableRow
-                            key={subscription.id}
-                            className={
-                              index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
-                            }
-                          >
-                            <TableCell className="font-medium text-gray-900">
-                              {subscription.email}
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-gray-900">
-                                {"name" in subscription
-                                  ? String(subscription.name)
-                                  : "Anonymous Subscriber"}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                {subscription.subscribedAt
-                                  ? formatDate(subscription.subscribedAt)
-                                  : "Unknown"}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Active
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
         </Tabs>
 
         {/* Enhanced Email Blast Dialog */}
         <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-          <DialogContent className="sm:max-w-2xl bg-white border-0 shadow-2xl">
+          <DialogContent className="w-[95vw] max-w-md sm:max-w-2xl bg-white border-0 shadow-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader className="space-y-4 pb-6">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
@@ -1957,8 +2594,7 @@ export default function AdminDashboard() {
                     Create Email Campaign
                   </DialogTitle>
                   <DialogDescription className="text-gray-600">
-                    Compose and send newsletter to all{" "}
-                    {newsletterSubscriptions.length} active subscribers
+                    Compose and send email campaign to all users
                   </DialogDescription>
                 </div>
               </div>
@@ -2004,7 +2640,7 @@ export default function AdminDashboard() {
                 </Label>
                 <Textarea
                   id="email-message"
-                  placeholder="Write your newsletter content here..."
+                  placeholder="Write your email content here..."
                   value={emailMessage}
                   onChange={(e) => setEmailMessage(e.target.value)}
                   className="min-h-[200px] text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] resize-none"
@@ -2016,15 +2652,15 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <DialogFooter className="flex items-center justify-between pt-6 border-t border-slate-200">
-              <div className="text-sm text-gray-500">
-                Recipients: {newsletterSubscriptions.length} subscribers
+            <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-slate-200">
+              <div className="text-sm text-gray-500 order-3 sm:order-1">
+                Recipients: {users.length} users
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-col sm:flex-row items-center gap-3 sm:space-x-3 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   onClick={() => setShowEmailDialog(false)}
-                  className="px-6"
+                  className="w-full sm:w-auto px-6 order-2 sm:order-1 min-h-[44px]"
                 >
                   Cancel
                 </Button>
@@ -2033,17 +2669,23 @@ export default function AdminDashboard() {
                   disabled={
                     isLoading || !emailSubject.trim() || !emailMessage.trim()
                   }
-                  className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full sm:w-auto bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300 order-1 sm:order-2 min-h-[44px]"
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Sending Campaign...
+                      <span className="hidden sm:inline">
+                        Sending Campaign...
+                      </span>
+                      <span className="sm:hidden">Sending...</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4 mr-2" />
-                      Send to {newsletterSubscriptions.length} Subscribers
+                      <span className="hidden sm:inline">
+                        Send to {users.length} Users
+                      </span>
+                      <span className="sm:hidden">Send ({users.length})</span>
                     </>
                   )}
                 </Button>
@@ -2057,15 +2699,15 @@ export default function AdminDashboard() {
           open={!!confirmRoleChange}
           onOpenChange={() => setConfirmRoleChange(null)}
         >
-          <AlertDialogContent className="bg-white border-0 shadow-2xl">
+          <AlertDialogContent className="w-[95vw] max-w-md sm:max-w-lg bg-white border-0 shadow-2xl">
             <AlertDialogHeader className="space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto">
-                <Crown className="w-8 h-8 text-white" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto">
+                <Crown className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <AlertDialogTitle className="text-center text-2xl font-bold">
+              <AlertDialogTitle className="text-center text-xl sm:text-2xl font-bold">
                 Confirm Role Change
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-center text-gray-600 text-base leading-relaxed">
+              <AlertDialogDescription className="text-center text-gray-600 text-sm sm:text-base leading-relaxed">
                 Are you sure you want to change{" "}
                 <span className="font-semibold text-gray-900">
                   {confirmRoleChange?.userName}
@@ -2099,24 +2741,26 @@ export default function AdminDashboard() {
                 .
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="flex items-center justify-center space-x-4 pt-6">
-              <AlertDialogCancel className="px-8 py-2 border-slate-300 hover:bg-slate-50">
+            <AlertDialogFooter className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:space-x-4 pt-6">
+              <AlertDialogCancel className="w-full sm:w-auto px-8 py-2 border-slate-300 hover:bg-slate-50 order-2 sm:order-1 min-h-[44px]">
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmRoleChangeAction}
                 disabled={isLoading}
-                className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 py-2 shadow-lg hover:shadow-xl transition-all duration-300"
+                className="w-full sm:w-auto bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 py-2 shadow-lg hover:shadow-xl transition-all duration-300 order-1 sm:order-2 min-h-[44px]"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Updating Role...
+                    <span className="hidden sm:inline">Updating Role...</span>
+                    <span className="sm:hidden">Updating...</span>
                   </>
                 ) : (
                   <>
                     <Crown className="w-4 h-4 mr-2" />
-                    Confirm Change
+                    <span className="hidden sm:inline">Confirm Change</span>
+                    <span className="sm:hidden">Confirm</span>
                   </>
                 )}
               </AlertDialogAction>
@@ -2129,8 +2773,8 @@ export default function AdminDashboard() {
           open={showUserRegistrationDialog}
           onOpenChange={setShowUserRegistrationDialog}
         >
-          <DialogContent className="sm:max-w-4xl bg-white border-0 shadow-2xl">
-            <DialogHeader className="pb-4">
+          <DialogContent className="w-[95vw] max-w-md sm:max-w-2xl lg:max-w-4xl bg-white border-0 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4 sm:pb-6">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center">
                   <UserPlus className="w-5 h-5 text-white" />
@@ -2146,9 +2790,9 @@ export default function AdminDashboard() {
               </div>
             </DialogHeader>
 
-            <div className="space-y-4">
+            <div className="space-y-4 sm:space-y-5">
               {/* Row 1: Role and Name */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="user-role"
@@ -2248,7 +2892,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Row 2: Email and Password */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="user-email"
@@ -2312,7 +2956,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200">
+            <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2326,7 +2970,7 @@ export default function AdminDashboard() {
                     role: "ordinary_user",
                   });
                 }}
-                className="px-6"
+                className="w-full sm:w-auto px-6 order-2 sm:order-1"
               >
                 Cancel
               </Button>
@@ -2396,17 +3040,19 @@ export default function AdminDashboard() {
                   !userRegistrationData.email ||
                   !userRegistrationData.password
                 }
-                className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
+                className="w-full sm:w-auto bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300 order-1 sm:order-2 min-h-[44px]"
               >
                 {userRegistrationLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating User...
+                    <span className="hidden sm:inline">Creating User...</span>
+                    <span className="sm:hidden">Creating...</span>
                   </>
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Create User
+                    <span className="hidden sm:inline">Create User</span>
+                    <span className="sm:hidden">Create</span>
                   </>
                 )}
               </Button>
@@ -2419,8 +3065,8 @@ export default function AdminDashboard() {
           open={showEventRegistrationDialog}
           onOpenChange={setShowEventRegistrationDialog}
         >
-          <DialogContent className="sm:max-w-5xl bg-white border-0 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-4">
+          <DialogContent className="w-[95vw] max-w-md sm:max-w-2xl lg:max-w-5xl bg-white border-0 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4 sm:pb-6">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl flex items-center justify-center">
                   <CalendarPlus className="w-5 h-5 text-white" />
@@ -2436,9 +3082,9 @@ export default function AdminDashboard() {
               </div>
             </DialogHeader>
 
-            <div className="space-y-4">
+            <div className="space-y-4 sm:space-y-5">
               {/* Row 1: User and Event Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="event-user"
@@ -2538,63 +3184,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Row 2: Personal Details */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="event-title"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Title *
-                  </Label>
-                  <Select
-                    onValueChange={(value) =>
-                      setEventRegistrationData((prev) => ({
-                        ...prev,
-                        title: value,
-                      }))
-                    }
-                    value={eventRegistrationData.title}
-                  >
-                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                      <SelectValue placeholder="Title" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Mr">Mr</SelectItem>
-                      <SelectItem value="Mrs">Mrs</SelectItem>
-                      <SelectItem value="Miss">Miss</SelectItem>
-                      <SelectItem value="Dr">Dr</SelectItem>
-                      <SelectItem value="Prof">Prof</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="event-gender"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Gender *
-                  </Label>
-                  <Select
-                    onValueChange={(value) =>
-                      setEventRegistrationData((prev) => ({
-                        ...prev,
-                        gender: value,
-                      }))
-                    }
-                    value={eventRegistrationData.gender}
-                  >
-                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                      <SelectValue placeholder="Gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="event-country"
@@ -2639,7 +3229,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Row 3: Organization Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="event-organization"
@@ -2660,41 +3250,10 @@ export default function AdminDashboard() {
                     className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="event-organizationType"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Organization Type *
-                  </Label>
-                  <Select
-                    onValueChange={(value) =>
-                      setEventRegistrationData((prev) => ({
-                        ...prev,
-                        organizationType: value,
-                      }))
-                    }
-                    value={eventRegistrationData.organizationType}
-                  >
-                    <SelectTrigger className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]">
-                      <SelectValue placeholder="Organization type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Government">Government</SelectItem>
-                      <SelectItem value="Private">Private Sector</SelectItem>
-                      <SelectItem value="NGO">NGO/Non-Profit</SelectItem>
-                      <SelectItem value="Academic">
-                        Academic Institution
-                      </SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               {/* Row 4: Payment and Notes */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="event-paymentStatus"
@@ -2789,7 +3348,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200">
+            <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2797,11 +3356,9 @@ export default function AdminDashboard() {
                   setEventRegistrationData({
                     userId: "",
                     eventId: "",
-                    title: "Mr",
-                    gender: "Male",
                     country: "",
                     organization: "",
-                    organizationType: "Government",
+
                     position: "",
                     notes: "",
                     hasPaid: false,
@@ -2811,7 +3368,7 @@ export default function AdminDashboard() {
                   setSelectedEvent(null);
                   setSearchTerm("");
                 }}
-                className="px-6"
+                className="w-full sm:w-auto px-6 order-2 sm:order-1 min-h-[44px]"
               >
                 Cancel
               </Button>
@@ -2836,12 +3393,9 @@ export default function AdminDashboard() {
                       body: JSON.stringify({
                         userId: selectedUser?.id,
                         eventId: selectedEvent?.id,
-                        title: eventRegistrationData.title,
-                        gender: eventRegistrationData.gender,
+
                         country: eventRegistrationData.country,
                         organization: eventRegistrationData.organization,
-                        organizationType:
-                          eventRegistrationData.organizationType,
                         position: eventRegistrationData.position,
                         notes: eventRegistrationData.notes,
                         hasPaid: eventRegistrationData.hasPaid,
@@ -2869,11 +3423,9 @@ export default function AdminDashboard() {
                     setEventRegistrationData({
                       userId: "",
                       eventId: "",
-                      title: "Mr",
-                      gender: "Male",
                       country: "",
                       organization: "",
-                      organizationType: "Government",
+
                       position: "",
                       notes: "",
                       hasPaid: false,
@@ -2904,17 +3456,19 @@ export default function AdminDashboard() {
                   !eventRegistrationData.organization ||
                   !eventRegistrationData.position
                 }
-                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300"
+                className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-600 text-white px-8 shadow-lg hover:shadow-xl transition-all duration-300 order-1 sm:order-2 min-h-[44px]"
               >
                 {eventRegistrationLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating Registration...
+                    <span className="hidden sm:inline">Registering...</span>
+                    <span className="sm:hidden">Saving...</span>
                   </>
                 ) : (
                   <>
                     <CalendarPlus className="w-4 h-4 mr-2" />
-                    Register User for Event
+                    <span className="hidden sm:inline">Register for Event</span>
+                    <span className="sm:hidden">Register</span>
                   </>
                 )}
               </Button>

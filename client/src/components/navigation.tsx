@@ -400,7 +400,9 @@ export function Navigation() {
                       </Button>
                     </Link>
 
-                    {user.role === "admin" && (
+                    {(user.role === "super_admin" ||
+                      user.role === "finance_person" ||
+                      user.role === "event_manager") && (
                       <Link href="/admin-dashboard">
                         <Button
                           variant="outline"

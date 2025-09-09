@@ -128,13 +128,29 @@ export function EventCard({
                 </div>
               )}
 
-              {/* Price for featured events */}
-              {featured && event.price && (
-                <div className="flex items-center text-gray-600 text-xs">
-                  <DollarSign className="w-3 h-3 mr-2 text-green-600" />
-                  <span className="font-medium text-green-700">
-                    ${event.price}
-                  </span>
+              {/* Pricing for featured events */}
+              {featured && (
+                <div className="space-y-1 mb-2">
+                  <div className="flex items-center text-gray-600 text-xs">
+                    <DollarSign className="w-3 h-3 mr-2 text-green-600" />
+                    <span className="font-medium text-green-700">
+                      Registration Fees:
+                    </span>
+                  </div>
+                  <div className="ml-5 space-y-0.5 text-xs">
+                    <div className="text-gray-600">
+                      <span className="font-medium">Private Sector:</span> ZMW
+                      7,000
+                    </div>
+                    <div className="text-gray-600">
+                      <span className="font-medium">Public Sector:</span> ZMW
+                      6,500
+                    </div>
+                    <div className="text-gray-600">
+                      <span className="font-medium">International:</span> USD
+                      650
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -307,13 +323,31 @@ export function EventCard({
                 </div>
               )}
 
-              {/* Price for featured events */}
-              {featured && event.price && (
-                <div className="flex items-center text-gray-600 text-sm">
-                  <DollarSign className="w-4 h-4 mr-2 text-green-600" />
-                  <span className="font-medium text-green-700">
-                    ${event.price}
-                  </span>
+              {/* Pricing for featured events */}
+              {featured && (
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center text-gray-600 text-sm">
+                    <DollarSign className="w-4 h-4 mr-2 text-green-600" />
+                    <span className="font-medium text-green-700">
+                      Registration Fees:
+                    </span>
+                  </div>
+                  <div className="ml-6 space-y-1 text-sm">
+                    <div className="text-gray-600">
+                      <span className="font-medium">Private Sector:</span> ZMW
+                      7,000
+                    </div>
+                    <div className="text-gray-600">
+                      <span className="font-medium">Public Sector:</span> ZMW
+                      6,500
+                    </div>
+                    <div className="text-gray-600">
+                      <span className="font-medium">
+                        International Delegates:
+                      </span>{" "}
+                      USD 650
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

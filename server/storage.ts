@@ -25,28 +25,29 @@ interface UserRow {
   first_name: string | null;
   last_name: string | null;
   phone_number: string | null;
+  gender: string | null;
   created_at: string;
 }
 
 export const storage = {
   async generateRegistrationNumber(): Promise<string> {
     try {
-      // Get the count of existing registrations
-      const { count, error } = await supabase
-        .from("event_registrations")
-        .select("*", { count: "exact", head: true });
+      // Use database sequence function to generate unique registration number
+      const { data, error } = await supabase.rpc(
+        "generate_registration_number",
+      );
 
       if (error) {
-        console.error("Error getting registration count:", error);
+        console.error("Error generating registration number:", error);
         throw error;
       }
 
-      // Generate next registration number (0001, 0002, etc.)
-      const nextNumber = (count || 0) + 1;
-      return nextNumber.toString().padStart(4, "0");
+      return data || "0001";
     } catch (error: any) {
       console.error("Error generating registration number:", error);
-      throw error;
+      // Fallback to timestamp-based number if database function fails
+      const timestamp = Date.now().toString().slice(-4);
+      return timestamp.padStart(4, "0");
     }
   },
   async getUser(id: string): Promise<UserResponse | undefined> {
@@ -54,7 +55,7 @@ export const storage = {
       // Fetch from public.users
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("id, first_name, last_name, phone_number, created_at")
+        .select("id, first_name, last_name, phone_number, gender, created_at")
         .eq("id", id)
         .single();
       if (userError || !userData) {
@@ -79,6 +80,7 @@ export const storage = {
         firstName: userData.first_name,
         lastName: userData.last_name,
         phoneNumber: userData.phone_number,
+        gender: userData.gender,
         role: authData.user.user_metadata?.role || "ordinary_user",
         createdAt: userData.created_at,
       };
@@ -105,7 +107,7 @@ export const storage = {
       // Fetch from public.users
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("id, first_name, last_name, phone_number, created_at")
+        .select("id, first_name, last_name, phone_number, gender, created_at")
         .eq("id", authUser.id)
         .single();
       if (userError || !userData) {
@@ -122,6 +124,7 @@ export const storage = {
         firstName: userData.first_name,
         lastName: userData.last_name,
         phoneNumber: userData.phone_number,
+        gender: userData.gender,
         role: authUser.user_metadata?.role || "ordinary_user",
         createdAt: userData.created_at,
       };
@@ -142,6 +145,7 @@ export const storage = {
             first_name: user.firstName,
             last_name: user.lastName,
             phone_number: user.phoneNumber,
+            gender: user.gender,
           },
         });
       if (authError) {
@@ -156,8 +160,9 @@ export const storage = {
           first_name: user.firstName,
           last_name: user.lastName,
           phone_number: user.phoneNumber,
+          gender: user.gender,
         })
-        .select("id, first_name, last_name, phone_number, created_at")
+        .select("id, first_name, last_name, phone_number, gender, created_at")
         .single();
       if (error) {
         console.error("Error creating user in users table:", error.message);
@@ -170,6 +175,7 @@ export const storage = {
         firstName: data.first_name,
         lastName: data.last_name,
         phoneNumber: data.phone_number,
+        gender: data.gender,
         role: user.role || "ordinary_user",
         createdAt: data.created_at,
       };
@@ -183,7 +189,7 @@ export const storage = {
     try {
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("id, first_name, last_name, phone_number, created_at");
+        .select("id, first_name, last_name, phone_number, gender, created_at");
       if (userError) {
         console.error("Error fetching all users:", userError.message);
         throw new Error(`Failed to fetch users: ${userError.message}`);
@@ -206,6 +212,7 @@ export const storage = {
             firstName: u.first_name,
             lastName: u.last_name,
             phoneNumber: u.phone_number,
+            gender: u.gender,
             role: authData.user.user_metadata?.role || "ordinary_user",
             createdAt: u.created_at ? new Date(u.created_at) : null,
           };
@@ -406,16 +413,18 @@ export const storage = {
         eventId: data.event_id,
         userId: data.user_id,
         paymentStatus: data.payment_status,
-        title: data.title,
-        gender: data.gender,
+        registeredAt: data.registered_at,
+
         country: data.country,
         organization: data.organization,
-        organizationType: data.organization_type,
         position: data.position,
         notes: data.notes,
         hasPaid: data.has_paid,
         paymentEvidence: data.payment_evidence,
-        registeredAt: data.registered_at,
+        paymentMethod: data.payment_method,
+        currency: data.currency,
+        pricePaid: data.price_paid,
+        delegateType: data.delegate_type,
       };
     } catch (error: any) {
       console.error("Error in getEventRegistration:", error.message);
@@ -441,15 +450,17 @@ export const storage = {
         eventId: r.event_id,
         userId: r.user_id,
         paymentStatus: r.payment_status,
-        title: r.title,
-        gender: r.gender,
+
         country: r.country,
         organization: r.organization,
-        organizationType: r.organization_type,
         position: r.position,
         notes: r.notes,
         hasPaid: r.has_paid,
         paymentEvidence: r.payment_evidence,
+        paymentMethod: r.payment_method,
+        currency: r.currency,
+        pricePaid: r.price_paid,
+        delegateType: r.delegate_type,
         registeredAt: r.registered_at,
       }));
     } catch (error: any) {
@@ -476,15 +487,16 @@ export const storage = {
         eventId: r.event_id,
         userId: r.user_id,
         paymentStatus: r.payment_status,
-        title: r.title,
-        gender: r.gender,
         country: r.country,
         organization: r.organization,
-        organizationType: r.organization_type,
         position: r.position,
         notes: r.notes,
         hasPaid: r.has_paid,
         paymentEvidence: r.payment_evidence,
+        paymentMethod: r.payment_method,
+        currency: r.currency,
+        pricePaid: r.price_paid,
+        delegateType: r.delegate_type,
         registeredAt: r.registered_at,
       }));
     } catch (error: any) {
@@ -508,7 +520,7 @@ export const storage = {
         eventId: r.event_id,
         userId: r.user_id,
         paymentStatus: r.payment_status,
-        title: r.title,
+        registeredAt: r.registered_at,
         gender: r.gender,
         country: r.country,
         organization: r.organization,
@@ -517,7 +529,10 @@ export const storage = {
         notes: r.notes,
         hasPaid: r.has_paid,
         paymentEvidence: r.payment_evidence,
-        registeredAt: r.registered_at,
+        paymentMethod: r.payment_method,
+        currency: r.currency,
+        pricePaid: r.price_paid,
+        delegateType: r.delegate_type,
       }));
     } catch (error: any) {
       console.error("Error in getAllEventRegistrations:", error.message);
@@ -539,15 +554,17 @@ export const storage = {
           event_id: registration.eventId,
           user_id: registration.userId,
           payment_status: registration.paymentStatus || "pending",
-          title: registration.title,
-          gender: registration.gender,
+
           country: registration.country,
           organization: registration.organization,
-          organization_type: registration.organizationType,
           position: registration.position,
           notes: registration.notes,
           has_paid: registration.hasPaid || false,
           payment_evidence: registration.paymentEvidence,
+          payment_method: registration.paymentMethod,
+          currency: registration.currency,
+          price_paid: registration.pricePaid,
+          delegate_type: registration.delegateType,
         })
         .select()
         .single();
@@ -567,15 +584,17 @@ export const storage = {
         eventId: data.event_id,
         userId: data.user_id,
         paymentStatus: data.payment_status,
-        title: data.title,
-        gender: data.gender,
+
         country: data.country,
         organization: data.organization,
-        organizationType: data.organization_type,
         position: data.position,
         notes: data.notes,
         hasPaid: data.has_paid,
         paymentEvidence: data.payment_evidence,
+        paymentMethod: data.payment_method,
+        currency: data.currency,
+        pricePaid: data.price_paid,
+        delegateType: data.delegate_type,
         registeredAt: data.registered_at,
       };
     } catch (error: any) {
@@ -593,15 +612,17 @@ export const storage = {
         .from("event_registrations")
         .update({
           payment_status: updates.paymentStatus,
-          title: updates.title,
-          gender: updates.gender,
+
           country: updates.country,
           organization: updates.organization,
-          organization_type: updates.organizationType,
           position: updates.position,
           notes: updates.notes,
           has_paid: updates.hasPaid,
           payment_evidence: updates.paymentEvidence,
+          payment_method: updates.paymentMethod,
+          currency: updates.currency,
+          price_paid: updates.pricePaid,
+          delegate_type: updates.delegateType,
         })
         .eq("id", id)
         .select()
@@ -615,15 +636,17 @@ export const storage = {
         eventId: data.event_id,
         userId: data.user_id,
         paymentStatus: data.payment_status,
-        title: data.title,
-        gender: data.gender,
+
         country: data.country,
         organization: data.organization,
-        organizationType: data.organization_type,
         position: data.position,
         notes: data.notes,
         hasPaid: data.has_paid,
         paymentEvidence: data.payment_evidence,
+        paymentMethod: data.payment_method,
+        currency: data.currency,
+        pricePaid: data.price_paid,
+        delegateType: data.delegate_type,
         registrationNumber: data.registration_number,
         registeredAt: data.registered_at,
       };

@@ -156,6 +156,23 @@ const teamMembers = [
       "Regional Integration",
     ],
   },
+  {
+    name: "Rabby Kazwala Sikozi",
+    position: "IT Specialist",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757435266/WhatsApp_Image_2025-09-09_at_09.54.35_lh8mls.jpg",
+    bio: "Rabby Kazwala Sikozi is an IT specialist with expertise in disaster recovery, cybersecurity awareness, and digital systems development. He has developed comprehensive ICT disaster recovery manuals and incident management procedures tailored for government, private, and NGO sectors.",
+    expertise: [
+      "Disaster Recovery",
+      "Cybersecurity Awareness",
+      "Digital Systems Development",
+      "Incident Management",
+    ],
+    contact: [
+      "+260963530936",
+      "+260973595988",
+    ],
+  },
+
 ];
 
 

@@ -63,9 +63,9 @@ export function AboutSection() {
 
             <div className="bg-primary-blue text-white rounded-2xl p-8 -mt-20 ml-8 relative z-10 shadow-xl">
               <h3 className="text-xl font-bold mb-4" data-testid="vision-title">Our Vision</h3>
-              <p className="leading-relaxed" data-testid="vision-description">
-                To be a leading training, research and consultancy company for public and private sector Supply Chain Systems and Financial Management in the Southern Africa Region and beyond. This can only be achieved with the full commitment, involvement, and proficient support of the Government of the Republic of Zambia (GRZ) and cooperating partners.
-              </p>
+                <p className="leading-relaxed" data-testid="vision-description">
+                 To be a leading training, research and consultancy company for public and private sector Supply Chain Systems and Financial Management in the Southern Africa Region and beyond.
+                </p>
             </div>
           </div>
         </div>
