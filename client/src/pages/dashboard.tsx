@@ -165,8 +165,8 @@ export default function Dashboard() {
     ) {
       try {
         await apiRequest(
-          "DELETE",
-          `/api/users/${user?.id}/registrations/${registration.id}`,
+          "PATCH",
+          `/api/users/${user?.id}/registrations/${registration.id}/cancel`,
         );
         toast({
           title: "Registration Cancelled",
@@ -396,22 +396,6 @@ export default function Dashboard() {
                   <div className="flex flex-col sm:flex-row lg:flex-col gap-3 lg:w-40 flex-shrink-0">
                     {registration.paymentStatus === "pending" && (
                       <>
-                        <Button
-                          onClick={() =>
-                            setUploadDialog({ open: true, registration })
-                          }
-                          className="bg-primary-yellow text-primary-blue hover:bg-yellow-400 font-semibold w-full"
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Upload Evidence
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="border-green-200 text-green-600 hover:bg-green-50 w-full"
-                        >
-                          <DollarSign className="w-4 h-4 mr-2" />
-                          Pay Now
-                        </Button>
                         <Button
                           variant="outline"
                           className="border-red-200 text-red-600 hover:bg-red-50 w-full"

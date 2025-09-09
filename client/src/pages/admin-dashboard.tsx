@@ -90,6 +90,8 @@ import { EvidenceViewer } from "@/components/evidence-viewer";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 // Real data interfaces
 interface Event {
@@ -142,7 +144,8 @@ interface Registration {
 
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
+
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -263,7 +266,7 @@ export default function AdminDashboard() {
     }
   }, [searchTerm, users, events, registrations]);
 
-  const fetchData = async () => {
+  const refreshData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -290,18 +293,6 @@ export default function AdminDashboard() {
       const userRole = currentUser.user_metadata?.role || "ordinary_user";
       console.log("Current user role:", userRole);
       console.log("Current user metadata:", currentUser.user_metadata);
-
-      const tempUser = {
-        id: currentUser.id,
-        firstName: currentUser.user_metadata?.first_name || "",
-        lastName: currentUser.user_metadata?.last_name || "",
-        email: currentUser.email || "",
-        phoneNumber: currentUser.user_metadata?.phone_number || "",
-        title: currentUser.user_metadata?.title || null,
-        role: userRole,
-        createdAt: currentUser.created_at || new Date().toISOString(),
-      };
-      setUser(tempUser);
 
       // Fetch events (public endpoint)
       try {
@@ -374,17 +365,60 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchData = async () => {
+    await refreshData();
+  };
+
   // Get auth permissions
   const {
+    user,
     isSuperAdmin,
     isFinancePerson,
     isEventManager,
+    isAdmin,
     canManageUsers,
     canManageFinance,
     canUpdatePaymentStatus,
     canRegisterUsers,
     canManageEvents,
   } = useAuth();
+
+  // Redirect ordinary users to user dashboard
+  useEffect(() => {
+    if (user && !isAdmin) {
+      window.location.href = "/dashboard";
+    }
+  }, [user, isAdmin]);
+
+  // Payment status update handler
+  const handlePaymentStatusUpdate = async (
+    registrationId: string,
+    newStatus: string,
+  ) => {
+    try {
+      const hasPaid = newStatus === "paid";
+
+      await apiRequest("PATCH", `/api/admin/registrations/${registrationId}`, {
+        paymentStatus: newStatus,
+        hasPaid,
+      });
+
+      toast({
+        title: "Payment Status Updated",
+        description: `Registration marked as ${newStatus}`,
+      });
+
+      // Refresh the data
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error updating payment status:", error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Calculate analytics
   const totalRevenue = registrations
@@ -1150,7 +1184,10 @@ export default function AdminDashboard() {
         {/* Enhanced Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
           <div className="bg-white rounded-xl border border-slate-200/60 p-1 shadow-sm overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-4 bg-transparent gap-1 min-w-[480px] sm:min-w-0">
+            <TabsList
+              className={`grid w-full ${canManageUsers && canManageEvents ? "grid-cols-4" : canManageUsers || canManageEvents ? "grid-cols-3" : "grid-cols-2"} bg-transparent gap-1 min-w-[480px] sm:min-w-0`}
+            >
+              {/* Overview - All admin roles can see */}
               <TabsTrigger
                 value="overview"
                 className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
@@ -1158,20 +1195,30 @@ export default function AdminDashboard() {
                 <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 <span className="hidden xs:inline">Overview</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="users"
-                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
-              >
-                <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                <span className="hidden xs:inline">Users</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="events"
-                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
-              >
-                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                <span className="hidden xs:inline">Events</span>
-              </TabsTrigger>
+
+              {/* Users - Only super_admin can manage users */}
+              {canManageUsers && (
+                <TabsTrigger
+                  value="users"
+                  className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+                >
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Users</span>
+                </TabsTrigger>
+              )}
+
+              {/* Events - super_admin and event_manager can manage events */}
+              {canManageEvents && (
+                <TabsTrigger
+                  value="events"
+                  className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+                >
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Events</span>
+                </TabsTrigger>
+              )}
+
+              {/* Registrations - All admin roles can see */}
               <TabsTrigger
                 value="registrations"
                 className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
@@ -1184,83 +1231,117 @@ export default function AdminDashboard() {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <TrendingUp className="w-5 h-5 text-emerald-500" />
-                    Payment Analytics
-                  </CardTitle>
-                  <CardDescription>
-                    Overview of payment statuses and revenue
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-white" />
+              {canManageFinance && (
+                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <TrendingUp className="w-5 h-5 text-emerald-500" />
+                      Payment Analytics
+                    </CardTitle>
+                    <CardDescription>
+                      Overview of payment statuses and revenue
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-emerald-900">
+                              Completed Payments
+                            </p>
+                            <p className="text-sm text-emerald-700">
+                              K{totalRevenue.toFixed(2)} revenue
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-emerald-900">
-                            Completed Payments
-                          </p>
-                          <p className="text-sm text-emerald-700">
-                            K{totalRevenue.toFixed(2)} revenue
-                          </p>
-                        </div>
+                        <Badge className="bg-emerald-500 text-white text-lg px-3 py-1">
+                          {completedPayments}
+                        </Badge>
                       </div>
-                      <Badge className="bg-emerald-500 text-white text-lg px-3 py-1">
-                        {completedPayments}
-                      </Badge>
-                    </div>
 
-                    <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-100">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
-                          <Clock className="w-5 h-5 text-white" />
+                      <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-100">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
+                            <Clock className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-amber-900">
+                              Pending Payments
+                            </p>
+                            <p className="text-sm text-amber-700">
+                              Awaiting confirmation
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-amber-900">
-                            Pending Payments
-                          </p>
-                          <p className="text-sm text-amber-700">
-                            Awaiting confirmation
-                          </p>
-                        </div>
+                        <Badge
+                          variant="secondary"
+                          className="bg-amber-200 text-amber-800 text-lg px-3 py-1"
+                        >
+                          {pendingPayments}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant="secondary"
-                        className="bg-amber-200 text-amber-800 text-lg px-3 py-1"
-                      >
-                        {pendingPayments}
-                      </Badge>
-                    </div>
 
-                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                          <Activity className="w-5 h-5 text-white" />
+                      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                            <Activity className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-blue-900">
+                              Total Registrations
+                            </p>
+                            <p className="text-sm text-blue-700">
+                              All event registrations
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-blue-900">
-                            Total Registrations
-                          </p>
-                          <p className="text-sm text-blue-700">
-                            All event registrations
-                          </p>
-                        </div>
+                        <Badge
+                          variant="outline"
+                          className="text-lg px-3 py-1 border-blue-200 text-blue-800"
+                        >
+                          {registrations.length}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant="outline"
-                        className="text-lg px-3 py-1 border-blue-200 text-blue-800"
-                      >
-                        {registrations.length}
-                      </Badge>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {!canManageFinance && (
+                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Shield className="w-5 h-5 text-amber-500" />
+                      Financial Analytics
+                    </CardTitle>
+                    <CardDescription>
+                      Financial information access restricted
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                        <Shield className="w-8 h-8 text-amber-600" />
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        Access Restricted
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Financial analytics are only available to Super Admins
+                        and Finance Persons.
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Contact your administrator if you need access to
+                        financial data.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
                 <CardHeader className="pb-4">
@@ -1294,167 +1375,321 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="users">
-            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-              <CardHeader className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
-                      User Management
-                    </CardTitle>
-                    <CardDescription className="text-sm">
-                      Manage user accounts, roles, and permissions
-                    </CardDescription>
+          {!canManageUsers && (
+            <TabsContent value="users">
+              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                <CardContent className="p-8">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                      <Users className="w-10 h-10 text-red-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                      User Management Restricted
+                    </h3>
+                    <p className="text-gray-600 mb-4 max-w-md">
+                      User management is only available to Super Admins. This
+                      includes creating users, changing roles, and managing user
+                      accounts.
+                    </p>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <p className="text-sm text-blue-800">
+                        <strong>Your current role:</strong>{" "}
+                        {user?.role
+                          ?.replace("_", " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-3">
-                    {canRegisterUsers && (
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {canManageUsers && (
+            <TabsContent value="users">
+              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                <CardHeader className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
+                        User Management
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        Manage user accounts, roles, and permissions
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-3">
+                      {canRegisterUsers && (
+                        <Button
+                          onClick={() => setShowUserRegistrationDialog(true)}
+                          className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg hover:shadow-xl transition-all duration-300 min-h-[44px]"
+                        >
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          <span className="hidden sm:inline">Add New User</span>
+                          <span className="sm:hidden">Add User</span>
+                        </Button>
+                      )}
+                      {canRegisterUsers && (
+                        <Button
+                          onClick={() => setShowEventRegistrationDialog(true)}
+                          variant="outline"
+                          className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
+                        >
+                          <CalendarPlus className="w-4 h-4 mr-2" />
+                          <span className="hidden sm:inline">
+                            Register for Event
+                          </span>
+                          <span className="sm:hidden">Event Reg</span>
+                        </Button>
+                      )}
                       <Button
-                        onClick={() => setShowUserRegistrationDialog(true)}
-                        className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg hover:shadow-xl transition-all duration-300 min-h-[44px]"
-                      >
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        <span className="hidden sm:inline">Add New User</span>
-                        <span className="sm:hidden">Add User</span>
-                      </Button>
-                    )}
-                    {canRegisterUsers && (
-                      <Button
-                        onClick={() => setShowEventRegistrationDialog(true)}
+                        onClick={() => exportToExcel("users")}
                         variant="outline"
                         className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
                       >
-                        <CalendarPlus className="w-4 h-4 mr-2" />
                         <span className="hidden sm:inline">
-                          Register for Event
+                          Download Users as Excel
                         </span>
-                        <span className="sm:hidden">Event Reg</span>
+                        <span className="sm:hidden">Export</span>
                       </Button>
-                    )}
-                    <Button
-                      onClick={() => exportToExcel("users")}
-                      variant="outline"
-                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
-                    >
-                      <span className="hidden sm:inline">
-                        Download Users as Excel
-                      </span>
-                      <span className="sm:hidden">Export</span>
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Desktop Table View */}
-                <div className="hidden lg:block rounded-lg border border-slate-200 overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-slate-50">
-                      <TableRow>
-                        <TableHead className="font-semibold">
-                          User Details
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Contact Info
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Role & Status
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Join Date
-                        </TableHead>
-                        <TableHead className="font-semibold text-center">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.map((userData, index) => (
-                        <TableRow
-                          key={userData.id}
-                          className={
-                            index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
-                          }
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="border-2 border-slate-200">
-                                <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
-                                  {userData.firstName?.charAt(0)?.toUpperCase()}
-                                  {userData.lastName?.charAt(0)?.toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-semibold text-gray-900">
-                                  {userData.firstName} {userData.lastName}
+                </CardHeader>
+                <CardContent>
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block rounded-lg border border-slate-200 overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="font-semibold">
+                            User Details
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Contact Info
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Role & Status
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Join Date
+                          </TableHead>
+                          <TableHead className="font-semibold text-center">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUsers.map((userData, index) => (
+                          <TableRow
+                            key={userData.id}
+                            className={
+                              index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                            }
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="border-2 border-slate-200">
+                                  <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
+                                    {userData.firstName
+                                      ?.charAt(0)
+                                      ?.toUpperCase()}
+                                    {userData.lastName
+                                      ?.charAt(0)
+                                      ?.toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-semibold text-gray-900">
+                                    {userData.firstName} {userData.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    ID: {userData.id?.slice(0, 8) || "N/A"}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="text-sm text-gray-900">
+                                  {userData.email}
                                 </div>
                                 <div className="text-sm text-gray-500">
-                                  ID: {userData.id?.slice(0, 8) || "N/A"}
+                                  {userData.phoneNumber || "No phone"}
                                 </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="text-sm text-gray-900">
-                                {userData.email}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {userData.phoneNumber || "No phone"}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {userData.role === "super_admin" ? (
-                              <Badge className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
-                                <Crown className="w-3 h-3 mr-1" />
-                                Super Admin
-                              </Badge>
-                            ) : userData.role === "finance_person" ? (
-                              <Badge className="bg-emerald-500 text-white">
-                                <DollarSign className="w-3 h-3 mr-1" />
-                                Finance Person
-                              </Badge>
-                            ) : userData.role === "event_manager" ? (
-                              <Badge className="bg-blue-500 text-white">
-                                <Calendar className="w-3 h-3 mr-1" />
-                                Event Manager
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="border-gray-300"
-                              >
-                                <UserCheck className="w-3 h-3 mr-1" />
-                                Ordinary User
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {userData.createdAt
-                                ? formatDate(userData.createdAt)
-                                : "Unknown"}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="hover:bg-slate-100"
+                            </TableCell>
+                            <TableCell>
+                              {userData.role === "super_admin" ? (
+                                <Badge className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
+                                  <Crown className="w-3 h-3 mr-1" />
+                                  Super Admin
+                                </Badge>
+                              ) : userData.role === "finance_person" ? (
+                                <Badge className="bg-emerald-500 text-white">
+                                  <DollarSign className="w-3 h-3 mr-1" />
+                                  Finance Person
+                                </Badge>
+                              ) : userData.role === "event_manager" ? (
+                                <Badge className="bg-blue-500 text-white">
+                                  <Calendar className="w-3 h-3 mr-1" />
+                                  Event Manager
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="border-gray-300"
                                 >
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
-                              >
-                                {isSuperAdmin &&
-                                  user &&
-                                  userData.id !== user.id && (
-                                    <>
+                                  <UserCheck className="w-3 h-3 mr-1" />
+                                  Ordinary User
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {userData.createdAt
+                                  ? formatDate(userData.createdAt)
+                                  : "Unknown"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="hover:bg-slate-100"
+                                  >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
+                                >
+                                  {isSuperAdmin &&
+                                    user &&
+                                    userData.id !== user.id && (
+                                      <>
+                                        {userData.role !== "super_admin" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleRoleChangeRequest(
+                                                userData.id,
+                                                "super_admin",
+                                                `${userData.firstName} ${userData.lastName}`,
+                                              )
+                                            }
+                                            className="text-purple-600"
+                                          >
+                                            <Crown className="w-4 h-4 mr-2" />
+                                            Make Super Admin
+                                          </DropdownMenuItem>
+                                        )}
+                                        {userData.role !== "finance_person" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleRoleChangeRequest(
+                                                userData.id,
+                                                "finance_person",
+                                                `${userData.firstName} ${userData.lastName}`,
+                                              )
+                                            }
+                                            className="text-green-600"
+                                          >
+                                            <DollarSign className="w-4 h-4 mr-2" />
+                                            Make Finance Person
+                                          </DropdownMenuItem>
+                                        )}
+                                        {userData.role !== "event_manager" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleRoleChangeRequest(
+                                                userData.id,
+                                                "event_manager",
+                                                `${userData.firstName} ${userData.lastName}`,
+                                              )
+                                            }
+                                            className="text-blue-600"
+                                          >
+                                            <Calendar className="w-4 h-4 mr-2" />
+                                            Make Event Manager
+                                          </DropdownMenuItem>
+                                        )}
+                                        {userData.role !== "ordinary_user" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleRoleChangeRequest(
+                                                userData.id,
+                                                "ordinary_user",
+                                                `${userData.firstName} ${userData.lastName}`,
+                                              )
+                                            }
+                                            className="text-amber-600"
+                                          >
+                                            <UserCheck className="w-4 h-4 mr-2" />
+                                            Make Ordinary User
+                                          </DropdownMenuItem>
+                                        )}
+                                      </>
+                                    )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {filteredUsers.map((userData, index) => (
+                      <Card
+                        key={userData.id}
+                        className="border border-slate-200 shadow-sm"
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* User Header */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="border-2 border-slate-200 w-12 h-12">
+                                  <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
+                                    {userData.firstName
+                                      ?.charAt(0)
+                                      ?.toUpperCase()}
+                                    {userData.lastName
+                                      ?.charAt(0)
+                                      ?.toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-semibold text-gray-900 text-lg">
+                                    {userData.firstName} {userData.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    ID: {userData.id?.slice(0, 8) || "N/A"}
+                                  </div>
+                                </div>
+                              </div>
+                              {isSuperAdmin &&
+                                user &&
+                                userData.id !== user.id && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-10 w-10 p-0"
+                                      >
+                                        <MoreHorizontal className="w-5 h-5" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                      align="end"
+                                      className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
+                                    >
                                       {userData.role !== "super_admin" && (
                                         <DropdownMenuItem
                                           onClick={() =>
@@ -1515,381 +1750,211 @@ export default function AdminDashboard() {
                                           Make Ordinary User
                                         </DropdownMenuItem>
                                       )}
-                                    </>
-                                  )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Mobile Card View */}
-                <div className="lg:hidden space-y-4">
-                  {filteredUsers.map((userData, index) => (
-                    <Card
-                      key={userData.id}
-                      className="border border-slate-200 shadow-sm"
-                    >
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {/* User Header */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="border-2 border-slate-200 w-12 h-12">
-                                <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
-                                  {userData.firstName?.charAt(0)?.toUpperCase()}
-                                  {userData.lastName?.charAt(0)?.toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-semibold text-gray-900 text-lg">
-                                  {userData.firstName} {userData.lastName}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  ID: {userData.id?.slice(0, 8) || "N/A"}
-                                </div>
-                              </div>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
                             </div>
-                            {isSuperAdmin &&
-                              user &&
-                              userData.id !== user.id && (
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-10 w-10 p-0"
-                                    >
-                                      <MoreHorizontal className="w-5 h-5" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
-                                  >
-                                    {userData.role !== "super_admin" && (
-                                      <DropdownMenuItem
-                                        onClick={() =>
-                                          handleRoleChangeRequest(
-                                            userData.id,
-                                            "super_admin",
-                                            `${userData.firstName} ${userData.lastName}`,
-                                          )
-                                        }
-                                        className="text-purple-600"
-                                      >
-                                        <Crown className="w-4 h-4 mr-2" />
-                                        Make Super Admin
-                                      </DropdownMenuItem>
-                                    )}
-                                    {userData.role !== "finance_person" && (
-                                      <DropdownMenuItem
-                                        onClick={() =>
-                                          handleRoleChangeRequest(
-                                            userData.id,
-                                            "finance_person",
-                                            `${userData.firstName} ${userData.lastName}`,
-                                          )
-                                        }
-                                        className="text-green-600"
-                                      >
-                                        <DollarSign className="w-4 h-4 mr-2" />
-                                        Make Finance Person
-                                      </DropdownMenuItem>
-                                    )}
-                                    {userData.role !== "event_manager" && (
-                                      <DropdownMenuItem
-                                        onClick={() =>
-                                          handleRoleChangeRequest(
-                                            userData.id,
-                                            "event_manager",
-                                            `${userData.firstName} ${userData.lastName}`,
-                                          )
-                                        }
-                                        className="text-blue-600"
-                                      >
-                                        <Calendar className="w-4 h-4 mr-2" />
-                                        Make Event Manager
-                                      </DropdownMenuItem>
-                                    )}
-                                    {userData.role !== "ordinary_user" && (
-                                      <DropdownMenuItem
-                                        onClick={() =>
-                                          handleRoleChangeRequest(
-                                            userData.id,
-                                            "ordinary_user",
-                                            `${userData.firstName} ${userData.lastName}`,
-                                          )
-                                        }
-                                        className="text-amber-600"
-                                      >
-                                        <UserCheck className="w-4 h-4 mr-2" />
-                                        Make Ordinary User
-                                      </DropdownMenuItem>
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              )}
-                          </div>
 
-                          {/* Contact Info */}
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Mail className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm text-gray-900">
-                                {userData.email}
-                              </span>
-                            </div>
-                            {userData.phoneNumber && (
+                            {/* Contact Info */}
+                            <div className="space-y-2">
                               <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4 text-gray-500" />
+                                <Mail className="w-4 h-4 text-gray-500" />
                                 <span className="text-sm text-gray-900">
-                                  {userData.phoneNumber}
+                                  {userData.email}
                                 </span>
                               </div>
-                            )}
-                          </div>
-
-                          {/* Role and Date */}
-                          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                            <div>
-                              {userData.role === "super_admin" ? (
-                                <Badge className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
-                                  <Crown className="w-3 h-3 mr-1" />
-                                  Super Admin
-                                </Badge>
-                              ) : userData.role === "finance_person" ? (
-                                <Badge className="bg-emerald-500 text-white">
-                                  <DollarSign className="w-3 h-3 mr-1" />
-                                  Finance Person
-                                </Badge>
-                              ) : userData.role === "event_manager" ? (
-                                <Badge className="bg-blue-500 text-white">
-                                  <Calendar className="w-3 h-3 mr-1" />
-                                  Event Manager
-                                </Badge>
-                              ) : (
-                                <Badge
-                                  variant="outline"
-                                  className="border-gray-300"
-                                >
-                                  <UserCheck className="w-3 h-3 mr-1" />
-                                  Ordinary User
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Joined:{" "}
-                              {userData.createdAt
-                                ? formatDate(userData.createdAt)
-                                : "Unknown"}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="events">
-            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-              <CardHeader className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
-                      Event Management
-                    </CardTitle>
-                    <CardDescription className="text-sm">
-                      Overview and management of all training events
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={() => exportToExcel("events")}
-                    variant="outline"
-                    className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
-                  >
-                    <span className="hidden sm:inline">
-                      Download Events as Excel
-                    </span>
-                    <span className="sm:hidden">Export</span>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Desktop Table View */}
-                <div className="hidden lg:block rounded-lg border border-slate-200 overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-slate-50">
-                      <TableRow>
-                        <TableHead className="font-semibold">
-                          Event Details
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Schedule
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Location
-                        </TableHead>
-                        <TableHead className="font-semibold">Pricing</TableHead>
-                        <TableHead className="font-semibold">
-                          Attendance
-                        </TableHead>
-                        <TableHead className="font-semibold">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredEvents.map((event, index) => (
-                        <TableRow
-                          key={event.id}
-                          className={
-                            index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
-                          }
-                        >
-                          <TableCell>
-                            <div className="space-y-2">
-                              <div className="font-semibold text-gray-900 text-base">
-                                {event.title}
-                              </div>
-                              <div className="text-sm text-gray-600 max-w-xs line-clamp-2">
-                                {event.description}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="text-sm font-medium">
-                                {formatDate(event.startDate)}
-                              </div>
-                              {event.endDate &&
-                                event.startDate &&
-                                event.endDate !== event.startDate && (
-                                  <div className="text-sm text-gray-500">
-                                    to {formatDate(event.endDate)}
-                                  </div>
-                                )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm text-gray-900">
-                              {event.location || "To be announced"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold text-lg text-[#1C356B]">
-                              K{event.price}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-gray-900">
-                                {event.currentAttendees || 0}
-                              </div>
-                              {event.maxAttendees && (
-                                <div className="text-sm text-gray-500">
-                                  of {event.maxAttendees}
+                              {userData.phoneNumber && (
+                                <div className="flex items-center gap-2">
+                                  <Phone className="w-4 h-4 text-gray-500" />
+                                  <span className="text-sm text-gray-900">
+                                    {userData.phoneNumber}
+                                  </span>
                                 </div>
                               )}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            {event.featured ? (
-                              <Badge className="bg-gradient-to-r from-[#FDC123] to-amber-500 text-[#1C356B] font-semibold">
-                                <Star className="w-3 h-3 mr-1" />
-                                Featured
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="border-emerald-300 text-emerald-700 bg-emerald-50"
-                              >
-                                Active
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
 
-                {/* Mobile Card View */}
-                <div className="lg:hidden space-y-4">
-                  {filteredEvents.map((event, index) => (
-                    <Card
-                      key={event.id}
-                      className="border border-slate-200 shadow-sm"
-                    >
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {/* Event Header */}
-                          <div className="space-y-2">
-                            <div className="font-semibold text-gray-900 text-lg">
-                              {event.title}
-                            </div>
-                            <div className="text-sm text-gray-600 line-clamp-2">
-                              {event.description}
-                            </div>
-                          </div>
-
-                          {/* Event Details Grid */}
-                          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">
-                                Schedule
-                              </div>
-                              <div className="text-sm font-medium">
-                                {formatDate(event.startDate)}
-                              </div>
-                              {event.endDate &&
-                                event.startDate &&
-                                event.endDate !== event.startDate && (
-                                  <div className="text-xs text-gray-500">
-                                    to {formatDate(event.endDate)}
-                                  </div>
+                            {/* Role and Date */}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                              <div>
+                                {userData.role === "super_admin" ? (
+                                  <Badge className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
+                                    <Crown className="w-3 h-3 mr-1" />
+                                    Super Admin
+                                  </Badge>
+                                ) : userData.role === "finance_person" ? (
+                                  <Badge className="bg-emerald-500 text-white">
+                                    <DollarSign className="w-3 h-3 mr-1" />
+                                    Finance Person
+                                  </Badge>
+                                ) : userData.role === "event_manager" ? (
+                                  <Badge className="bg-blue-500 text-white">
+                                    <Calendar className="w-3 h-3 mr-1" />
+                                    Event Manager
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-gray-300"
+                                  >
+                                    <UserCheck className="w-3 h-3 mr-1" />
+                                    Ordinary User
+                                  </Badge>
                                 )}
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">
-                                Price
                               </div>
-                              <div className="font-semibold text-lg text-[#1C356B]">
-                                K{event.price}
+                              <div className="text-xs text-gray-500">
+                                Joined:{" "}
+                                {userData.createdAt
+                                  ? formatDate(userData.createdAt)
+                                  : "Unknown"}
                               </div>
                             </div>
                           </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
-                          {/* Location and Attendance */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">
-                                Location
+          {!canManageEvents && (
+            <TabsContent value="events">
+              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                <CardContent className="p-8">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-6">
+                      <Calendar className="w-10 h-10 text-purple-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                      Event Management Restricted
+                    </h3>
+                    <p className="text-gray-600 mb-4 max-w-md">
+                      Event management is only available to Super Admins and
+                      Event Managers. This includes creating events, editing
+                      event details, and managing event settings.
+                    </p>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <p className="text-sm text-blue-800">
+                        <strong>Your current role:</strong>{" "}
+                        {user?.role
+                          ?.replace("_", " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {canManageEvents && (
+            <TabsContent value="events">
+              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                <CardHeader className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
+                        Event Management
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        Overview and management of all training events
+                      </CardDescription>
+                    </div>
+                    <Button
+                      onClick={() => exportToExcel("events")}
+                      variant="outline"
+                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
+                    >
+                      <span className="hidden sm:inline">
+                        Download Events as Excel
+                      </span>
+                      <span className="sm:hidden">Export</span>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block rounded-lg border border-slate-200 overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="font-semibold">
+                            Event Details
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Schedule
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Location
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Pricing
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Attendance
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Status
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredEvents.map((event, index) => (
+                          <TableRow
+                            key={event.id}
+                            className={
+                              index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                            }
+                          >
+                            <TableCell>
+                              <div className="space-y-2">
+                                <div className="font-semibold text-gray-900 text-base">
+                                  {event.title}
+                                </div>
+                                <div className="text-sm text-gray-600 max-w-xs line-clamp-2">
+                                  {event.description}
+                                </div>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="text-sm font-medium">
+                                  {formatDate(event.startDate)}
+                                </div>
+                                {event.endDate &&
+                                  event.startDate &&
+                                  event.endDate !== event.startDate && (
+                                    <div className="text-sm text-gray-500">
+                                      to {formatDate(event.endDate)}
+                                    </div>
+                                  )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
                               <div className="text-sm text-gray-900">
                                 {event.location || "To be announced"}
                               </div>
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">
-                                Attendance
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-semibold text-lg text-[#1C356B]">
+                                K{event.price}
                               </div>
-                              <div className="text-sm font-medium">
-                                {event.currentAttendees || 0}
-                                {event.maxAttendees &&
-                                  ` of ${event.maxAttendees}`}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-gray-900">
+                                  {event.currentAttendees || 0}
+                                </div>
+                                {event.maxAttendees && (
+                                  <div className="text-sm text-gray-500">
+                                    of {event.maxAttendees}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          </div>
-
-                          {/* Status */}
-                          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                            <div>
+                            </TableCell>
+                            <TableCell>
                               {event.featured ? (
                                 <Badge className="bg-gradient-to-r from-[#FDC123] to-amber-500 text-[#1C356B] font-semibold">
                                   <Star className="w-3 h-3 mr-1" />
@@ -1903,16 +1968,108 @@ export default function AdminDashboard() {
                                   Active
                                 </Badge>
                               )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {filteredEvents.map((event, index) => (
+                      <Card
+                        key={event.id}
+                        className="border border-slate-200 shadow-sm"
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* Event Header */}
+                            <div className="space-y-2">
+                              <div className="font-semibold text-gray-900 text-lg">
+                                {event.title}
+                              </div>
+                              <div className="text-sm text-gray-600 line-clamp-2">
+                                {event.description}
+                              </div>
+                            </div>
+
+                            {/* Event Details Grid */}
+                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Schedule
+                                </div>
+                                <div className="text-sm font-medium">
+                                  {formatDate(event.startDate)}
+                                </div>
+                                {event.endDate &&
+                                  event.startDate &&
+                                  event.endDate !== event.startDate && (
+                                    <div className="text-xs text-gray-500">
+                                      to {formatDate(event.endDate)}
+                                    </div>
+                                  )}
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Price
+                                </div>
+                                <div className="font-semibold text-lg text-[#1C356B]">
+                                  K{event.price}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Location and Attendance */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Location
+                                </div>
+                                <div className="text-sm text-gray-900">
+                                  {event.location || "To be announced"}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Attendance
+                                </div>
+                                <div className="text-sm font-medium">
+                                  {event.currentAttendees || 0}
+                                  {event.maxAttendees &&
+                                    ` of ${event.maxAttendees}`}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Status */}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                              <div>
+                                {event.featured ? (
+                                  <Badge className="bg-gradient-to-r from-[#FDC123] to-amber-500 text-[#1C356B] font-semibold">
+                                    <Star className="w-3 h-3 mr-1" />
+                                    Featured
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-emerald-300 text-emerald-700 bg-emerald-50"
+                                  >
+                                    Active
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           <TabsContent value="registrations">
             <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
@@ -2167,6 +2324,12 @@ export default function AdminDashboard() {
                                         registration.paymentStatus === "paid"
                                       }
                                       className="text-emerald-600"
+                                      onSelect={() =>
+                                        handlePaymentStatusUpdate(
+                                          registration.id,
+                                          "paid",
+                                        )
+                                      }
                                     >
                                       <CheckCircle className="w-4 h-4 mr-2" />
                                       Mark as Paid
@@ -2176,18 +2339,31 @@ export default function AdminDashboard() {
                                         registration.paymentStatus === "pending"
                                       }
                                       className="text-amber-600"
+                                      onSelect={() =>
+                                        handlePaymentStatusUpdate(
+                                          registration.id,
+                                          "pending",
+                                        )
+                                      }
                                     >
                                       <Clock className="w-4 h-4 mr-2" />
                                       Mark as Pending
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                       disabled={
-                                        registration.paymentStatus === "failed"
+                                        registration.paymentStatus ===
+                                        "cancelled"
                                       }
                                       className="text-red-600"
+                                      onSelect={() =>
+                                        handlePaymentStatusUpdate(
+                                          registration.id,
+                                          "cancelled",
+                                        )
+                                      }
                                     >
                                       <XCircle className="w-4 h-4 mr-2" />
-                                      Mark as Failed
+                                      Mark as Cancelled
                                     </DropdownMenuItem>
                                   </>
                                 )}
@@ -2338,6 +2514,62 @@ export default function AdminDashboard() {
                                 </Button>
                               )}
                             </div>
+
+                            {/* Payment Status Update Buttons */}
+                            {canUpdatePaymentStatus && (
+                              <div className="flex flex-wrap gap-2 mt-3">
+                                <Button
+                                  onClick={() =>
+                                    handlePaymentStatusUpdate(
+                                      registration.id,
+                                      "paid",
+                                    )
+                                  }
+                                  disabled={
+                                    registration.paymentStatus === "paid"
+                                  }
+                                  size="sm"
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                >
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Mark Paid
+                                </Button>
+                                <Button
+                                  onClick={() =>
+                                    handlePaymentStatusUpdate(
+                                      registration.id,
+                                      "pending",
+                                    )
+                                  }
+                                  disabled={
+                                    registration.paymentStatus === "pending"
+                                  }
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-amber-600 text-amber-600 hover:bg-amber-50"
+                                >
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Mark Pending
+                                </Button>
+                                <Button
+                                  onClick={() =>
+                                    handlePaymentStatusUpdate(
+                                      registration.id,
+                                      "cancelled",
+                                    )
+                                  }
+                                  disabled={
+                                    registration.paymentStatus === "cancelled"
+                                  }
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-red-600 text-red-600 hover:bg-red-50"
+                                >
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>
