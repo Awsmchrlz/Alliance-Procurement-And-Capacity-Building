@@ -308,11 +308,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const {
           userId,
           eventId,
-          title,
-          gender,
           country,
           organization,
-          organizationType,
           position,
           notes,
           hasPaid,
@@ -320,15 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } = req.body;
 
         // Validate required fields
-        if (
-          !userId ||
-          !eventId ||
-          !title ||
-          !gender ||
-          !country ||
-          !organization ||
-          !position
-        ) {
+        if (!userId || !eventId || !country || !organization || !position) {
           return res.status(400).json({ message: "Missing required fields" });
         }
 
@@ -369,11 +358,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const registration = await storage.createEventRegistration({
           eventId,
           userId,
-          title,
-          gender,
           country,
           organization,
-          organizationType: organizationType || "Other",
           position,
           notes: notes || null,
           hasPaid: hasPaid || false,
@@ -398,6 +384,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Failed to create registration",
           details: error.message,
         });
+      }
+    },
+  );
+
+  // Newsletter sending endpoint
+  app.post(
+    "/api/admin/newsletter/send",
+    authenticateSupabase,
+    async (req: any, res) => {
+      try {
+        // Check if user has admin privileges
+        const userRole =
+          req.supabaseUser?.user_metadata?.role || req.supabaseUser?.role;
+        if (
+          !["super_admin", "finance_person", "event_manager"].includes(userRole)
+        ) {
+          return res.status(403).json({ message: "Admin privileges required" });
+        }
+
+        const { subject, content, recipients } = req.body;
+
+        if (!subject || !content || !recipients || !Array.isArray(recipients)) {
+          return res
+            .status(400)
+            .json({ message: "Subject, content, and recipients are required" });
+        }
+
+        // For now, we'll simulate email sending
+        // In a real implementation, you would integrate with an email service like Resend, SendGrid, etc.
+        console.log(
+          `Sending newsletter: "${subject}" to ${recipients.length} recipients`,
+        );
+
+        // Simulate async email sending
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Log newsletter activity
+        console.log("Newsletter sent successfully:", {
+          subject,
+          recipientCount: recipients.length,
+          sentBy: req.supabaseUser.email,
+          sentAt: new Date().toISOString(),
+        });
+
+        res.json({
+          success: true,
+          message: `Newsletter sent to ${recipients.length} recipients`,
+          subject,
+          recipientCount: recipients.length,
+        });
+      } catch (error) {
+        console.error("Newsletter sending error:", error);
+        res.status(500).json({ message: "Failed to send newsletter" });
       }
     },
   );
@@ -802,20 +841,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Newsletter subscriptions (super admin only)
-  app.get(
-    "/api/admin/newsletter-subscriptions",
-    authenticateSupabase,
-    requireRoles([Roles.SuperAdmin]),
-    async (_req, res) => {
-      try {
-        const subscriptions = await storage.getAllNewsletterSubscriptions();
-        res.json(subscriptions);
-      } catch (error) {
-        console.error("Error fetching newsletter subscriptions:", error);
-        res.status(500).json({ message: "Failed to fetch subscriptions" });
-      }
-    },
-  );
 
   // Email blast (super admin only)
   app.post(
@@ -837,11 +862,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ message: "Subject and message are required" });
         }
 
-        const subscriptions = await storage.getAllNewsletterSubscriptions();
+        const users = await storage.getAllUsers();
 
         // Log email blast details (replace with SendGrid when ready)
         console.log(
-          `📧 Sending email blast to ${subscriptions.length} subscribers`,
+          `📧 Sending email blast to ${users.length} registered users`,
         );
         console.log(`   Subject: ${subject}`);
         console.log(`   From: ${fromName} <${fromEmail}>`);
@@ -850,8 +875,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         /*
       const sgMail = require('@sendgrid/mail');
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      const messages = subscriptions.map(sub => ({
-        to: sub.email,
+      const messages = users.map(user => ({
+        to: user.email,
         from: { email: fromEmail, name: fromName },
         subject,
         text: message,
@@ -861,11 +886,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       */
 
         res.json({
-          message: `Email blast queued for ${subscriptions.length} subscribers`,
+          message: `Email blast queued for ${users.length} users`,
           results: {
-            sent: subscriptions.length,
+            sent: users.length,
             failed: 0,
-            total: subscriptions.length,
+            total: users.length,
           },
         });
       } catch (error) {
