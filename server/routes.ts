@@ -1,15 +1,20 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage"; // Assumes storage.ts from my previous response
+import fileUpload from "express-fileupload";
+import { storage } from "./storage";
 import {
   insertUserSchema,
   insertEventRegistrationSchema,
   insertNewsletterSubscriptionSchema,
 } from "@shared/schema";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import fileUpload from "express-fileupload";
+import { emailService } from "./email-service";
+import { createClient } from "@supabase/supabase-js";
 
-// Role helpers
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 const Roles = {
   SuperAdmin: "super_admin",
   Finance: "finance_person",
@@ -41,7 +46,7 @@ const authenticateSupabase = async (req: any, res: any, next: any) => {
         .json({ message: "Supabase server credentials not configured" });
     }
 
-    const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
     const { data, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !data.user) {
       return res.status(403).json({ message: "Invalid or expired token" });
@@ -80,31 +85,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
+    console.log("🚀 Starting user registration process...");
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
+    
     try {
+      // Validate request body against schema
       const userData = insertUserSchema.parse(req.body);
+      console.log("✅ Request data validated successfully");
 
       // Check if user already exists
+      console.log(`🔍 Checking if user ${userData.email} already exists...`);
       const existingUser = await storage.getUserByEmail(userData.email);
       if (existingUser) {
-        return res.status(400).json({ message: "User already exists" });
+        console.log(`❌ User ${userData.email} already exists`);
+        return res.status(400).json({ 
+          message: "User already exists",
+          details: "A user with this email address is already registered"
+        });
       }
+      console.log("✅ Email is available for registration");
 
       // Check if this is the first user (make them super_admin)
+      console.log("🔍 Checking if this is the first user...");
       const allUsers = await storage.getAllUsers();
       const isFirstUser = allUsers.length === 0;
+      const finalRole = isFirstUser ? "super_admin" : userData.role || "ordinary_user";
+      console.log(`📝 User will be assigned role: ${finalRole} (first user: ${isFirstUser})`);
 
       // Create user in Supabase with role in user_metadata
+      console.log("🔨 Creating user account...");
       const user = await storage.createUser({
         ...userData,
-        role: isFirstUser ? "super_admin" : userData.role || "ordinary_user",
+        role: finalRole,
       });
+      console.log(`✅ User account created successfully: ${user.id}`);
 
-      res.status(201).json({ user });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(400).json({ message: "Invalid user data" });
+      // Send welcome email to new user (fire-and-forget)
+      console.log("📧 Sending welcome email...");
+      emailService
+        .sendUserWelcomeEmail({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+        })
+        .then(() => {
+          console.log(`✅ Welcome email sent to ${user.email}`);
+        })
+        .catch((error) => {
+          console.error("❌ Failed to send welcome email:", error.message);
+        });
+
+      // Send notification to super admins (fire-and-forget)
+      if (!isFirstUser) {
+        console.log("📧 Sending admin notifications...");
+        const superAdmins = allUsers.filter(
+          (admin) => admin.role === "super_admin" && admin.email !== user.email,
+        );
+        const adminEmails = superAdmins.map((admin) => ({
+          email: admin.email,
+          name: `${admin.firstName} ${admin.lastName}`,
+        }));
+
+        if (adminEmails.length > 0) {
+          console.log(`📧 Notifying ${adminEmails.length} super admin(s)`);
+          emailService
+            .notifyAdminsNewUserRegistration(
+              {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role,
+              },
+              adminEmails,
+            )
+            .then(() => {
+              console.log("✅ Admin notifications sent successfully");
+            })
+            .catch((error) => {
+              console.error("❌ Failed to notify admins of new user:", error.message);
+            });
+        } else {
+          console.log("ℹ️ No super admins to notify");
+        }
+      } else {
+        console.log("ℹ️ First user registration - no admin notifications needed");
+      }
+
+      console.log(`🎉 User ${user.email} registered successfully with ID: ${user.id}`);
+      res.status(201).json({ 
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phoneNumber: user.phoneNumber,
+          gender: user.gender,
+          role: user.role,
+          createdAt: user.createdAt
+        },
+        message: "Registration successful"
+      });
+    } catch (error: any) {
+      console.error("❌ Registration error:", error);
+      console.error("Error stack:", error.stack);
+      
+      // Determine error type for better user feedback
+      let errorMessage = "Registration failed";
+      let errorDetails = error.message || "Invalid user data";
+      
+      if (error.message?.includes("duplicate key")) {
+        errorMessage = "User already exists";
+        errorDetails = "A user with this email address is already registered";
+      } else if (error.message?.includes("validation")) {
+        errorMessage = "Invalid input data";
+        errorDetails = "Please check all required fields are filled correctly";
+      } else if (error.message?.includes("auth")) {
+        errorMessage = "Authentication setup failed";
+        errorDetails = "There was an issue setting up your account authentication";
+      } else if (error.message?.includes("database") || error.message?.includes("insert")) {
+        errorMessage = "Database error";
+        errorDetails = "There was an issue saving your account information";
+      }
+      
+      res.status(400).json({ 
+        message: errorMessage, 
+        details: errorDetails,
+        timestamp: new Date().toISOString()
+      });
     }
   });
+
+  // Promote user to admin (super admin only)
+  app.patch(
+    "/api/admin/users/:userId/promote",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req: any, res) => {
+      try {
+        const { userId } = req.params;
+        const { role } = req.body;
+
+        // Validate role
+        const validRoles = ["super_admin", "finance_person", "event_manager", "ordinary_user"];
+        if (!validRoles.includes(role)) {
+          return res.status(400).json({ message: "Invalid role specified" });
+        }
+
+        console.log(`🔄 Promoting user ${userId} to role: ${role}`);
+
+        // Update user metadata in Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.admin.updateUserById(userId, {
+          user_metadata: { role }
+        });
+
+        if (authError) {
+          console.error("Error updating user role:", authError.message);
+          return res.status(400).json({ message: "Failed to update user role", details: authError.message });
+        }
+
+        console.log(`✅ User ${userId} promoted to ${role} successfully`);
+        res.json({ 
+          message: "User role updated successfully", 
+          user: {
+            id: authData.user.id,
+            email: authData.user.email,
+            role: authData.user.user_metadata.role
+          }
+        });
+      } catch (error: any) {
+        console.error("Error promoting user:", error);
+        res.status(500).json({ message: "Internal server error", details: error.message });
+      }
+    }
+  );
+
+  // Get all users with roles (super admin only)
+  app.get(
+    "/api/admin/users",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req: any, res) => {
+      try {
+        const users = await storage.getAllUsers();
+        res.json({ users });
+      } catch (error: any) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ message: "Failed to fetch users", details: error.message });
+      }
+    }
+  );
 
   // Admin user registration endpoint (super admin only)
   app.post(
@@ -135,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ message: "Server configuration error" });
         }
 
-        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
         // Create user in Supabase Auth
         const { data: authData, error: authError } =
@@ -210,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Supabase server credentials not configured" });
       }
 
-      const supabase = createSupabaseClient(supabaseUrl, serviceRoleKey);
+      const supabase = createClient(supabaseUrl, serviceRoleKey);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -272,14 +442,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Check if event exists and has capacity
-        const event = await storage.getEvent(registrationData.eventId);
-        if (!event) {
+        const eventData = await storage.getEvent(registrationData.eventId);
+        if (!eventData) {
           return res.status(404).json({ message: "Event not found" });
         }
         if (
-          event.maxAttendees &&
-          event.currentAttendees &&
-          event.currentAttendees >= event.maxAttendees
+          eventData.maxAttendees &&
+          eventData.currentAttendees &&
+          eventData.currentAttendees >= eventData.maxAttendees
         ) {
           return res.status(400).json({ message: "Event is full" });
         }
@@ -287,9 +457,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Force paymentStatus to 'pending' for all new user-initiated registrations
         const registration = await storage.createEventRegistration({
           ...registrationData,
+          notes: "", // Always use empty string for notes
           paymentStatus: "pending",
           hasPaid: false,
         });
+
+        // Get user and event details for email notifications
+        const user = await storage.getUser(registrationData.userId);
+        const eventDetails = await storage.getEvent(registrationData.eventId);
+
+        if (user && eventDetails) {
+          // Send confirmation email to user (fire-and-forget)
+          emailService
+            .sendEventRegistrationConfirmation({
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              eventTitle: eventDetails.title,
+              eventDate: eventDetails.startDate,
+              registrationNumber: registration.registrationNumber,
+              organization: registrationData.organization,
+              country: registrationData.country,
+            })
+            .catch((emailError) => {
+              console.error(
+                "Failed to send registration confirmation email:",
+                emailError.message,
+              );
+            });
+
+          // Notify super admins and event managers about new registration (fire-and-forget)
+          const allUsers = await storage.getAllUsers();
+          const adminEmails = allUsers
+            .filter(
+              (u) => u.role === "super_admin" || u.role === "event_manager",
+            )
+            .map((admin) => ({
+              email: admin.email,
+              name: `${admin.firstName} ${admin.lastName}`,
+            }));
+
+          if (adminEmails.length > 0) {
+            emailService
+              .notifyAdminsNewEventRegistration(
+                {
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                  email: user.email,
+                  eventTitle: eventDetails.title,
+                  eventDate: eventDetails.startDate,
+                  registrationNumber: registration.registrationNumber,
+                  organization: registrationData.organization,
+                  country: registrationData.country,
+                },
+                adminEmails,
+              )
+              .catch((emailError) => {
+                console.error(
+                  "Failed to notify admins about event registration:",
+                  emailError.message,
+                );
+              });
+          }
+        }
+
         res.status(201).json(registration);
       } catch (error) {
         console.error("Registration error:", error);
@@ -361,7 +592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           country,
           organization,
           position,
-          notes: notes || null,
+          notes: "", // Always use empty string for notes
           hasPaid: hasPaid || false,
           paymentStatus: paymentStatus || "pending",
           paymentEvidence: null,
@@ -664,7 +895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ message: "Supabase server credentials not configured" });
         }
 
-        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
         const allUsers: any[] = [];
         const perPage = 1000;
         let page = 1;
@@ -721,7 +952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         const supabaseAdmin =
           supabaseUrl && serviceRoleKey
-            ? createSupabaseClient(supabaseUrl, serviceRoleKey)
+            ? createClient(supabaseUrl, serviceRoleKey)
             : null;
 
         const registrationsWithDetails = await Promise.all(
@@ -820,7 +1051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ message: "Supabase server credentials not configured" });
         }
 
-        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
         const { error } = await supabaseAdmin.auth.admin.updateUserById(
           userId,
           {
@@ -927,7 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ message: "Supabase server credentials not configured" });
         }
 
-        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
         const bucket =
           process.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
 
@@ -1013,7 +1244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ message: "Server configuration error" });
         }
 
-        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
         const bucket =
           process.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
 
@@ -1145,7 +1376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ message: "Server configuration error" });
         }
 
-        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
         const bucket =
           process.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
 
@@ -1244,7 +1475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ message: "Server configuration error" });
         }
 
-        const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
         const bucket =
           process.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
 
@@ -1319,9 +1550,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/events",
     authenticateSupabase,
     requireRoles([Roles.SuperAdmin, Roles.EventManager]),
-    async (req, res) => {
+    async (req: any, res) => {
       try {
         const event = await storage.createEvent(req.body);
+        
+        // Send notification to all users about new event (fire-and-forget)
+        const allUsers = await storage.getAllUsers();
+        const userEmails = allUsers.map((user) => ({
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`,
+        }));
+
+        if (userEmails.length > 0) {
+          emailService
+            .sendEventCreationNotification(
+              {
+                eventTitle: event.title,
+                eventDescription: event.description,
+                eventDate: event.startDate,
+                eventLocation: event.location || "TBA",
+                eventPrice: event.price,
+              },
+              userEmails,
+            )
+            .catch((emailError: any) => {
+              console.error(
+                "Failed to send event creation notifications:",
+                emailError.message,
+              );
+            });
+        }
+
+        console.log(`✅ Event "${event.title}" created successfully by ${req.supabaseUser.email}`);
         res.status(201).json(event);
       } catch (error: any) {
         res
@@ -1362,6 +1622,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res
           .status(400)
           .json({ message: "Failed to delete event", details: error.message });
+      }
+    },
+  );
+
+  // Email campaign endpoint with user removal functionality
+  app.post(
+    "/api/email/campaign",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req: any, res) => {
+      try {
+        const { recipients, subject, content, recipientType, excludedUsers = [] } = req.body;
+
+        if (!recipients || !subject || !content || !recipientType) {
+          return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        if (!Array.isArray(recipients) || recipients.length === 0) {
+          return res.status(400).json({ message: "No recipients provided" });
+        }
+
+        // Filter out excluded users
+        const filteredRecipients = recipients.filter(recipient => 
+          !excludedUsers.some((excluded: any) => 
+            excluded.email === recipient.email || excluded.id === recipient.id
+          )
+        );
+
+        if (filteredRecipients.length === 0) {
+          return res.status(400).json({ message: "No recipients remaining after exclusions" });
+        }
+
+        // Generate HTML template for the email
+        const htmlContent = emailService.generateCampaignTemplate(
+          subject,
+          content,
+          "This email was sent to you as a member of our platform.",
+        );
+
+        // Send the campaign email
+        await emailService.sendCampaignEmail(
+          filteredRecipients,
+          subject,
+          htmlContent,
+          content.replace(/<[^>]*>/g, ""), // Strip HTML for text version
+        );
+
+        console.log(
+          `📧 Email campaign sent to ${filteredRecipients.length} recipients (${recipients.length - filteredRecipients.length} excluded) by ${req.supabaseUser.email}`,
+        );
+
+        res.status(200).json({
+          message: "Email campaign sent successfully",
+          recipientCount: filteredRecipients.length,
+          excludedCount: recipients.length - filteredRecipients.length,
+          recipientType,
+        });
+      } catch (error: any) {
+        console.error("Email campaign error:", error);
+        res.status(500).json({
+          message: "Failed to send email campaign",
+          details: error.message,
+        });
       }
     },
   );

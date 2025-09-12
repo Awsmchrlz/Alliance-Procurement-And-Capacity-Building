@@ -6,37 +6,26 @@ export function TestimonialsSection() {
   const testimonials = [
     {
       id: 1,
-      name: "Sarah Johnson",
-      position: "Director of Operations",
-      company: "Global Solutions Ltd.",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&q=80",
+      name: "anonymous",
       rating: 5,
       text: "Alliance Procurement & Capacity Building transformed our procurement processes. Their expertise and professionalism exceeded our expectations, delivering results that have significantly improved our operational efficiency."
     },
     {
       id: 2,
-      name: "Michael Chen",
+      name: "anonymous",
       position: "Supply Chain Manager",
-      company: "TechCorp Industries",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&q=80",
       rating: 5,
       text: "The capacity building programs provided by APCB were exceptional. Their team's deep understanding of procurement challenges helped us implement sustainable solutions that continue to benefit our organization."
     },
     {
       id: 3,
-      name: "Dr. Amelia Rodriguez",
-      position: "Procurement Head",
-      company: "Healthcare Alliance",
-      image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&q=80",
+      name: "anonymous",
       rating: 5,
       text: "Working with APCB has been a game-changer for our healthcare procurement needs. Their innovative approach and attention to detail ensured we received the highest quality services within our budget."
     },
     {
       id: 4,
-      name: "James Thompson",
-      position: "CEO",
-      company: "BuildRight Construction",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80",
+      name: "anonymous",
       rating: 5,
       text: "APCB's procurement expertise helped us streamline our supply chain and reduce costs by 25%. Their professional team delivered outstanding results that have had a lasting positive impact on our business."
     }
@@ -72,7 +61,7 @@ export function TestimonialsSection() {
     }, 300);
   };
 
-  const goToTestimonial = (index) => {
+  const goToTestimonial = (index: number) => {
     if (isAnimating || index === currentIndex) return;
     setIsAnimating(true);
     setTimeout(() => {
@@ -81,7 +70,7 @@ export function TestimonialsSection() {
     }, 300);
   };
 
-  const renderStars = (rating) => {
+  const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
@@ -127,18 +116,7 @@ export function TestimonialsSection() {
             >
               <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
                 {/* Client Image */}
-                <div className="flex-shrink-0">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden ring-4 ring-[#87CEEB]/20">
-                    <img
-                      src={testimonials[currentIndex].image}
-                      alt={testimonials[currentIndex].name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(testimonials[currentIndex].name)}&background=1C356B&color=FDC123&size=150`;
-                      }}
-                    />
-                  </div>
-                </div>
+           
 
                 {/* Testimonial Content */}
                 <div className="flex-1 text-center lg:text-left">
@@ -157,12 +135,6 @@ export function TestimonialsSection() {
                     <h4 className="text-xl font-bold text-[#1C356B] mb-1">
                       {testimonials[currentIndex].name}
                     </h4>
-                    <p className="text-[#87CEEB] font-medium mb-1">
-                      {testimonials[currentIndex].position}
-                    </p>
-                    <p className="text-gray-600">
-                      {testimonials[currentIndex].company}
-                    </p>
                   </div>
                 </div>
               </div>

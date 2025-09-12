@@ -29,27 +29,27 @@ export function Navigation() {
   const navLinks = [
     { href: "/", id: "home", label: "Home", isRoute: true, icon: Home },
     {
-      href: "#events",
+      href: "/events",
       id: "events",
       label: "Events",
-      isRoute: false,
+      isRoute: true,
       icon: Calendar,
     },
     {
-      href: "#services",
+      href: "/services",
       id: "services",
       label: "Services",
-      isRoute: false,
+      isRoute: true,
       icon: Briefcase,
     },
     {
-      href: "#contact",
+      href: "/contact",
       id: "contact",
       label: "Contact",
-      isRoute: false,
+      isRoute: true,
       icon: Mail,
     },
-    { href: "#about", id: "about", label: "About", isRoute: false, icon: Info },
+    { href: "/about", id: "about", label: "About", isRoute: true, icon: Info },
   ];
 
   // Intersection Observer for active section detection
@@ -60,8 +60,8 @@ export function Navigation() {
       threshold: 0,
     };
 
-    const observerCallback = (entries) => {
-      entries.forEach((entry) => {
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry: IntersectionObserverEntry) => {
         if (entry.isIntersecting) {
           setActiveSection(entry.target.id);
         }
@@ -110,14 +110,15 @@ export function Navigation() {
     };
   }, [isMobileMenuOpen]);
 
-  const handleLinkClick = (href, id, isRoute) => {
+  const handleLinkClick = (href: string, id: string, isRoute: boolean) => {
     if (isRoute) {
       setActiveSection(id);
       closeMobileMenu(); // Close mobile menu on navigation
+      navigate(href);
       return;
     }
 
-    // Smooth scroll to section
+    // Smooth scroll to section (fallback for non-route links)
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({
@@ -582,7 +583,7 @@ export function Navigation() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes slideInRight {
           from {
             opacity: 0;

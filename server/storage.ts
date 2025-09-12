@@ -135,53 +135,269 @@ export const storage = {
   },
 
   async createUser(user: InsertUser): Promise<UserResponse> {
+    console.log("🚀 Starting user creation process...");
+    console.log("📝 User data:", {
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+    });
+
+    // Validate required fields
+    if (!user.email || !user.password || !user.firstName || !user.lastName) {
+      const missingFields = [];
+      if (!user.email) missingFields.push('email');
+      if (!user.password) missingFields.push('password');
+      if (!user.firstName) missingFields.push('firstName');
+      if (!user.lastName) missingFields.push('lastName');
+      throw new Error(`❌ Missing required fields: ${missingFields.join(', ')}`);
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(user.email)) {
+      throw new Error(`❌ Invalid email format: ${user.email}`);
+    }
+
+    // Password validation
+    if (user.password.length < 6) {
+      throw new Error(`❌ Password must be at least 6 characters long`);
+    }
+
+    // Check if this is the first user (should be super_admin)
+    console.log("🔍 Checking if this is the first user...");
+    const allUsers = await this.getAllUsers();
+    const isFirstUser = allUsers.length === 0;
+    const assignedRole = isFirstUser ? "super_admin" : (user.role || "ordinary_user");
+
+    console.log(`👤 User will be assigned role: ${assignedRole} (first user: ${isFirstUser})`);
+
+    let authUserId: string | null = null;
+
     try {
+      // Step 1: Check if user already exists in auth
+      console.log("🔍 Checking for existing user in auth system...");
+      const { data: existingUsers } = await supabase.auth.admin.listUsers();
+      const existingAuthUser = existingUsers.users.find(u => u.email === user.email);
+      
+      if (existingAuthUser) {
+        throw new Error(`❌ User with email ${user.email} already exists in authentication system`);
+      }
+
+      // Step 2: Create user in Supabase Auth
+      console.log("📝 Creating Supabase auth user...");
       const { data: authData, error: authError } =
         await supabase.auth.admin.createUser({
           email: user.email,
           password: user.password,
+          email_confirm: true, // Skip email confirmation
+          phone_confirm: true, // Skip phone confirmation if applicable
           user_metadata: {
-            role: user.role || "ordinary_user",
+            role: assignedRole,
             first_name: user.firstName,
             last_name: user.lastName,
             phone_number: user.phoneNumber,
             gender: user.gender,
-          },
+          }
         });
+      
       if (authError) {
-        console.error("Error creating auth user:", authError.message);
-        throw new Error(`Failed to create auth user: ${authError.message}`);
+        console.error("❌ Failed to create Supabase auth user:");
+        console.error(`   Error Code: ${authError.status || 'unknown'}`);
+        console.error(`   Error Message: ${authError.message}`);
+        
+        if (authError.message.includes('duplicate') || authError.message.includes('already')) {
+          throw new Error(`❌ User with email ${user.email} already exists`);
+        } else if (authError.message.includes('password')) {
+          throw new Error(`❌ Password validation failed: ${authError.message}`);
+        } else if (authError.message.includes('email')) {
+          throw new Error(`❌ Email validation failed: ${authError.message}`);
+        }
+        
+        throw new Error(`❌ Auth user creation failed: ${authError.message}`);
       }
 
-      const { data, error } = await supabase
+      if (!authData.user) {
+        throw new Error("❌ Auth user creation succeeded but returned no user data");
+      }
+
+      authUserId = authData.user.id;
+      console.log(`✅ Supabase auth user created successfully`);
+      console.log(`   User ID: ${authUserId}`);
+      console.log(`   Email: ${authData.user.email}`);
+
+      // Ensure email is confirmed if it wasn't set during creation
+      if (!authData.user.email_confirmed_at) {
+        console.log("📧 Manually confirming email address...");
+        const { error: confirmError } = await supabase.auth.admin.updateUserById(
+          authUserId,
+          { email_confirm: true }
+        );
+        if (confirmError) {
+          console.warn("⚠️ Failed to confirm email, but continuing:", confirmError.message);
+        } else {
+          console.log("✅ Email confirmed successfully");
+        }
+      }
+
+      // Step 3: Check if user profile already exists
+      console.log("🔍 Checking for existing user profile...");
+      const { data: existingProfile } = await supabase
+        .from("users")
+        .select('id')
+        .eq('id', authUserId)
+        .single();
+        
+      if (existingProfile) {
+        console.log(`ℹ️ User profile with ID ${authUserId} already exists, skipping profile creation`);
+        // Return the existing user data instead of throwing an error
+        const { data: existingUserData } = await supabase
+          .from("users")
+          .select('*')
+          .eq('id', authUserId)
+          .single();
+        
+        return {
+          id: existingUserData.id,
+          firstName: existingUserData.first_name,
+          lastName: existingUserData.last_name,
+          email: user.email, // Use the email from the input since it's not stored in users table
+          phoneNumber: existingUserData.phone_number,
+          gender: existingUserData.gender,
+          role: assignedRole,
+          createdAt: existingUserData.created_at,
+        };
+      }
+
+      // Step 4: Create user record in public.users table
+      console.log("📝 Creating user profile record in database...");
+      const { data: userData, error: userError } = await supabase
         .from("users")
         .insert({
-          id: authData.user.id,
+          id: authUserId,
           first_name: user.firstName,
           last_name: user.lastName,
           phone_number: user.phoneNumber,
           gender: user.gender,
         })
-        .select("id, first_name, last_name, phone_number, gender, created_at")
+        .select()
         .single();
-      if (error) {
-        console.error("Error creating user in users table:", error.message);
-        throw new Error(`Failed to create user: ${error.message}`);
+
+      if (userError) {
+        console.error("❌ Failed to create user profile record:");
+        console.error(`   Error Code: ${userError.code || 'unknown'}`);
+        console.error(`   Error Message: ${userError.message}`);
+        console.error(`   Error Details: ${userError.details || 'none'}`);
+        console.error(`   Error Hint: ${userError.hint || 'none'}`);
+        
+        let errorMessage = "Failed to create user profile";
+        
+        if (userError.code === '23505') {
+          errorMessage = `❌ User profile already exists for ID ${authUserId}`;
+        } else if (userError.code === '23503') {
+          errorMessage = `❌ Foreign key violation - auth user ${authUserId} may not exist`;
+        } else if (userError.code === '42501') {
+          errorMessage = `❌ Permission denied - check database permissions`;
+        } else if (userError.message.includes('duplicate')) {
+          errorMessage = `❌ Duplicate user profile detected`;
+        }
+        
+        // Rollback: Delete the auth user since database insert failed
+        console.log("🔄 Rolling back auth user creation due to profile creation failure...");
+        try {
+          const { error: deleteError } = await supabase.auth.admin.deleteUser(authUserId);
+          if (deleteError) {
+            console.error("❌ Failed to rollback auth user:", deleteError.message);
+            errorMessage += ` (Warning: Auth user ${authUserId} may still exist and need manual cleanup)`;
+          } else {
+            console.log("✅ Auth user rollback successful");
+          }
+        } catch (rollbackError) {
+          console.error("❌ Rollback operation failed:", rollbackError);
+          errorMessage += ` (Warning: Auth user ${authUserId} may still exist and need manual cleanup)`;
+        }
+        
+        throw new Error(`${errorMessage}: ${userError.message}`);
       }
 
-      return {
-        id: data.id,
+      if (!userData) {
+        console.error("❌ User profile creation succeeded but returned no data");
+        // Rollback auth user
+        console.log("🔄 Rolling back auth user due to missing profile data...");
+        try {
+          await supabase.auth.admin.deleteUser(authUserId);
+          console.log("✅ Auth user rollback successful");
+        } catch (rollbackError) {
+          console.error("❌ Rollback failed:", rollbackError);
+        }
+        throw new Error("❌ User profile creation succeeded but returned no data");
+      }
+
+      console.log(`✅ User profile record created successfully`);
+      console.log(`   Profile ID: ${userData.id}`);
+      console.log(`   Name: ${userData.first_name} ${userData.last_name}`);
+
+      // Step 5: Verify complete user setup
+      console.log("🔍 Verifying complete user setup...");
+      const { data: verifyAuth } = await supabase.auth.admin.getUserById(authUserId);
+      const { data: verifyProfile } = await supabase
+        .from("users")
+        .select('*')
+        .eq('id', authUserId)
+        .single();
+
+      if (!verifyAuth.user || !verifyProfile) {
+        throw new Error("❌ User verification failed - incomplete user setup detected");
+      }
+
+      const userResponse: UserResponse = {
+        id: userData.id,
+        firstName: userData.first_name,
+        lastName: userData.last_name,
         email: user.email,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        phoneNumber: data.phone_number,
-        gender: data.gender,
-        role: user.role || "ordinary_user",
-        createdAt: data.created_at,
+        phoneNumber: userData.phone_number,
+        gender: userData.gender,
+        role: assignedRole,
+        createdAt: userData.created_at,
       };
+
+      console.log("🎉 User creation completed successfully!");
+      console.log("📊 Final user details:", {
+        id: userResponse.id,
+        email: userResponse.email,
+        role: userResponse.role,
+        name: `${userResponse.firstName} ${userResponse.lastName}`,
+        createdAt: userResponse.createdAt
+      });
+
+      return userResponse;
     } catch (error: any) {
-      console.error("Error in createUser:", error.message);
-      throw new Error(`Failed to create user: ${error.message}`);
+      console.error("💥 User creation process failed:");
+      console.error(`   Error: ${error.message}`);
+      
+      // Emergency rollback if we have an auth user ID
+      if (authUserId) {
+        console.log("🚨 Emergency rollback: attempting to delete auth user...");
+        try {
+          const { error: deleteError } = await supabase.auth.admin.deleteUser(authUserId);
+          if (deleteError) {
+            console.error("❌ Emergency rollback failed:", deleteError.message);
+            console.error(`⚠️  Manual cleanup required for auth user ID: ${authUserId}`);
+          } else {
+            console.log("✅ Emergency rollback completed successfully");
+          }
+        } catch (rollbackError) {
+          console.error("❌ Emergency rollback operation failed:", rollbackError);
+          console.error(`⚠️  Manual cleanup required for auth user ID: ${authUserId}`);
+        }
+      }
+      
+      // Re-throw with enhanced error message
+      if (error.message && error.message.startsWith('❌')) {
+        throw error; // Already formatted
+      } else {
+        throw new Error(`❌ User creation failed: ${error.message || 'Unknown error'}`);
+      }
     }
   },
 

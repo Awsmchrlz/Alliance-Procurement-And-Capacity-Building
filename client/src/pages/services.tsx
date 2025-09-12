@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import {
   GraduationCap,
   Handshake,
@@ -16,12 +17,15 @@ import {
   BookOpen,
   UserCheck,
   Search,
-  BarChart3
+  BarChart3,
+  Home,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Services() {
   const [selectedService, setSelectedService] = useState(0);
+  const [, navigate] = useLocation();
 
   // Handle service selection from URL parameter
   useEffect(() => {
@@ -228,6 +232,36 @@ export default function Services() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Breadcrumb Navigation */}
+      <div className="bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200/50 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="text-gray-600 hover:text-[#1C356B] hover:bg-gray-100 transition-colors duration-200"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="text-[#1C356B] font-medium">Services</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/")}
+              className="border-[#87CEEB] text-[#1C356B] hover:bg-[#87CEEB] hover:text-white transition-all duration-200"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <header
         className="text-white py-12 sm:py-16 relative overflow-hidden"

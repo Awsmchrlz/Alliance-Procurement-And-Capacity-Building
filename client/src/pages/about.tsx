@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import {
   CheckCircle,
   Users,
@@ -23,6 +24,8 @@ import {
   ChevronRight,
   Sparkles,
   MapPin,
+  ArrowLeft,
+  Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function About() {
   const [activeTab, setActiveTab] = useState("story");
+  const [, navigate] = useLocation();
 
   const coreValues = [
     {
@@ -133,7 +137,7 @@ const teamMembers = [
   {
     name: "Ms. Chomba Chileshe",
     position: "Manager – Consultancy Services",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.48.51_tfmqm9.jpg",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757576481/WhatsApp_Image_2025-09-09_at_23.27.04_nenm2g.jpg",
     bio: "Ms. Chomba Chileshe is a procurement and supply chain consultant with over 12 years of experience in procurement planning, contract management, and supply chain coordination. She holds a BSc in Purchasing & Supply Management and is pursuing an MBA in Strategic Management. A full member of ZIPS, she is recognized for integrity, stakeholder engagement, and ability to enhance efficiency and accountability. She has experience designing procurement strategies, optimizing inventory, supervising performance, and providing consultancy services that improve organizational capacity.",
     expertise: [
       "Procurement Strategy",
@@ -289,6 +293,36 @@ const teamMembers = [
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-200">
+      {/* Breadcrumb Navigation */}
+      <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md shadow-sm border-b border-gray-200/50 dark:border-gray-700/50 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="text-gray-600 dark:text-gray-300 hover:text-[#1C356B] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="text-[#1C356B] dark:text-[#87CEEB] font-medium">About</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/")}
+              className="border-[#87CEEB] text-[#1C356B] hover:bg-[#87CEEB] hover:text-white transition-all duration-200"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#1C356B] via-[#2d4a7a] to-[#0f1e3d] text-white">
         {/* Background Pattern */}
@@ -320,22 +354,7 @@ const teamMembers = [
                 expert training, advisory services, and innovative solutions.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button
-                  size="lg"
-                  className="bg-[#87CEEB] hover:bg-[#87CEEB]/90 text-[#1C356B] font-semibold px-8 py-3 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
-                >
-                  Discover Our Story
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-white/30 text-white hover:bg-white/10 px-8 py-3 rounded-full backdrop-blur-sm"
-                >
-                  View Our Impact
-                </Button>
-              </div>
+      
             </div>
           </div>
         </div>
@@ -822,13 +841,7 @@ const teamMembers = [
               Let's discuss how APCBL can help transform your procurement
               capabilities and drive organizational success.
             </p>
-            <Button
-              size="lg"
-              className="bg-primary-yellow text-primary-blue transition-all duration-300 font-semibold hover:scale-105 transform shadow-lg hover:bg-yellow-400"
-            >
-              <Phone className="w-5 h-5 mr-2" />
-              Schedule Consultation
-            </Button>
+      
           </div>
         </div>
       </section>

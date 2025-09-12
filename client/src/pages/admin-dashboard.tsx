@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -65,7 +65,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Loader2,
   TrendingUp,
   UserCheck,
   Activity,
@@ -84,6 +83,13 @@ import {
   Phone,
   MapPin,
   CreditCard,
+  User,
+  History,
+  RotateCcw,
+  Loader2,
+  X,
+  Check,
+  Info,
 } from "lucide-react";
 
 import { EvidenceViewer } from "@/components/evidence-viewer";
@@ -135,7 +141,6 @@ interface Registration {
   organization: string | null;
 
   position: string | null;
-  notes: string | null;
   hasPaid: boolean;
   registeredAt: string;
   event?: Event;
@@ -157,6 +162,12 @@ export default function AdminDashboard() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+
+  // Email campaign functionality
+  const [emailContent, setEmailContent] = useState("");
+  const [emailRecipientType, setEmailRecipientType] = useState("all");
+  const [emailSending, setEmailSending] = useState(false);
+  const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(new Set());
 
   // Role change functionality
   const [confirmRoleChange, setConfirmRoleChange] = useState<{
@@ -200,7 +211,6 @@ export default function AdminDashboard() {
     organization: "",
 
     position: "",
-    notes: "",
     hasPaid: false,
     paymentStatus: "pending",
   });
@@ -216,6 +226,106 @@ export default function AdminDashboard() {
   const [filteredRegistrations, setFilteredRegistrations] = useState<
     Registration[]
   >([]);
+
+  // Email campaign helper functions
+  const getEmailRecipients = () => {
+    let recipients = [];
+    
+    if (emailRecipientType === "all") {
+      recipients = users;
+    } else {
+      recipients = users.filter((user) => user.role === emailRecipientType);
+    }
+    
+    // Filter out excluded users
+    return recipients
+      .filter(user => !excludedUserIds.has(user.id))
+      .map((user) => ({
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`,
+      }));
+  };
+  
+  const toggleExcludeUser = (userId: string) => {
+    setExcludedUserIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+  
+  const resetExcludedUsers = () => {
+    setExcludedUserIds(new Set());
+  };
+  
+  const getFilteredUsers = () => {
+    if (emailRecipientType === "all") {
+      return users;
+    }
+    return users.filter(user => user.role === emailRecipientType);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailSubject.trim() || !emailContent.trim() || !emailRecipientType) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setEmailSending(true);
+
+      const recipients = getEmailRecipients();
+      
+      // Format recipients to match the expected API format
+      const formattedRecipients = recipients.map(({ email, name }) => ({ email, name }));
+
+      const response = await fetch("/api/email/campaign", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          recipients: formattedRecipients,
+          subject: emailSubject,
+          content: emailContent,
+          recipientType: emailRecipientType,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send email campaign");
+      }
+
+      toast({
+        title: "Email Campaign Sent!",
+        description: `Successfully sent to ${recipients.length} recipients`,
+      });
+
+      // Clear form
+      setEmailSubject("");
+      setEmailContent("");
+      setEmailRecipientType("all");
+    } catch (error: any) {
+      console.error("Email campaign error:", error);
+      toast({
+        title: "Email Failed",
+        description: error.message || "Failed to send email campaign",
+        variant: "destructive",
+      });
+    } finally {
+      setEmailSending(false);
+    }
+  };
 
   // Fetch real data from Supabase
   useEffect(() => {
@@ -260,7 +370,8 @@ export default function AdminDashboard() {
             registration.user?.lastName.toLowerCase().includes(term) ||
             registration.user?.email.toLowerCase().includes(term) ||
             registration.event?.title.toLowerCase().includes(term) ||
-            registration.paymentStatus.toLowerCase().includes(term),
+            registration.paymentStatus.toLowerCase().includes(term) ||
+            registration.registrationNumber?.toLowerCase().includes(term),
         ),
       );
     }
@@ -319,8 +430,8 @@ export default function AdminDashboard() {
             },
           });
           if (usersResponse.ok) {
-            const usersData = await usersResponse.json();
-            setUsers(usersData);
+            const { users: usersData } = await usersResponse.json();
+            setUsers(usersData || []);
           } else {
             console.error(
               "Failed to fetch users:",
@@ -434,11 +545,11 @@ export default function AdminDashboard() {
   const completedPayments = registrations.filter(
     (reg) => reg.paymentStatus === "completed" || reg.paymentStatus === "paid",
   ).length;
-  const superAdminUsers = users.filter((u) => u.role === "super_admin").length;
-  const financeUsers = users.filter((u) => u.role === "finance_person").length;
-  const eventManagerUsers = users.filter(
+  const superAdminUsers = users?.filter((u) => u.role === "super_admin").length || 0;
+  const financeUsers = users?.filter((u) => u.role === "finance_person").length || 0;
+  const eventManagerUsers = users?.filter(
     (u) => u.role === "event_manager",
-  ).length;
+  ).length || 0;
 
   const handleRoleChangeRequest = (
     userId: string,
@@ -707,7 +818,6 @@ export default function AdminDashboard() {
               registration.pricePaid || registration.event?.price || "N/A",
             "Has Paid": registration.hasPaid ? "Yes" : "No",
             "Payment Evidence": registration.paymentEvidence ? "Yes" : "No",
-            Notes: registration.notes || "N/A",
             "Registered At": formatTime(registration.registeredAt),
           }));
           filename = `registrations_export_${new Date().toISOString().split("T")[0]}.csv`;
@@ -951,8 +1061,9 @@ export default function AdminDashboard() {
             <Button
               onClick={() => (window.location.href = "/")}
               variant="outline"
+              className="w-full sm:w-auto"
             >
-              Go Home
+              Return to Homepage
             </Button>
           </CardContent>
         </Card>
@@ -982,16 +1093,13 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="hidden lg:flex items-center space-x-6 text-right">
-                  <Button
-                    onClick={() => (window.location.href = "/")}
-                    variant="outline"
-                    className="border-blue-200 text-white bg-white/10 hover:bg-white/20 hover:border-white/40 transition-colors"
-                  >
-                    Home
-                  </Button>
-                  <div className="text-white/90">
+                <div className="text-white/90">
                     <div className="text-2xl font-bold">{users.length}</div>
                     <div className="text-sm text-blue-200">Total Users</div>
+                  </div>
+                <div className="text-white/90">
+                    <div className="text-2xl font-bold">{registrations.length}</div>
+                    <div className="text-sm text-blue-200">Total Registrations</div>
                   </div>
                   <div className="text-white/90">
                     <div className="text-2xl font-bold">{events.length}</div>
@@ -1065,7 +1173,7 @@ export default function AdminDashboard() {
                   </div>
                   <Input
                     type="text"
-                    placeholder="Search users, events, registrations..."
+                    placeholder="Search users, events, registrations (including registration numbers)..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-4 py-3 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] rounded-xl shadow-sm"
@@ -1185,7 +1293,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="overview" className="space-y-6">
           <div className="bg-white rounded-xl border border-slate-200/60 p-1 shadow-sm overflow-x-auto">
             <TabsList
-              className={`grid w-full ${canManageUsers && canManageEvents ? "grid-cols-4" : canManageUsers || canManageEvents ? "grid-cols-3" : "grid-cols-2"} bg-transparent gap-1 min-w-[480px] sm:min-w-0`}
+              className={`grid w-full ${canManageUsers && canManageEvents ? "grid-cols-5" : canManageUsers || canManageEvents ? "grid-cols-4" : "grid-cols-3"} bg-transparent gap-1 min-w-[600px] sm:min-w-0`}
             >
               {/* Overview - All admin roles can see */}
               <TabsTrigger
@@ -1226,6 +1334,17 @@ export default function AdminDashboard() {
                 <UserCog className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 <span className="hidden xs:inline">Regs</span>
               </TabsTrigger>
+
+              {/* Emails - Only super_admin can send emails */}
+              {canManageUsers && (
+                <TabsTrigger
+                  value="emails"
+                  className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+                >
+                  <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Emails</span>
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -2579,6 +2698,301 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Emails Tab */}
+          {canManageUsers && (
+            <TabsContent value="emails">
+              <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                <CardHeader className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
+                        Email Campaigns
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        Send emails to users by role or to all members
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-6">
+                  {/* Email Campaign Form */}
+                  <div className="space-y-6">
+                    {/* Recipient Selection */}
+                    <div className="space-y-4">
+                      <Label className="text-base font-medium text-gray-900">
+                        Select Recipients
+                      </Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                          {
+                            value: "all",
+                            label: "All Users",
+                            count: users.length,
+                            icon: Users,
+                          },
+                          {
+                            value: "super_admin",
+                            label: "Super Admins",
+                            count: users.filter((u) => u.role === "super_admin")
+                              .length,
+                            icon: Shield,
+                          },
+                          {
+                            value: "event_manager",
+                            label: "Event Managers",
+                            count: users.filter(
+                              (u) => u.role === "event_manager",
+                            ).length,
+                            icon: Calendar,
+                          },
+                          {
+                            value: "finance_person",
+                            label: "Finance Managers",
+                            count: users.filter(
+                              (u) => u.role === "finance_person",
+                            ).length,
+                            icon: CreditCard,
+                          },
+                          {
+                            value: "ordinary_user",
+                            label: "Regular Users",
+                            count: users.filter(
+                              (u) => u.role === "ordinary_user",
+                            ).length,
+                            icon: User,
+                          },
+                        ].map(({ value, label, count, icon: Icon }) => (
+                          <div
+                            key={value}
+                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                              emailRecipientType === value
+                                ? "border-[#1C356B] bg-[#1C356B]/5 shadow-lg"
+                                : "border-slate-200 hover:border-slate-300 hover:shadow-md"
+                            }`}
+                            onClick={() => setEmailRecipientType(value)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`p-2 rounded-lg ${
+                                  emailRecipientType === value
+                                    ? "bg-[#1C356B] text-white"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}
+                              >
+                                <Icon className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="font-medium text-sm">
+                                  {label}
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  {count} users
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Email Subject */}
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="email-subject"
+                        className="text-base font-medium text-gray-900"
+                      >
+                        Email Subject <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="email-subject"
+                        placeholder="Enter compelling subject line"
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                        className="h-12 text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
+                      />
+                    </div>
+
+                    {/* Email Content */}
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="email-content"
+                        className="text-base font-medium text-gray-900"
+                      >
+                        Email Content <span className="text-red-500">*</span>
+                      </Label>
+                      <Textarea
+                        id="email-content"
+                        placeholder="Write your email content here. You can use HTML formatting..."
+                        value={emailContent}
+                        onChange={(e) => setEmailContent(e.target.value)}
+                        className="min-h-[200px] text-base border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] resize-none"
+                      />
+                      <p className="text-xs text-slate-500">
+                        HTML formatting is supported. The email will be styled
+                        with our standard template.
+                      </p>
+                    </div>
+
+                    {/* Recipient Management */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base font-medium text-gray-900">
+                          Recipients ({getEmailRecipients().length} of {getFilteredUsers().length} selected)
+                        </Label>
+                        {excludedUserIds.size > 0 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={resetExcludedUsers}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            <RotateCcw className="w-3 h-3 mr-1" />
+                            Reset all exclusions
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Select
+                            value={emailRecipientType}
+                            onValueChange={(value) => {
+                              setEmailRecipientType(value);
+                              resetExcludedUsers();
+                            }}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select recipient group" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Users</SelectItem>
+                              <SelectItem value="super_admin">Super Admins</SelectItem>
+                              <SelectItem value="finance_person">Finance Team</SelectItem>
+                              <SelectItem value="event_manager">Event Managers</SelectItem>
+                              <SelectItem value="ordinary_user">Regular Users</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="max-h-60 overflow-y-auto bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+                          {getFilteredUsers().length === 0 ? (
+                            <p className="text-sm text-slate-500 text-center py-4">No users found in this group</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {getFilteredUsers().map((user) => (
+                                <div 
+                                  key={user.id} 
+                                  className={`flex items-center justify-between p-2 rounded-md ${excludedUserIds.has(user.id) ? 'bg-red-50' : 'bg-white'}`}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                      {user.firstName} {user.lastName}
+                                    </p>
+                                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant={excludedUserIds.has(user.id) ? "outline" : "ghost"}
+                                    size="sm"
+                                    onClick={() => toggleExcludeUser(user.id)}
+                                    className={`ml-2 ${excludedUserIds.has(user.id) ? 'text-red-600 hover:text-red-700' : 'text-gray-500 hover:text-gray-700'}`}
+                                  >
+                                    {excludedUserIds.has(user.id) ? (
+                                      <>
+                                        <X className="w-3.5 h-3.5 mr-1" />
+                                        <span className="text-xs">Excluded</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Check className="w-3.5 h-3.5 mr-1 text-green-600" />
+                                        <span className="text-xs">Included</span>
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {excludedUserIds.size > 0 && (
+                          <div className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-md p-2">
+                            <div className="flex items-start">
+                              <Info className="w-3.5 h-3.5 mt-0.5 mr-1.5 flex-shrink-0" />
+                              <span>
+                                {excludedUserIds.size} user{excludedUserIds.size !== 1 ? 's' : ''} excluded from this campaign. 
+                                They will not receive this email.
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Send Email Button */}
+                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                      <Button
+                        onClick={handleSendEmail}
+                        disabled={
+                          !emailSubject.trim() ||
+                          !emailContent.trim() ||
+                          !emailRecipientType ||
+                          emailSending
+                        }
+                        className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                      >
+                        {emailSending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Sending Email...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4 mr-2" />
+                            Send Email Campaign
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEmailSubject("");
+                          setEmailContent("");
+                          setEmailRecipientType("all");
+                        }}
+                        disabled={emailSending}
+                        className="px-6 py-3 border-slate-300 hover:bg-slate-100"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Clear Form
+                      </Button>
+                    </div>
+
+                    {/* Recent Email Campaigns */}
+                    <div className="border-t pt-6 mt-8">
+                      <div className="flex items-center gap-2 mb-4">
+                        <History className="w-5 h-5 text-slate-600" />
+                        <h3 className="text-lg font-medium text-gray-900">
+                          Recent Email Campaigns
+                        </h3>
+                      </div>
+                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        <p className="text-sm text-slate-600 text-center">
+                          Email campaign history will appear here after sending
+                          emails.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Enhanced Email Blast Dialog */}
@@ -3308,26 +3722,6 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="event-notes"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Notes (optional)
-                  </Label>
-                  <Input
-                    id="event-notes"
-                    placeholder="Registration notes..."
-                    value={eventRegistrationData.notes}
-                    onChange={(e) =>
-                      setEventRegistrationData((prev) => ({
-                        ...prev,
-                        notes: e.target.value,
-                      }))
-                    }
-                    className="h-10 text-sm border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B]"
-                  />
-                </div>
               </div>
 
               {/* Info Box */}
@@ -3360,8 +3754,7 @@ export default function AdminDashboard() {
                     organization: "",
 
                     position: "",
-                    notes: "",
-                    hasPaid: false,
+                                    hasPaid: false,
                     paymentStatus: "pending",
                   });
                   setSelectedUser(null);
@@ -3397,7 +3790,7 @@ export default function AdminDashboard() {
                         country: eventRegistrationData.country,
                         organization: eventRegistrationData.organization,
                         position: eventRegistrationData.position,
-                        notes: eventRegistrationData.notes,
+                        notes: "",
                         hasPaid: eventRegistrationData.hasPaid,
                         paymentStatus: eventRegistrationData.paymentStatus,
                       }),
@@ -3427,8 +3820,7 @@ export default function AdminDashboard() {
                       organization: "",
 
                       position: "",
-                      notes: "",
-                      hasPaid: false,
+                                        hasPaid: false,
                       paymentStatus: "pending",
                     });
                     setSelectedUser(null);

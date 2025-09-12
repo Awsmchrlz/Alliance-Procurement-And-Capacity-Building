@@ -379,7 +379,7 @@ export const useEmailService = () => {
         }
       } catch (error) {
         console.error(`Failed to send batch ${Math.floor(i / batchSize) + 1}:`, error)
-        results.push({ success: false, error: error.message })
+        results.push({ success: false, error: error instanceof Error ? error.message : String(error) })
       }
     }
 

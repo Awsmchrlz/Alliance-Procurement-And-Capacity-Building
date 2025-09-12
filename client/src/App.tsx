@@ -11,6 +11,7 @@ import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import Services from "@/pages/services";
 import About from "@/pages/about";
+import Events from "@/pages/events";
 import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/services" component={Services} />
       <Route path="/about" component={About} />
+      <Route path="/events" component={Events} />
       
       {/* Protected routes with role-based access */}
       <Route path="/dashboard">

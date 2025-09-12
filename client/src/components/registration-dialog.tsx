@@ -10,6 +10,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+
+import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -25,27 +27,32 @@ import { Event } from "@shared/schema";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
-  User,
+  X,
+  CheckCircle,
+  Copy,
+  Smartphone,
+  Info,
+  Upload,
+  FileText,
   Mail,
-  Phone,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Landmark,
+  User,
   Building2,
   MapPin,
-  FileText,
-  CreditCard,
-  CheckCircle,
-  Loader2,
   Calendar,
   Clock,
   DollarSign,
   ArrowLeft,
   Sparkles,
-  Smartphone,
   Banknote,
   Wallet,
-  Copy,
-  Info,
-  ChevronRight,
-  Upload,
+  Phone,
+  CreditCard,
 } from "lucide-react";
 
 interface RegistrationDialogProps {
@@ -64,7 +71,6 @@ type FormDataType = {
   country: string;
   organization: string;
   position: string;
-  notes: string;
   paymentMethod: "mobile" | "bank" | "cash" | "";
   delegateType: "private" | "public" | "international";
 };
@@ -134,7 +140,6 @@ export function RegistrationDialog({
     country: "Zambia", // Default to Zambia, will be updated by auto-detection
     organization: "",
     position: "",
-    notes: "",
     paymentMethod: "",
     delegateType: "private",
   });
@@ -210,7 +215,6 @@ export function RegistrationDialog({
       country: "",
       organization: "",
       position: "",
-      notes: "",
       paymentMethod: "",
       delegateType: "private",
     });
@@ -221,39 +225,78 @@ export function RegistrationDialog({
     setEvidenceFile(null);
   };
 
-  const validateStep = (step: number) => {
+  const { toast } = useToast();
+
+  const validateStep = (step: number): { isValid: boolean; message?: string; field?: string } => {
     switch (step) {
-      case 1:
-        const required: (keyof FormDataType)[] = [
-          "firstName",
-          "lastName",
-          "email",
-          "country",
-        ];
+      case 1: {
+        const required: (keyof FormDataType)[] = ["firstName", "lastName", "email", "country"];
         for (const field of required) {
           if (!formData[field]) {
-            return `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, " $1")} is required`;
+            const fieldName = field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, " $1");
+            return { 
+              isValid: false, 
+              message: `${fieldName} is required`,
+              field
+            };
           }
         }
-        if (!formData.email.includes("@")) {
-          return "Please enter a valid email address";
+        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+          return { 
+            isValid: false, 
+            message: "Please enter a valid email address",
+            field: "email"
+          };
         }
         break;
-      case 2:
-        if (!formData.organization) return "Organization is required";
-        if (!formData.position) return "Position is required";
+      }
+      case 2: {
+        if (!formData.organization) {
+          return { 
+            isValid: false, 
+            message: "Organization is required",
+            field: "organization"
+          };
+        }
+        if (!formData.position) {
+          return { 
+            isValid: false, 
+            message: "Position is required",
+            field: "position"
+          };
+        }
         break;
-      case 3:
-        if (!formData.paymentMethod) return "Please select a payment method";
+      }
+      case 3: {
+        if (!formData.paymentMethod) {
+          return { 
+            isValid: false, 
+            message: "Please select a payment method",
+            field: "paymentMethod"
+          };
+        }
         break;
+      }
     }
-    return null;
+    return { isValid: true };
   };
 
   const nextStep = () => {
-    const validationError = validateStep(currentStep);
-    if (validationError) {
-      setError(validationError);
+    const { isValid, message, field } = validateStep(currentStep);
+    if (!isValid && message) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: message,
+      });
+      
+      // Optionally focus the field with error if it exists in the DOM
+      if (field) {
+        const element = document.querySelector(`[name="${field}"]`);
+        if (element) {
+          (element as HTMLElement).focus();
+        }
+      }
       return;
     }
     setError("");
@@ -267,13 +310,21 @@ export function RegistrationDialog({
 
   const handleRegister = async () => {
     if (!user || !isAuthenticated) {
-      setError("Authentication required. Please log in again.");
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please log in again to continue.",
+      });
       return;
     }
 
-    const validationError = validateStep(3);
-    if (validationError) {
-      setError(validationError);
+    const { isValid, message } = validateStep(3);
+    if (!isValid && message) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: message,
+      });
       return;
     }
 
@@ -289,7 +340,12 @@ export function RegistrationDialog({
           data: { user },
         } = await supabase.auth.getUser();
         const userId = user?.id || "anonymous";
-        const fileName = `payment-evidence/${userId}/${Date.now()}-${evidenceFile.name}`;
+        // Sanitize filename by removing spaces and special characters
+        const sanitizedFileName = evidenceFile.name
+          .replace(/[^a-zA-Z0-9.-]/g, '_')
+          .replace(/_{2,}/g, '_')
+          .replace(/^_|_$/g, '');
+        const fileName = `payment-evidence/${userId}/${Date.now()}-${sanitizedFileName}`;
         const bucket =
           import.meta.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -333,7 +389,7 @@ export function RegistrationDialog({
         country: formData.country.trim(),
         organization: formData.organization.trim(),
         position: formData.position.trim(),
-        notes: formData.notes || null,
+        notes: "",
         paymentMethod: formData.paymentMethod,
         delegateType: formData.delegateType,
         hasPaid: false,
@@ -345,22 +401,7 @@ export function RegistrationDialog({
 
       await apiRequest("POST", "/api/events/register", registrationPayload);
 
-      // Automatically subscribe to newsletter (fire-and-forget)
-      await apiRequest("POST", "/api/newsletter/subscribe", {
-        email: formData.email,
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
-      }).catch((newsletterError) => {
-        console.error("Newsletter subscription failed:", newsletterError);
-      });
-
-      // Send confirmation email (fire-and-forget)
-      await apiRequest("POST", "/api/notifications/registration-confirmation", {
-        email: formData.email,
-        eventId: event.id,
-        fullName: `${formData.firstName} ${formData.lastName}`.trim(),
-      }).catch((emailError) => {
-        console.error("Email confirmation failed:", emailError);
-      });
+      console.log("✅ Registration completed successfully");
 
       setSuccess(true);
 
@@ -484,8 +525,8 @@ export function RegistrationDialog({
                   </span>
                 </div>
 
-                {/* Event Info Cards */}
-                <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mt-6">
+                {/* Event Info Cards - Hidden on mobile */}
+                <div className="hidden sm:flex flex-wrap justify-center gap-2 sm:gap-4 mt-6">
                   <div className="flex items-center gap-2 bg-sky-400/20 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-xl border border-sky-400/30">
                     <Calendar className="w-4 h-4 text-sky-400" />
                     <span className="text-sky-400 text-xs sm:text-sm font-medium">
@@ -661,52 +702,40 @@ export function RegistrationDialog({
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-gray-700">
-                      Additional Notes
-                    </Label>
-                    <Textarea
-                      className="min-h-[120px] border-slate-300 focus:border-[#1C356B] focus:ring-[#1C356B] resize-none"
-                      value={formData.notes}
-                      onChange={(e) => updateField("notes", e.target.value)}
-                      placeholder="Share any special requirements, dietary restrictions, or additional information..."
-                    />
-                  </div>
                 </div>
               )}
 
               {/* Step 3: Pricing & Payment */}
               {currentStep === 3 && (
-                <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-5">
                   <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#1C356B] rounded-lg sm:rounded-xl flex items-center justify-center">
-                      <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-sky-400" />
+                    <div className="w-8 h-8 bg-[#1C356B] rounded-lg flex items-center justify-center flex-shrink-0">
+                      <DollarSign className="w-4 h-4 text-sky-400" />
                     </div>
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                    <h3 className="text-lg font-bold text-gray-900">
                       Choose Your Package & Payment
                     </h3>
                   </div>
 
                   {/* Pricing Tiers */}
-                  <div className="space-y-4">
-                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-1">
-                      Select Your Category{" "}
-                      <span className="text-red-500">*</span>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Select Your Category <span className="text-red-500">*</span>
                     </Label>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {pricingTiers.map((tier) => (
                         <div
                           key={tier.type}
-                          className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          className={`p-3 border-2 rounded-lg cursor-pointer transition-colors ${
                             formData.delegateType === tier.type
-                              ? "border-[#1C356B] bg-[#1C356B]/5 shadow-lg"
-                              : "border-slate-200 hover:border-slate-300 hover:shadow-md"
+                              ? "border-[#1C356B] bg-[#1C356B]/5"
+                              : "border-slate-200"
                           }`}
                           onClick={() => updateField("delegateType", tier.type)}
                         >
                           <div className="flex items-start gap-3">
                             <div
-                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
                                 formData.delegateType === tier.type
                                   ? "border-[#1C356B] bg-[#1C356B]"
                                   : "border-slate-300"
@@ -717,20 +746,20 @@ export function RegistrationDialog({
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex flex-col space-y-2">
+                              <div className="flex flex-col">
                                 <div>
-                                  <h4 className="font-bold text-base text-gray-900">
+                                  <h4 className="font-bold text-gray-900">
                                     {tier.label}
                                   </h4>
-                                  <p className="text-sm text-gray-600 mt-1">
+                                  <p className="text-sm text-gray-600 mt-0.5">
                                     {tier.description}
                                   </p>
                                 </div>
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                                  <span className="text-sm text-gray-500">
+                                <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-100">
+                                  <span className="text-xs text-gray-500">
                                     Price per person
                                   </span>
-                                  <div className="text-xl font-bold text-[#1C356B]">
+                                  <div className="text-base font-bold text-[#1C356B]">
                                     {tier.currency} {tier.price}
                                   </div>
                                 </div>
@@ -743,25 +772,142 @@ export function RegistrationDialog({
                   </div>
 
                   {/* Payment Methods */}
-                  <div className="space-y-3 sm:space-y-4">
-                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-1">
-                      How would you like to pay?{" "}
-                      <span className="text-red-500">*</span>
+                  <div className="space-y-3">
+                    <Label className="block text-sm font-semibold text-gray-700 mb-2">
+                      How would you like to pay? <span className="text-red-500">*</span>
                     </Label>
 
                     <div className="space-y-3">
+                      {/* Bank Transfer */}
+                      <div
+                        className={`p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                          formData.paymentMethod === "bank"
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-slate-200"
+                        }`}
+                        onClick={() => updateField("paymentMethod", "bank")}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 mt-0.5 flex-shrink-0 flex items-center justify-center ${
+                              formData.paymentMethod === "bank"
+                                ? "border-blue-500 bg-blue-500"
+                                : "border-slate-300"
+                            }`}
+                          >
+                            {formData.paymentMethod === "bank" && (
+                              <div className="w-2 h-2 bg-white rounded-full" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Landmark className="w-5 h-5 text-blue-600" />
+                              <h4 className="font-bold text-gray-900">
+                                Bank Transfer
+                              </h4>
+                            </div>
+                            {formData.paymentMethod === "bank" && (
+                              <div className="space-y-3 mt-3">
+                                <p className="text-sm text-gray-600">
+                                  Transfer funds to our bank account:
+                                </p>
+                                <div className="space-y-2">
+                                  <div className="p-3 bg-white rounded-lg border border-blue-100">
+                                    <div className="space-y-3">
+                                      <div>
+                                        <p className="text-xs text-gray-500">Bank Name</p>
+                                        <p className="font-medium text-sm">Alliance Bank</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-500">Account Name</p>
+                                        <p className="font-medium text-sm">Alliance Procurement Ltd</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-500 mb-1">Account Number</p>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <p className="font-mono text-blue-700 text-sm break-all">
+                                            1234 5678 9012 3456
+                                          </p>
+                                          <Button
+                                            size="icon"
+                                            variant="outline"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              copyToClipboard("1234 5678 9012 3456", "Account Number");
+                                            }}
+                                            className="h-7 w-7 p-0 flex-shrink-0 border-blue-200 hover:bg-blue-50"
+                                            aria-label="Copy account number"
+                                          >
+                                            {copiedText === "Account Number" ? (
+                                              <CheckCircle className="w-3.5 h-3.5 text-blue-600" />
+                                            ) : (
+                                              <Copy className="w-3.5 h-3.5 text-gray-500" />
+                                            )}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-500 mb-1">Branch Code</p>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <p className="font-mono text-blue-700">123456</p>
+                                          <Button
+                                            size="icon"
+                                            variant="outline"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              copyToClipboard("123456", "Branch Code");
+                                            }}
+                                            className="h-7 w-7 p-0 flex-shrink-0 border-blue-200 hover:bg-blue-50"
+                                            aria-label="Copy branch code"
+                                          >
+                                            {copiedText === "Branch Code" ? (
+                                              <CheckCircle className="w-3.5 h-3.5 text-blue-600" />
+                                            ) : (
+                                              <Copy className="w-3.5 h-3.5 text-gray-500" />
+                                            )}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {selectedPricing && (
+                                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-sm">
+                                    <div className="flex items-start gap-2">
+                                      <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                                      <div>
+                                        <p className="text-blue-800">
+                                          <span className="font-medium">Amount to transfer: </span>
+                                          <span className="font-bold">
+                                            {selectedPricing.currency} {selectedPricing.price}
+                                          </span>
+                                        </p>
+                                        <p className="text-blue-700 mt-1 text-xs">
+                                          Use your name as reference: {formData.firstName} {formData.lastName}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Mobile Money */}
                       <div
-                        className={`p-3 sm:p-4 md:p-6 border-2 rounded-xl sm:rounded-2xl cursor-pointer transition-all ${
+                        className={`p-3 border-2 rounded-lg cursor-pointer transition-colors ${
                           formData.paymentMethod === "mobile"
-                            ? "border-green-500 bg-green-50 shadow-lg"
-                            : "border-slate-200 hover:border-slate-300 hover:shadow-md"
+                            ? "border-green-500 bg-green-50"
+                            : "border-slate-200"
                         }`}
                         onClick={() => updateField("paymentMethod", "mobile")}
                       >
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-3">
                           <div
-                            className={`w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${
+                            className={`w-5 h-5 rounded-full border-2 mt-0.5 flex-shrink-0 flex items-center justify-center ${
                               formData.paymentMethod === "mobile"
                                 ? "border-green-500 bg-green-500"
                                 : "border-slate-300"
@@ -771,83 +917,72 @@ export function RegistrationDialog({
                               <div className="w-2 h-2 bg-white rounded-full" />
                             )}
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-3">
-                              <Smartphone className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-                              <h4 className="font-bold text-base sm:text-lg text-gray-900">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Smartphone className="w-5 h-5 text-green-600" />
+                              <h4 className="font-bold text-gray-900">
                                 Mobile Money
                               </h4>
                             </div>
                             {formData.paymentMethod === "mobile" && (
-                              <div className="space-y-3 mt-4">
-                                <p className="text-sm text-gray-600 mb-4">
-                                  Send payment to any of these mobile money
-                                  numbers:
+                              <div className="space-y-3 mt-3">
+                                <p className="text-sm text-gray-600">
+                                  Send payment to any of these mobile money numbers:
                                 </p>
-                                {mobileMoneyNumbers.map((provider, index) => (
-                                  <div
-                                    key={index}
-                                    className="p-3 bg-white rounded-lg border border-green-200"
-                                  >
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-gray-900 text-sm">
-                                          {provider.provider}
+                                <div className="space-y-2">
+                                  {mobileMoneyNumbers.map((provider, index) => (
+                                    <div
+                                      key={index}
+                                      className="p-3 bg-white rounded-lg border border-green-100"
+                                    >
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-gray-900 text-sm">
+                                            {provider.provider}
+                                          </p>
+                                          <p className="text-base font-mono text-green-700 break-all">
+                                            {provider.number}
+                                          </p>
+                                        </div>
+                                        <Button
+                                          size="icon"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            copyToClipboard(
+                                              provider.number,
+                                              provider.provider,
+                                            );
+                                          }}
+                                          className="h-8 w-8 p-0 flex-shrink-0 border-green-200 hover:bg-green-50"
+                                          aria-label={`Copy ${provider.provider} number`}
+                                        >
+                                          {copiedText === provider.provider ? (
+                                            <CheckCircle className="w-4 h-4 text-green-600" />
+                                          ) : (
+                                            <Copy className="w-3.5 h-3.5 text-gray-500" />
+                                          )}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {selectedPricing && (
+                                  <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-100 text-sm">
+                                    <div className="flex items-start gap-2">
+                                      <Info className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                      <div>
+                                        <p className="text-green-800">
+                                          <span className="font-medium">Amount to send: </span>
+                                          <span className="font-bold">
+                                            {selectedPricing.currency} {selectedPricing.price}
+                                          </span>
                                         </p>
-                                        <p className="text-lg font-mono text-green-700 break-all">
-                                          {provider.number}
+                                        <p className="text-green-700 mt-1 text-xs">
+                                          Use your name as reference: {formData.firstName} {formData.lastName}
                                         </p>
                                       </div>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          copyToClipboard(
-                                            provider.number,
-                                            provider.provider,
-                                          )
-                                        }
-                                        className="border-green-300 text-green-700 hover:bg-green-50 shrink-0"
-                                      >
-                                        {copiedText === provider.provider ? (
-                                          <>
-                                            <CheckCircle className="w-4 h-4 mr-1" />
-                                            <span className="hidden xs:inline">
-                                              Copied
-                                            </span>
-                                            <span className="xs:hidden">✓</span>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Copy className="w-4 h-4 mr-1" />
-                                            <span className="hidden xs:inline">
-                                              Copy
-                                            </span>
-                                            <span className="xs:hidden">
-                                              📋
-                                            </span>
-                                          </>
-                                        )}
-                                      </Button>
                                     </div>
-                                  </div>
-                                ))}
-                                {selectedPricing && (
-                                  <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-200">
-                                    <div className="flex items-center gap-2">
-                                      <Info className="w-4 h-4 text-green-700" />
-                                      <p className="text-sm text-green-800 font-medium">
-                                        Amount to send:{" "}
-                                        <span className="font-bold">
-                                          {selectedPricing.currency}{" "}
-                                          {selectedPricing.price}
-                                        </span>
-                                      </p>
-                                    </div>
-                                    <p className="text-xs text-green-700 mt-1">
-                                      Use your full name as reference:{" "}
-                                      {formData.firstName} {formData.lastName}
-                                    </p>
                                   </div>
                                 )}
                               </div>
@@ -1241,14 +1376,6 @@ export function RegistrationDialog({
                       Back
                     </Button>
                   )}
-                  <Button
-                    variant="outline"
-                    onClick={close}
-                    disabled={submitting}
-                    className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base border-slate-300 hover:bg-slate-100 font-medium"
-                  >
-                    Cancel
-                  </Button>
                   {currentStep < 3 ? (
                     <Button
                       onClick={nextStep}
@@ -1321,7 +1448,7 @@ export function RegistrationDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-200">
                     <Clock className="w-5 h-5 text-[#1C356B]" />
                     <div>

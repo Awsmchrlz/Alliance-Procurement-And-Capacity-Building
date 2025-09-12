@@ -113,28 +113,78 @@ const RegisterPage = () => {
     try {
       setIsLoading(true);
 
-      const { error } = await supabase.auth.signUp({
+      const registrationData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone_number: formData.phoneNumber,
-            gender: formData.gender,
-            role: "ordinary_user",
-          },
+        phoneNumber: formData.phoneNumber,
+        gender: formData.gender,
+        role: "ordinary_user",
+      };
+
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify(registrationData),
       });
 
-      if (error) throw error;
+      const data = await response.json();
 
-      toast({
-        title: "Account Created",
-        description:
-          "Your account has been created successfully. You can now sign in.",
-      });
-      setLocation("/login");
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      // Auto-login the user after successful registration
+      try {
+        const loginResponse = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+
+        if (loginResponse.ok) {
+          const loginData = await loginResponse.json();
+          
+          // Sign in with Supabase to update auth state
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
+          
+          if (!error && data.user) {
+            toast({
+              title: "Welcome to Alliance! 🎉",
+              description: "Account created and logged in successfully.",
+            });
+            // Use React Router navigation instead of window.location
+            setLocation("/events?from=auth");
+          } else {
+            // Fallback to page refresh if Supabase auth fails
+            window.location.href = "/events?from=auth";
+          }
+        } else {
+          // If auto-login fails, still redirect but user will need to login manually
+          toast({
+            title: "Account Created Successfully! 🎉",
+            description: "Please log in with your new credentials.",
+          });
+          setLocation("/login");
+        }
+      } catch (loginError) {
+        toast({
+          title: "Account Created Successfully! 🎉",
+          description: "Please log in with your new credentials.",
+        });
+        setLocation("/login");
+      }
     } catch (err: any) {
       toast({
         title: "Registration Failed",

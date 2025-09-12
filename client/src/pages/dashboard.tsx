@@ -339,16 +339,6 @@ export default function Dashboard() {
                               </div>
                             )}
                           </div>
-                          {registration.notes && (
-                            <div className="pt-2 border-t border-gray-200">
-                              <span className="font-medium text-gray-700">
-                                Notes:
-                              </span>
-                              <p className="mt-1 text-gray-600">
-                                {registration.notes}
-                              </p>
-                            </div>
-                          )}
                         </div>
                       </div>
                       <Badge

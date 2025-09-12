@@ -71,9 +71,9 @@ const LoginPage = () => {
       } else {
         toast({
           title: "Welcome back!",
-          description: "Redirecting to your dashboard...",
+          description: "Ready to register for events?",
         });
-        navigate("/dashboard");
+        navigate("/events?from=auth");
       }
     } catch (err: any) {
       toast({
