@@ -60,9 +60,9 @@ const PaymentDetails = () => {
     title: 'Airtel Money',
     icon: <Smartphone className="w-6 h-6 text-[#1C356B]" />,
     details: [
-      { label: 'Number', value: '0974318440', copyable: true },
+      { label: 'Number', value: '077 3484004', copyable: true },
       { label: 'Name', value: 'Alliance Procurement and Capacity Building Foundation' },
-      { label: 'Network', value: 'Airtel Zambia' },
+      { label: 'Network', value: 'Airtel Zambia - Chipo Buumba' },
     ],
   };
 
