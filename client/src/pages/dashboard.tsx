@@ -119,7 +119,7 @@ export default function Dashboard() {
       }
 
       const response = await fetch(
-        `/api/users/payment-evidence/${uploadDialog.registration.id}`,
+        `/api/users/evidence/${uploadDialog.registration.id}`,
         {
           method: "PUT",
           headers: {
@@ -363,7 +363,12 @@ export default function Dashboard() {
                             size="sm"
                             variant="outline"
                             className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                            onClick={() =>
+                            onClick={() => {
+                              console.log('🔍 Dashboard Debug - Opening evidence viewer:');
+                              console.log('  - registration.paymentEvidence:', registration.paymentEvidence);
+                              console.log('  - registration.id:', registration.id);
+                              console.log('  - registration object:', registration);
+                              
                               setEvidenceViewer({
                                 open: true,
                                 evidencePath: registration.paymentEvidence,
@@ -372,7 +377,7 @@ export default function Dashboard() {
                                   .pop(),
                                 registrationId: registration.id,
                               })
-                            }
+                            }}
                           >
                             <Eye className="w-3 h-3 mr-1" />
                             View

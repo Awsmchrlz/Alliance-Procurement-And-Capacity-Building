@@ -3,16 +3,18 @@ import { supabase } from "@/lib/supabase";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import {
+  User,
+  Mail,
+  Phone,
+  Lock,
   Eye,
   EyeOff,
-  Mail,
-  Lock,
-  User,
-  Phone,
   ArrowRight,
-  Shield,
   CheckCircle,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -20,10 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 
 type ErrorsType = {
   [key: string]: string;
@@ -45,7 +43,6 @@ const RegisterPage = () => {
     password: "",
     confirmPassword: "",
     gender: "",
-    acceptTerms: false,
   });
   const [errors, setErrors] = useState<ErrorsType>({});
 
@@ -63,7 +60,7 @@ const RegisterPage = () => {
         setCurrentImageIndex((prev) => (prev + 1) % backgroundImages.length);
         setIsImageVisible(true);
       }, 800);
-    }, 5500);
+    }, 6000);
 
     return () => clearInterval(interval);
   }, [backgroundImages.length]);
@@ -91,9 +88,6 @@ const RegisterPage = () => {
     }
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords don't match";
-    }
-    if (!formData.acceptTerms) {
-      newErrors.acceptTerms = "You must agree to the Terms and Privacy Policy";
     }
 
     setErrors(newErrors);
@@ -161,26 +155,23 @@ const RegisterPage = () => {
           
           if (!error && data.user) {
             toast({
-              title: "Welcome to Alliance! 🎉",
+              title: "Welcome to Alliance!",
               description: "Account created and logged in successfully.",
             });
-            // Use React Router navigation instead of window.location
             setLocation("/events?from=auth");
           } else {
-            // Fallback to page refresh if Supabase auth fails
             window.location.href = "/events?from=auth";
           }
         } else {
-          // If auto-login fails, still redirect but user will need to login manually
           toast({
-            title: "Account Created Successfully! 🎉",
+            title: "Account Created Successfully!",
             description: "Please log in with your new credentials.",
           });
           setLocation("/login");
         }
       } catch (loginError) {
         toast({
-          title: "Account Created Successfully! 🎉",
+          title: "Account Created Successfully!",
           description: "Please log in with your new credentials.",
         });
         setLocation("/login");
@@ -195,19 +186,6 @@ const RegisterPage = () => {
       setIsLoading(false);
     }
   };
-
-  const getPasswordStrength = (password: string) => {
-    if (!password) return 0;
-    if (password.length < 6) return 1;
-    if (password.length < 8) return 2;
-    if (password.length >= 8 && /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password))
-      return 4;
-    return 3;
-  };
-
-  const passwordStrength = getPasswordStrength(formData.password);
-  const strengthLabels = ["", "Weak", "Fair", "Good", "Strong"];
-  const strengthColors = ["", "#ef4444", "#f97316", "#eab308", "#22c55e"];
 
   return (
     <div className="min-h-screen flex">
@@ -246,12 +224,19 @@ const RegisterPage = () => {
 
         {/* Content Overlay */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
-          <div className="mb-8">
-            <img
-              src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-              alt="Alliance Procurement Logo"
-              className="w-32 h-32 object-contain mb-6"
-            />
+          <div className="mb-12 w-full flex justify-center">
+            <div className="relative w-72 h-72">
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                alt="Alliance Procurement & Capacity Building Logo"
+                className="w-full h-full object-contain rounded-lg"
+                onError={(e) => {
+                  // Fallback styling if image fails to load
+                  e.currentTarget.className = "w-full h-full bg-white/10 rounded-lg flex items-center justify-center";
+                  e.currentTarget.innerHTML = '<span class="text-[#87CEEB] text-2xl font-bold">APCB</span>';
+                }}
+              />
+            </div>
           </div>
           <h2 className="text-4xl font-bold mb-4">
             Join <span style={{ color: "#87CEEB" }}>Alliance</span>
@@ -278,20 +263,26 @@ const RegisterPage = () => {
       </div>
 
       {/* Right Side - Registration Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-gray-50">
-        <div className="w-full max-w-md">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-3 sm:p-8 bg-gray-50">
+        <div className="w-full max-w-lg">
           {/* Mobile Header */}
-          <div className="lg:hidden text-center mb-8">
-            <img
-              src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-              alt="Alliance Procurement Logo"
-              className="w-20 h-20 object-contain mx-auto mb-4"
-            />
-            <h1 className="text-2xl font-bold" style={{ color: "#1C356B" }}>
-              Create Account
+          <div className="lg:hidden text-center mb-6">
+            <div className="relative w-42 h-42 mx-auto mb-4">
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                alt="Alliance Procurement & Capacity Building Logo"
+                className="w-full h-full object-contain rounded-lg"
+                onError={(e) => {
+                  e.currentTarget.className = "w-full h-full bg-gray-100 rounded-lg flex items-center justify-center";
+                  e.currentTarget.innerHTML = '<span class="text-[#1C356B] text-lg font-bold">APCB</span>';
+                }}
+              />
+            </div>
+            <h1 className="text-xl font-bold" style={{ color: "#1C356B" }}>
+              Join Alliance
             </h1>
-            <p className="text-gray-600 mt-2">
-              Join Alliance Procurement & Capacity Building
+            <p className="text-gray-600 mt-1 text-sm">
+              Start your professional development journey
             </p>
           </div>
 
@@ -301,27 +292,20 @@ const RegisterPage = () => {
               className="text-3xl font-bold mb-2"
               style={{ color: "#1C356B" }}
             >
-              Create Account
+              Join Alliance
             </h1>
-            <p className="text-gray-600">
-              Already have an account?{" "}
-              <button
-                onClick={() => setLocation("/login")}
-                className="font-medium hover:underline"
-                style={{ color: "#87CEEB" }}
-              >
-                Sign in
-              </button>
+            <p className="text-gray-600 mb-6">
+              Start your professional development journey with us
             </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-3 sm:space-y-6">
             {/* Name Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label
                   htmlFor="firstName"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                   style={{ color: "#1C356B" }}
                 >
                   First Name
@@ -336,7 +320,7 @@ const RegisterPage = () => {
                     onChange={(e) =>
                       handleInputChange("firstName", e.target.value)
                     }
-                    className="pl-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                    className="pl-10 h-10 sm:h-12 text-sm border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
                   />
                 </div>
                 {errors.firstName && (
@@ -347,7 +331,7 @@ const RegisterPage = () => {
               <div className="space-y-2">
                 <Label
                   htmlFor="lastName"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                   style={{ color: "#1C356B" }}
                 >
                   Last Name
@@ -362,7 +346,7 @@ const RegisterPage = () => {
                     onChange={(e) =>
                       handleInputChange("lastName", e.target.value)
                     }
-                    className="pl-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                    className="pl-10 h-10 sm:h-12 text-sm border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
                   />
                 </div>
                 {errors.lastName && (
@@ -401,7 +385,7 @@ const RegisterPage = () => {
               <div className="space-y-2">
                 <Label
                   htmlFor="phoneNumber"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                   style={{ color: "#1C356B" }}
                 >
                   Phone Number
@@ -416,7 +400,7 @@ const RegisterPage = () => {
                     onChange={(e) =>
                       handleInputChange("phoneNumber", e.target.value)
                     }
-                    className="pl-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                    className="pl-10 h-10 sm:h-12 text-sm border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
                   />
                 </div>
                 {errors.phoneNumber && (
@@ -427,7 +411,7 @@ const RegisterPage = () => {
               <div className="space-y-2">
                 <Label
                   htmlFor="gender"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                   style={{ color: "#1C356B" }}
                 >
                   Gender
@@ -436,16 +420,14 @@ const RegisterPage = () => {
                   value={formData.gender}
                   onValueChange={(value) => handleInputChange("gender", value)}
                 >
-                  <SelectTrigger className="h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]">
+                  <SelectTrigger className="h-10 sm:h-12 text-sm border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Male">Male</SelectItem>
                     <SelectItem value="Female">Female</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
-                    <SelectItem value="Prefer not to say">
-                      Prefer not to say
-                    </SelectItem>
+                    <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.gender && (
@@ -454,133 +436,82 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            {/* Password */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-sm font-medium"
-                style={{ color: "#1C356B" }}
-              >
-                Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Create a password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    handleInputChange("password", e.target.value)
-                  }
-                  className="pl-10 pr-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
-                  onClick={() => setShowPassword(!showPassword)}
+            {/* Password Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="password"
+                  className="text-xs sm:text-sm font-medium"
+                  style={{ color: "#1C356B" }}
                 >
-                  {showPassword ? <EyeOff /> : <Eye />}
-                </button>
-              </div>
-              {formData.password && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Password strength:</span>
-                    <span style={{ color: strengthColors[passwordStrength] }}>
-                      {strengthLabels[passwordStrength]}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 h-1 rounded-full">
-                    <div
-                      className="h-1 rounded-full transition-all duration-300"
-                      style={{
-                        width: `${(passwordStrength / 4) * 100}%`,
-                        backgroundColor: strengthColors[passwordStrength],
-                      }}
-                    />
-                  </div>
+                  Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create password"
+                    value={formData.password}
+                    onChange={(e) =>
+                      handleInputChange("password", e.target.value)
+                    }
+                    className="pl-10 pr-10 h-10 sm:h-12 text-sm border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </button>
                 </div>
-              )}
-              {errors.password && (
-                <p className="text-red-500 text-sm">{errors.password}</p>
-              )}
-            </div>
+                {errors.password && (
+                  <p className="text-red-500 text-sm">{errors.password}</p>
+                )}
+              </div>
 
-            {/* Confirm Password */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="confirmPassword"
-                className="text-sm font-medium"
-                style={{ color: "#1C356B" }}
-              >
-                Confirm Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={(e) =>
-                    handleInputChange("confirmPassword", e.target.value)
-                  }
-                  className="pl-10 pr-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="confirmPassword"
+                  className="text-xs sm:text-sm font-medium"
+                  style={{ color: "#1C356B" }}
                 >
-                  {showConfirmPassword ? <EyeOff /> : <Eye />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-red-500 text-sm">{errors.confirmPassword}</p>
-              )}
-            </div>
-
-            {/* Terms and Conditions */}
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="acceptTerms"
-                  checked={formData.acceptTerms}
-                  onCheckedChange={(checked) =>
-                    handleInputChange("acceptTerms", checked)
-                  }
-                  className="mt-0.5 border-gray-300 data-[state=checked]:bg-[#87CEEB] data-[state=checked]:border-[#87CEEB]"
-                />
-                <div className="text-sm text-gray-600 leading-relaxed">
-                  <Label htmlFor="acceptTerms" className="cursor-pointer">
-                    I agree to the{" "}
-                    <button
-                      className="font-medium hover:underline"
-                      style={{ color: "#87CEEB" }}
-                    >
-                      Terms of Service
-                    </button>{" "}
-                    and{" "}
-                    <button
-                      className="font-medium hover:underline"
-                      style={{ color: "#87CEEB" }}
-                    >
-                      Privacy Policy
-                    </button>
-                  </Label>
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm password"
+                    value={formData.confirmPassword}
+                    onChange={(e) =>
+                      handleInputChange("confirmPassword", e.target.value)
+                    }
+                    className="pl-10 pr-10 h-10 sm:h-12 text-sm border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff /> : <Eye />}
+                  </button>
                 </div>
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-sm">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
-              {errors.acceptTerms && (
-                <p className="text-red-500 text-sm">{errors.acceptTerms}</p>
-              )}
             </div>
 
             {/* Submit Button */}
             <Button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="w-full h-12 text-white font-semibold text-base transition-all duration-300 hover:shadow-lg"
+              className="w-full h-10 sm:h-12 text-white font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg"
               style={{
                 backgroundColor: "#87CEEB",
                 borderColor: "#87CEEB",
@@ -605,9 +536,9 @@ const RegisterPage = () => {
               )}
             </Button>
 
-            {/* Mobile Sign In Link */}
+            {/* Login Link */}
             <div className="lg:hidden text-center pt-4">
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm">
                 Already have an account?{" "}
                 <button
                   onClick={() => setLocation("/login")}
@@ -617,18 +548,6 @@ const RegisterPage = () => {
                   Sign in
                 </button>
               </p>
-            </div>
-
-            {/* Security Notice */}
-            <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <Shield className="w-5 h-5 mt-0.5" style={{ color: "#87CEEB" }} />
-              <div className="text-sm text-gray-700">
-                <p className="font-medium mb-1">Your information is secure</p>
-                <p className="text-gray-600">
-                  We use industry-standard encryption to protect your personal
-                  data.
-                </p>
-              </div>
             </div>
           </div>
         </div>

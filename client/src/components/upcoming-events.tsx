@@ -23,10 +23,11 @@ export function UpcomingEventsSection() {
   const handleRegister = async (eventId: string) => {
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please login to register for events.",
+        title: "Create Account Required",
+        description: "Please create an account to register for events.",
         variant: "destructive",
       });
+      navigate("/register");
       return;
     }
 

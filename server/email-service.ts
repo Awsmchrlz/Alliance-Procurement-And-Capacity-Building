@@ -44,13 +44,11 @@ class EmailService {
 
   constructor() {
     this.apiKey =
-      process.env.BREVO_API_KEY ||
-      "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";
+      process.env.BREVO_API_KEY;
     this.senderEmail =
-      process.env.BREVO_SENDER_EMAIL || "chisalecharles23@gmail.com";
+      process.env.BREVO_SENDER_EMAIL;
     this.senderName =
-      process.env.BREVO_SENDER_NAME ||
-      "Alliance Procurement & Capacity Building";
+      process.env.BREVO_SENDER_NAME;
 
     if (!this.apiKey) {
       throw new Error("BREVO_API_KEY environment variable is required");
@@ -1147,21 +1145,14 @@ This confirmation was sent to ${eventData.email}`;
 
     await this.sendBulkEmails(recipients, subject, htmlContent);
   }
-        </div>
-      </body>
-      </html>
-    `;
-
-    await this.sendBulkEmails(recipients, subject, htmlContent);
-  }
 
   /**
    * Generate a modern, responsive HTML email template with professional design
    */
-  generateCampaignTemplate(
+  private generateCampaignTemplate(
     title: string,
     content: string,
-    preheader?: string,
+    preheader?: string
   ): string {
     const year = new Date().getFullYear();
     

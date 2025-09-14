@@ -60,28 +60,34 @@ export function EvidenceViewer({
     }
   };
 
-  const loadFileUrl = async (path?: string) => {
-    const targetPath = path || currentEvidencePath;
+  const loadFileUrl = async (targetPath: string) => {
     if (!targetPath) return;
 
-    console.log('🔍 loadFileUrl called with path:', targetPath);
     setLoading(true);
     setError(null);
 
     try {
+      console.log('🔍 Evidence Viewer Debug Info:');
+      console.log('  - targetPath:', targetPath);
+      console.log('  - isAdmin:', isAdmin);
+      console.log('  - registrationId:', registrationId);
+      console.log('  - fileName:', fileName);
+
       // Get current session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error('No active session found');
       }
 
-      // Use appropriate endpoint based on user type with cache busting
+      console.log('  - userId:', session.user.id);
+
+      // Add cache buster to prevent stale responses
       const cacheBuster = `?t=${Date.now()}`;
       const baseEndpoint = isAdmin 
-        ? `/api/admin/payment-evidence/${encodeURIComponent(targetPath)}`
-        : `/api/users/payment-evidence/${encodeURIComponent(targetPath)}`;
+        ? `/api/admin/evidence/${encodeURIComponent(targetPath)}`
+        : `/api/users/evidence/${encodeURIComponent(targetPath)}`;
       const fetchUrl = `${baseEndpoint}${cacheBuster}`;
-      console.log('🌐 Fetching from URL:', fetchUrl, 'isAdmin:', isAdmin);
+      console.log('🌐 Fetching from URL:', fetchUrl);
 
       const response = await fetch(fetchUrl, {
         headers: {
@@ -98,8 +104,17 @@ export function EvidenceViewer({
         try {
           const errorData = await response.json();
           console.error('❌ Error details:', errorData);
+          
+          // If it's a 404, provide a more helpful message
+          if (response.status === 404) {
+            throw new Error('Payment evidence file not found. It may have been moved or deleted.');
+          }
+          
           throw new Error(errorData.message || `Failed to load file: ${response.statusText}`);
-        } catch {
+        } catch (parseError) {
+          if (response.status === 404) {
+            throw new Error('Payment evidence file not found. Please check if the file exists.');
+          }
           throw new Error(`Failed to load file: ${response.statusText}`);
         }
       }
@@ -110,7 +125,18 @@ export function EvidenceViewer({
       setFileUrl(blobUrl);
     } catch (err: any) {
       console.error('Error loading file:', err);
-      setError(err.message || 'Failed to load file');
+      const errorMessage = err.message || 'Failed to load file';
+      
+      // Provide more specific error messages and suggest solutions
+      if (errorMessage.includes('Not Found') || errorMessage.includes('404')) {
+        setError('Evidence file not found. This may be due to a path mismatch. Please try uploading the evidence file again.');
+      } else if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+        setError('Access denied. You may not have permission to view this file.');
+      } else if (errorMessage.includes('Network')) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError(`${errorMessage}. If this persists, try re-uploading the evidence file.`);
+      }
     } finally {
       setLoading(false);
     }
@@ -131,8 +157,8 @@ export function EvidenceViewer({
 
       // Download file via API
       const downloadEndpoint = isAdmin 
-        ? `/api/admin/payment-evidence/${encodeURIComponent(currentEvidencePath)}`
-        : `/api/users/payment-evidence/${encodeURIComponent(currentEvidencePath)}`;
+        ? `/api/admin/evidence/${encodeURIComponent(currentEvidencePath)}`
+        : `/api/users/evidence/${encodeURIComponent(currentEvidencePath)}`;
       
       const response = await fetch(downloadEndpoint, {
         headers: {
@@ -141,6 +167,9 @@ export function EvidenceViewer({
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Payment evidence file not found. The file may have been moved or deleted.');
+        }
         throw new Error(`Failed to download file: ${response.statusText}`);
       }
 
@@ -176,8 +205,8 @@ export function EvidenceViewer({
 
       // Open file in new tab via API
       const viewEndpoint = isAdmin 
-        ? `/api/admin/payment-evidence/${encodeURIComponent(currentEvidencePath)}`
-        : `/api/users/payment-evidence/${encodeURIComponent(currentEvidencePath)}`;
+        ? `/api/admin/evidence/${encodeURIComponent(currentEvidencePath)}`
+        : `/api/users/evidence/${encodeURIComponent(currentEvidencePath)}`;
       
       const response = await fetch(viewEndpoint, {
         headers: {
@@ -186,6 +215,9 @@ export function EvidenceViewer({
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Payment evidence file not found. The file may have been moved or deleted.');
+        }
         throw new Error(`Failed to open file: ${response.statusText}`);
       }
 
@@ -225,7 +257,7 @@ export function EvidenceViewer({
       // Step 1: Upload new file directly to Supabase storage (same as registration dialog)
       const fileExtension = newFile.name.split('.').pop();
       const sanitizedFileName = `evidence_${Date.now()}.${fileExtension}`;
-      const bucket = import.meta.env.VITE_SUPABASE_EVIDENCE_BUCKET || 'registrations';
+      const bucket = 'evidence';
       
       // Get user ID from session
       const userId = session.user.id;
@@ -259,7 +291,7 @@ export function EvidenceViewer({
       if (uploadError) {
         console.error('Upload error:', uploadError);
         if (uploadError.message?.toLowerCase().includes('bucket')) {
-          throw new Error('Payment evidence bucket not found. Please create a Storage bucket named "' + bucket + '" or set VITE_SUPABASE_EVIDENCE_BUCKET to an existing bucket.');
+          throw new Error('Evidence bucket not found. Please create a Storage bucket named "' + bucket + '" or set VITE_SUPABASE_EVIDENCE_BUCKET to an existing bucket.');
         }
         throw new Error(`File upload failed: ${uploadError.message}`);
       }
@@ -413,35 +445,54 @@ export function EvidenceViewer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-md border border-white/20 shadow-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileIcon className="w-5 h-5 text-primary-blue" />
-            Payment Evidence
-          </DialogTitle>
-          <DialogDescription>
-            View and download your payment evidence for verification
-          </DialogDescription>
+      <DialogContent className="sm:max-w-4xl max-w-[95vw] max-h-[90vh] overflow-hidden bg-white border-0 shadow-2xl rounded-2xl flex flex-col">
+        <DialogHeader className="relative overflow-hidden shrink-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1C356B] via-[#1C356B] to-[#2d4a7a] opacity-95" />
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22m36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-10" />
+          
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute top-4 right-4 z-10 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
+            <X className="w-4 h-4 text-white" />
+          </button>
+          
+          <div className="relative px-4 sm:px-6 py-4 sm:py-6 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-3 sm:mb-4">
+              <FileIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[#FDC123]" />
+            </div>
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-white mb-2">
+              Payment Evidence
+            </DialogTitle>
+            <DialogDescription className="text-blue-100 text-sm sm:text-base px-2">
+              View, download, or update your payment evidence
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* File Info */}
-          <div className="p-4 bg-blue-50/90 backdrop-blur-sm rounded-lg border border-blue-200/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FileIcon className="w-8 h-8 text-blue-600" />
-                <div>
-                  <p className="font-medium text-blue-900">{displayName}</p>
-                  <p className="text-sm text-blue-700 capitalize">{fileType} file</p>
-                  <p className="text-xs text-blue-600">Path: {currentEvidencePath}</p>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 sm:space-y-6">
+          {/* File Info Card */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] rounded-xl flex items-center justify-center shrink-0">
+                  <FileIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-gray-900 text-base sm:text-lg truncate">{displayName}</h3>
+                  <p className="text-sm text-gray-600 capitalize">{fileType} file</p>
+                  <div className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded mt-1 break-all">
+                    <span className="block sm:hidden">{currentEvidencePath.split('/').pop()}</span>
+                    <span className="hidden sm:block">{currentEvidencePath}</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    // Force refresh the file
+                    setError(null); // Clear any previous errors
                     if (fileUrl) {
                       URL.revokeObjectURL(fileUrl);
                       setFileUrl(null);
@@ -449,78 +500,82 @@ export function EvidenceViewer({
                     loadFileUrl(currentEvidencePath);
                   }}
                   disabled={loading}
-                  className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                  className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                  title="Refresh file"
                 >
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Refresh
+                  <RefreshCw className="w-4 h-4" />
                 </Button>
                 {canUpdate && (
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => setShowUpdateForm(!showUpdateForm)}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                    className="border-green-300 text-green-700 hover:bg-green-100"
                   >
-                    <Upload className="w-4 h-4 mr-1" />
-                    Update
+                    <Upload className="w-4 h-4" />
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
               </div>
             </div>
           </div>
 
           {/* Update Form */}
           {showUpdateForm && canUpdate && (
-            <div className="p-4 bg-yellow-50/90 backdrop-blur-sm rounded-lg border border-yellow-200/50">
-              <h4 className="font-medium text-yellow-900 mb-3">Update Payment Evidence</h4>
-              <div className="space-y-3">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shrink-0">
+                  <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900">Update Payment Evidence</h4>
+              </div>
+              <div className="space-y-4">
                 <div>
-                  <Label htmlFor="new-evidence" className="text-sm text-yellow-800">
-                    New Evidence File
+                  <Label htmlFor="new-evidence" className="text-sm font-medium text-gray-700 mb-2 block">
+                    Choose New Evidence File
                   </Label>
                   <Input
                     id="new-evidence"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
                     onChange={handleFileChange}
-                    className="mt-1"
+                    className="h-12 border-amber-300 focus:border-amber-500 focus:ring-amber-500"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Supported formats: PDF, JPG, PNG, GIF, WebP</p>
                 </div>
-                <div className="flex gap-2">
+                {newFile && (
+                  <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-amber-200">
+                    <FileText className="w-4 h-4 text-amber-600 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-sm font-medium text-gray-700 block truncate">{newFile.name}</span>
+                      <span className="text-xs text-gray-500">({(newFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    </div>
+                  </div>
+                )}
+                <div className="flex flex-col sm:flex-row gap-3">
                   <Button
-                    size="sm"
                     onClick={handleUpdateEvidence}
                     disabled={!newFile || updating}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg w-full sm:w-auto"
                   >
                     {updating ? (
                       <>
-                        <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                         Updating...
                       </>
                     ) : (
                       <>
-                        <Upload className="w-4 h-4 mr-1" />
+                        <Upload className="w-4 h-4 mr-2" />
                         Update Evidence
                       </>
                     )}
                   </Button>
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => {
                       setShowUpdateForm(false);
                       setNewFile(null);
                     }}
-                    className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100 w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
@@ -531,76 +586,136 @@ export function EvidenceViewer({
 
           {/* Loading State */}
           {loading && (
-            <div className="flex items-center justify-center py-8 bg-white/50 backdrop-blur-sm rounded-lg">
-              <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mr-3" />
-              <span className="text-gray-600">Loading evidence...</span>
+            <div className="flex flex-col items-center justify-center py-12 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl border border-gray-200">
+              <RefreshCw className="w-12 h-12 animate-spin text-blue-600 mb-3" />
+              <span className="text-gray-700 font-medium">Loading evidence...</span>
+              <span className="text-sm text-gray-500 mt-1">Please wait while we fetch your file</span>
             </div>
           )}
 
           {/* File Preview */}
           {!loading && fileUrl && fileType === 'image' && (
-            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm">
-              <img
-                src={fileUrl}
-                alt="Payment Evidence"
-                className="w-full h-64 object-contain bg-gray-50"
-                onError={() => setError('Failed to load image preview')}
-              />
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-2 border-b border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700">Image Preview</h4>
+              </div>
+              <div className="p-4">
+                <img
+                  src={fileUrl}
+                  alt="Payment Evidence"
+                  className="w-full max-h-96 object-contain bg-gray-50 rounded-lg border border-gray-200"
+                  onError={() => setError('Failed to load image preview')}
+                />
+              </div>
             </div>
           )}
 
           {!loading && fileUrl && fileType === 'pdf' && (
-            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm">
-              <iframe
-                src={fileUrl}
-                className="w-full h-64"
-                title="Payment Evidence PDF"
-                onError={() => setError('Failed to load PDF preview')}
-              />
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-2 border-b border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700">PDF Preview</h4>
+              </div>
+              <div className="p-4">
+                <iframe
+                  src={fileUrl}
+                  className="w-full h-96 rounded-lg border border-gray-200"
+                  title="Payment Evidence PDF"
+                  onError={() => setError('Failed to load PDF preview')}
+                />
+              </div>
             </div>
           )}
 
           {!loading && fileType === 'document' && (
-            <div className="border border-gray-200 rounded-lg p-8 text-center bg-white/80 backdrop-blur-sm">
-              <FileIcon className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600">Document preview not available</p>
-              <p className="text-sm text-gray-500">Please download to view the file</p>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-2 border-b border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700">Document File</h4>
+              </div>
+              <div className="p-8 text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <FileIcon className="w-10 h-10 text-gray-500" />
+                </div>
+                <h5 className="font-medium text-gray-900 mb-2">Preview Not Available</h5>
+                <p className="text-gray-600 mb-1">This document type cannot be previewed</p>
+                <p className="text-sm text-gray-500">Use the download button to view the file</p>
+              </div>
             </div>
           )}
 
           {/* Success Message */}
           {success && (
-            <div className="p-3 bg-green-50/90 backdrop-blur-sm border border-green-200/50 rounded-lg">
-              <p className="text-green-700 text-sm">{success}</p>
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <p className="text-green-800 font-medium">{success}</p>
+              </div>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 bg-red-50/90 backdrop-blur-sm border border-red-200/50 rounded-lg">
-              <p className="text-red-700 text-sm">{error}</p>
+            <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-red-800 font-medium mb-2 break-words">{error}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setError(null);
+                      if (fileUrl) {
+                        URL.revokeObjectURL(fileUrl);
+                        setFileUrl(null);
+                      }
+                      loadFileUrl(currentEvidencePath);
+                    }}
+                    className="border-red-300 text-red-700 hover:bg-red-100 w-full sm:w-auto"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Try Again
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              onClick={handleView}
-              disabled={loading}
-              className="border-blue-200 text-blue-600 hover:bg-blue-50"
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              View
-            </Button>
-            <Button
-              onClick={handleDownload}
-              disabled={loading}
-              className="bg-primary-blue text-white hover:bg-[#2d4a7a]"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {loading ? "Loading..." : "Download"}
-            </Button>
+        </div>
+        
+        {/* Actions Footer */}
+        <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-sm text-gray-600 text-center sm:text-left">
+              <span className="font-medium">File actions:</span>
+              <span className="hidden sm:inline"> View in new tab or download to your device</span>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="outline"
+                onClick={handleView}
+                disabled={loading}
+                className="border-blue-300 text-blue-700 hover:bg-blue-50 w-full sm:w-auto"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                View in Tab
+              </Button>
+              <Button
+                onClick={handleDownload}
+                disabled={loading}
+                className="bg-gradient-to-r from-[#1C356B] to-[#2d4a7a] hover:from-[#2d4a7a] hover:to-[#1C356B] text-white shadow-lg w-full sm:w-auto"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {loading ? "Loading..." : "Download"}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

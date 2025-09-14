@@ -4,26 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="going live">
-      <change beforePath="$PROJECT_DIR$/client/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/navigation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/navigation.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/testimonial-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/testimonial-section.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/ui/toast.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/ui/toast.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/upcoming-events.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/upcoming-events.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/hooks/useEmailService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/hooks/useEmailService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/about.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/about.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/dashboard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/login.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/register.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/register.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/services.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/services.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/server/routes.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/storage.ts" beforeDir="false" afterPath="$PROJECT_DIR$/server/storage.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/vite.config.ts" afterDir="false" />
-    </list>
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="post prod fixes" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -119,13 +100,22 @@
       <option name="project" value="LOCAL" />
       <updated>1757438214427</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="post prod fixes">
+      <option name="closed" value="true" />
+      <created>1757651652008</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1757651652008</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="clean up" />
     <MESSAGE value="please work" />
     <MESSAGE value="going live" />
-    <option name="LAST_COMMIT_MESSAGE" value="going live" />
+    <MESSAGE value="post prod fixes" />
+    <option name="LAST_COMMIT_MESSAGE" value="post prod fixes" />
   </component>
 </project>

@@ -703,6 +703,12 @@ export default function AdminDashboard() {
         icon: Clock,
         label: "Pending",
       },
+      cancelled: {
+        variant: "destructive",
+        color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+        icon: XCircle,
+        label: "Cancelled",
+      },
       failed: {
         variant: "destructive",
         color: "bg-red-500 text-white",
@@ -1336,7 +1342,7 @@ export default function AdminDashboard() {
               </TabsTrigger>
 
               {/* Emails - Only super_admin can send emails */}
-              {canManageUsers && (
+              {isSuperAdmin && (
                 <TabsTrigger
                   value="emails"
                   className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
@@ -1981,16 +1987,6 @@ export default function AdminDashboard() {
                         Overview and management of all training events
                       </CardDescription>
                     </div>
-                    <Button
-                      onClick={() => exportToExcel("events")}
-                      variant="outline"
-                      className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10 min-h-[44px]"
-                    >
-                      <span className="hidden sm:inline">
-                        Download Events as Excel
-                      </span>
-                      <span className="sm:hidden">Export</span>
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -2011,9 +2007,7 @@ export default function AdminDashboard() {
                           <TableHead className="font-semibold">
                             Pricing
                           </TableHead>
-                          <TableHead className="font-semibold">
-                            Attendance
-                          </TableHead>
+                        
                           <TableHead className="font-semibold">
                             Status
                           </TableHead>
@@ -2061,18 +2055,7 @@ export default function AdminDashboard() {
                                 K{event.price}
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="text-center">
-                                <div className="text-lg font-bold text-gray-900">
-                                  {event.currentAttendees || 0}
-                                </div>
-                                {event.maxAttendees && (
-                                  <div className="text-sm text-gray-500">
-                                    of {event.maxAttendees}
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
+                          
                             <TableCell>
                               {event.featured ? (
                                 <Badge className="bg-gradient-to-r from-[#FDC123] to-amber-500 text-[#1C356B] font-semibold">
@@ -2615,7 +2598,13 @@ export default function AdminDashboard() {
                               </div>
                               {registration.paymentEvidence && (
                                 <Button
-                                  onClick={() =>
+                                  onClick={() => {
+                                    console.log('🔍 Admin Dashboard Debug - Opening evidence viewer:');
+                                    console.log('  - registration.paymentEvidence:', registration.paymentEvidence);
+                                    console.log('  - registration.id:', registration.id);
+                                    console.log('  - registration.user:', registration.user);
+                                    console.log('  - registration object:', registration);
+                                    
                                     setEvidenceViewer({
                                       open: true,
                                       evidencePath:
@@ -2623,7 +2612,7 @@ export default function AdminDashboard() {
                                       fileName: `${registration.user?.firstName}_${registration.user?.lastName}_payment_evidence`,
                                       registrationId: registration.id,
                                     })
-                                  }
+                                  }}
                                   variant="outline"
                                   size="sm"
                                   className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
@@ -2700,7 +2689,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           {/* Emails Tab */}
-          {canManageUsers && (
+          {isSuperAdmin && (
             <TabsContent value="emails">
               <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
                 <CardHeader className="space-y-4">
