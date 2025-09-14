@@ -123,6 +123,21 @@ const teamMembers = [
     ],
   },
   {
+    name: "Mr. Noel Sandukiya",
+    position: "Supply Chain Management Specialist & Consultant",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757831645/Screenshot_2025-09-13_at_8.00.53_AM_1_bx36fn.png",
+    bio: "Mr. Noel Sandukiya is a seasoned Supply Chain Management Specialist and Consultant with over 25 years of experience in public and private sectors, particularly in energy generation, transmission, distribution, and the hospitality industry. He has worked on major World Bank–funded projects in Zambia, including GREAT TDP, GEWEL, ZATP II, DFID renewable energy initiatives, and ZPPA procurement reforms. He has also served in diplomacy and international relations. As President of CIPS Zambia (2015), he introduced international conferences to Zambia, and as Vice President of ZIPS (2015–2021), he contributed to advancing procurement and supply chain professionalism. He holds an MBA from Maastricht School of Management (Netherlands) and ESAMI, a Graduate Diploma (Level 6) from CIPS UK, a CABS certificate, and a certificate in Diplomacy and International Relations from ZIDIS.",
+    expertise: [
+      "Supply Chain Management",
+      "Procurement Strategy",
+      "Business Administration",
+      "Finance",
+      "Energy & Hospitality Sector Management",
+      "Consultancy Services",
+      "Diplomacy & International Relations",
+    ],
+  },  
+  {
     name: "Siphiwe Mabhena",
     position: "Director – Secretarial Services (Southern Region)",
     image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.46.41_ymeqvm.jpg",

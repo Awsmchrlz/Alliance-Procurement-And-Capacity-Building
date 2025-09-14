@@ -393,7 +393,7 @@ export function EventCard({
                         </>
                       ) : (
                         <>
-                          Learn More
+                          Register Now
                           <ArrowRight className="w-5 h-5" />
                         </>
                       )}

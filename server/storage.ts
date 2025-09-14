@@ -788,12 +788,11 @@ export const storage = {
         console.error("Error creating event registration:", error.message);
         throw new Error(`Failed to create registration: ${error.message}`);
       }
-      await supabase
-        .rpc("increment_attendees", { event_id: registration.eventId })
-        .then(({ error: rpcError }) => {
-          if (rpcError)
-            console.error("Error incrementing attendees:", rpcError.message);
-        });
+
+      // Update event attendance count after new registration
+      const eventId = data.event_id;
+      await supabase.rpc('update_event_attendance', { event_id: eventId });
+
       return {
         id: data.id,
         registrationNumber: data.registration_number,
@@ -847,6 +846,13 @@ export const storage = {
         console.error("Error updating event registration:", error.message);
         return undefined;
       }
+
+      // Update event attendance count after payment status change
+      if (updates.hasPaid !== undefined) {
+        const eventId = data.event_id;
+        await supabase.rpc('update_event_attendance', { event_id: eventId });
+      }
+
       return {
         id: data.id,
         eventId: data.event_id,
