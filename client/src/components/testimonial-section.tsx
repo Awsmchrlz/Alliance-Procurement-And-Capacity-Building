@@ -6,39 +6,66 @@ export function TestimonialsSection() {
   const testimonials = [
     {
       id: 1,
-      name: "Sarah Johnson",
-      position: "Director of Operations",
-      company: "Global Solutions Ltd.",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&q=80",
+      name: "Dub Judah Shamayuwa",
+      position: "Director of Procurement Officer",
+      company: "Evelyn Hone College",
+      image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757652646/WhatsApp_Image_2025-09-11_at_20.55.20_xa4gnu.jpg",
       rating: 5,
-      text: "Alliance Procurement & Capacity Building transformed our procurement processes. Their expertise and professionalism exceeded our expectations, delivering results that have significantly improved our operational efficiency."
+      text: "The workshop provided me with invaluable knowledge in several areas. I learned that matters we often overlook—such as proper record-keeping—can either protect us from audit queries or expose us to significant risks. I also deepened my understanding of emotional and intelligence quotients and their practical application in workplace settings, especially in managerial roles. Equally important, I was able to build a strong professional network by connecting with other procurement professionals."
     },
     {
       id: 2,
-      name: "Michael Chen",
-      position: "Supply Chain Manager",
-      company: "TechCorp Industries",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&q=80",
+      name: "Michael Idah Chilala Hachuka",
+      position: "Stores Officer",
+      company: "kafue general Hospital",
+      image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757652647/WhatsApp_Image_2025-09-11_at_21.08.35_ryxo5z.jpg",
       rating: 5,
-      text: "The capacity building programs provided by APCB were exceptional. Their team's deep understanding of procurement challenges helped us implement sustainable solutions that continue to benefit our organization."
+      text: "The Ministry of Education’s for Luapula Province workshop on Electronic Government Procurement held at Samfya Secondary School in Samfya District from 25th to 26th October, 2024, was very enlightening. The sessions provided practical knowledge on e-GP and emphasized the importance of prudent supply chain and operations management in driving sustainable development. I am now better equipped to apply these skills to enhance transparency, accountability, and efficiency in my daily work"
     },
     {
       id: 3,
-      name: "Dr. Amelia Rodriguez",
-      position: "Procurement Head",
-      company: "Healthcare Alliance",
-      image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&q=80",
+      name: "Cynthia Maanga",
+      position: "Stores Officer",
+      company: "Zambia Law Development Commission",
+      image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757652646/WhatsApp_Image_2025-09-11_at_21.05.29_bnitmm.jpg",
       rating: 5,
-      text: "Working with APCB has been a game-changer for our healthcare procurement needs. Their innovative approach and attention to detail ensured we received the highest quality services within our budget."
+      text: "The workshop organized by Alliance Procurement and Capacity Building in collaboration with Zambia Public Procurement Authority for the Ministry of Community Development and Social Services at Mika Hotel in Chongwe District from 22nd to 24th April, 2025, under the theme ‘Driving Accountability in Public Procurement and Financial Management’ was truly insightful. The training provided practical knowledge and tools that will greatly improve transparency, accountability, and efficiency in my work. I am leaving empowered to contribute more effectively to strengthening financial and procurement systems in my institution"
     },
     {
       id: 4,
-      name: "James Thompson",
-      position: "CEO",
-      company: "BuildRight Construction",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80",
+      name: " Rita Zimba",
+      position: "Stores Officer",
+      company: "The Judiciary of Zambia",
+      image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757652646/WhatsApp_Image_2025-09-11_at_21.03.37_hzp7sd.jpg",
       rating: 5,
-      text: "APCB's procurement expertise helped us streamline our supply chain and reduce costs by 25%. Their professional team delivered outstanding results that have had a lasting positive impact on our business."
+      text: "The Stores Officers Training held at Chalimabana Local Government Training Institute in Chongwe District from 27th to 29th August, 2025, was highly beneficial. The sessions on accountability and effective stores management were practical and eye-opening, equipping me with new skills to strengthen controls and improve efficiency in my work. This training has truly enhanced my capacity to deliver with integrity and professionalism."
+    },
+    {
+      id: 5,
+      name: "SYDNEY KAPUI",
+      position: "ACTING PROCUREMENT AND SUPPLIES ASSISTANT",
+      company: "CHELSTONE ZONAL HOSPITAL",
+      image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757652647/WhatsApp_Image_2025-09-11_at_21.11.33_kqndrq.jpg",
+      rating: 5,
+      text:"The workshop held at Mika Hotel in Chongwe District from 26th to 28th March, 2025, under the theme ‘Driving Accountability in Public Procurement and Financial Management’ was extremely impactful. The training deepened my understanding of accountability and transparency, while providing practical tools to strengthen procurement and financial management processes. I left the workshop better equipped to uphold integrity and efficiency in my role."
+    },
+    {
+      id: 6,
+      name: "Racheal Ngoma",
+      position: "Secretary",
+      company: "Ministry of Health",
+      image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757652648/WhatsApp_Image_2025-09-11_at_22.28.17_jhexq4.jpg",
+      rating: 5,
+      text:"The workshop at Livingstone Lodge in Livingstone District from 23rd to 26th June, 2025 was eye-opening and impactful. The sessions were practical, engaging, and equipped us with modern skills in financial, secretarial, and records management. I left more confident, motivated, and ready to drive innovation in my organization."
+    } ,
+    {
+      id: 7,
+      name: "Lorraine mainza",
+      position: "Issuing Officer",
+      company: "Nitrogen chemicals of Zambi",
+      image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757652647/WhatsApp_Image_2025-09-11_at_21.14.25_fodut4.jpg",
+      rating: 5,
+      text:"The workshop for Executive, Administrative, Human Resource & Planning Officers held at Zambia Air force Banquet Hall in Livingstone District from 18th to 21st June, 2025, was truly empowering. The sessions were practical, insightful, and addressed real challenges we face in public service. I gained valuable knowledge and skills that will enhance my effectiveness and contribute to improved service delivery. It was a transformative experience that every officer should attend."
     }
   ];
 

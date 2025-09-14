@@ -212,27 +212,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to increment event attendee count
-CREATE OR REPLACE FUNCTION increment_attendees(event_id TEXT)
+-- Function to update event attendee count based on paid registrations only
+CREATE OR REPLACE FUNCTION update_event_attendance(event_id TEXT)
 RETURNS VOID AS $$
 BEGIN
     UPDATE events
     SET
-        current_attendees = COALESCE(current_attendees, 0) + 1,
+        current_attendees = (
+            SELECT COUNT(*)
+            FROM event_registrations
+            WHERE event_id = events.id AND has_paid = true
+        ),
         updated_at = NOW()
     WHERE id = event_id;
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to decrement event attendee count
+-- Legacy functions for backward compatibility (now call the new function)
+CREATE OR REPLACE FUNCTION increment_attendees(event_id TEXT)
+RETURNS VOID AS $$
+BEGIN
+    PERFORM update_event_attendance(event_id);
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION decrement_attendees(event_id TEXT)
 RETURNS VOID AS $$
 BEGIN
-    UPDATE events
-    SET
-        current_attendees = GREATEST(COALESCE(current_attendees, 0) - 1, 0),
-        updated_at = NOW()
-    WHERE id = event_id;
+    PERFORM update_event_attendance(event_id);
 END;
 $$ LANGUAGE plpgsql;
 

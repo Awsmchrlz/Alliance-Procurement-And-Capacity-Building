@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { EventCard } from "./event-card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,6 +12,7 @@ import { ProjectsModal, IndabaModal } from "./content-modals";
 export function UpcomingEventsSection() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [location, navigate] = useLocation();
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
   const [indabaModalOpen, setIndabaModalOpen] = useState(false);
 
@@ -21,10 +23,11 @@ export function UpcomingEventsSection() {
   const handleRegister = async (eventId: string) => {
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please login to register for events.",
+        title: "Create Account Required",
+        description: "Please create an account to register for events.",
         variant: "destructive",
       });
+      navigate("/register");
       return;
     }
 
@@ -73,110 +76,7 @@ export function UpcomingEventsSection() {
       style={{ backgroundColor: "#F8FBFF" }}
     >
       <div className="container mx-auto px-6">
-        {/* Three Header Cards Section */}
-        <div className="grid md:grid-cols-3 gap-6 mb-6">
-          <div className="rounded-xl p-4 text-center transition-all duration-300">
-            <h3
-              className="text-xl font-bold mb-4 text-blue-900 uppercase tracking-wider"
-              data-testid="upcoming-events-title"
-            >
-              UPCOMING EVENTS
-            </h3>
-            <button
-              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"
-              style={{ backgroundColor: "#1C356B", color: "#87CEEB" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#0f1e3d";
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#1C356B";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-              data-testid="events-read-more"
-              onClick={() => {
-                // Scroll to the events display section
-                const eventsSection =
-                  document.querySelector("#events .space-y-8");
-                if (eventsSection) {
-                  eventsSection.scrollIntoView({ behavior: "smooth" });
-                }
-              }}
-            >
-              SEE UPCOMING EVENTS →
-            </button>
-          </div>
-
-          {/* Current Projects Card */}
-          <div className="rounded-xl p-4 text-center transition-all duration-300">
-            <h3
-              className="text-xl font-bold text-blue-900 mb-4 uppercase tracking-wider"
-              data-testid="current-projects-title"
-            >
-              CURRENT PROJECTS
-            </h3>
-            <button
-              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"
-              style={{ backgroundColor: "#87CEEB", color: "#1C356B" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#e6ae1f";
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#87CEEB";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-              data-testid="projects-read-more"
-              onClick={() => {
-                // Navigate to projects page or scroll to projects section
-                const projectsSection = document.getElementById("projects");
-                if (projectsSection) {
-                  projectsSection.scrollIntoView({ behavior: "smooth" });
-                } else {
-                  // If no projects section, show modal
-                  setProjectsModalOpen(true);
-                }
-              }}
-            >
-              READ MORE →
-            </button>
-          </div>
-
-          {/* About Indaba Card */}
-          <div className="rounded-xl p-4 text-center transition-all duration-300">
-            <h3
-              className="text-xl font-bold mb-6 text-blue-900 uppercase tracking-wider"
-              data-testid="about-indaba-title"
-            >
-              INTERNATIONAL INDABA
-            </h3>
-            <button
-              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"
-              style={{ backgroundColor: "#1C356B", color: "#87CEEB" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#0f1e3d";
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#1C356B";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-              data-testid="indaba-read-more"
-              onClick={() => {
-                // Navigate to indaba page or show indaba information
-                const indabaSection = document.getElementById("indaba");
-                if (indabaSection) {
-                  indabaSection.scrollIntoView({ behavior: "smooth" });
-                } else {
-                  // If no indaba section, show information about the indaba
-                  setIndabaModalOpen(true);
-                }
-              }}
-            >
-              LEARN MORE →
-            </button>
-          </div>
-        </div>
+      
 
         {/* Events Display Section */}
         {events && events.length > 0 ? (
@@ -205,23 +105,7 @@ export function UpcomingEventsSection() {
               </div>
             )}
 
-            {/* View All Button */}
-            <div className="text-center mt-16">
-              <Button
-                className="font-bold py-4 px-12 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 uppercase tracking-wider"
-                style={{ backgroundColor: "#1C356B", color: "#87CEEB" }}
-                data-testid="view-all-events"
-                onClick={() => {
-                  // Scroll to top of events section to show all events
-                  const eventsSection = document.getElementById("events");
-                  if (eventsSection) {
-                    eventsSection.scrollIntoView({ behavior: "smooth" });
-                  }
-                }}
-              >
-                View All Events →
-              </Button>
-            </div>
+        
           </div>
         ) : (
           <div className="text-center py-20 bg-white rounded-3xl shadow-lg">
@@ -266,6 +150,94 @@ export function UpcomingEventsSection() {
           onOpenChange={setProjectsModalOpen}
         />
         <IndabaModal open={indabaModalOpen} onOpenChange={setIndabaModalOpen} />
+          {/* Three Header Cards Section */}
+          <div className="grid md:grid-cols-3 gap-6 mb-6">
+          <div className="rounded-xl p-4 text-center transition-all duration-300">
+            <h3
+              className="text-xl font-bold mb-4 text-blue-900 uppercase tracking-wider"
+              data-testid="upcoming-events-title"
+            >
+              UPCOMING EVENTS
+            </h3>
+            <button
+              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"
+              style={{ backgroundColor: "#1C356B", color: "#87CEEB" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#0f1e3d";
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#1C356B";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+              data-testid="events-read-more"
+              onClick={() => {
+                // Navigate to the events page
+                navigate("/events");
+              }}
+            >
+              SEE UPCOMING EVENTS →
+            </button>
+          </div>
+
+          {/* Current Projects Card */}
+          <div className="rounded-xl p-4 text-center transition-all duration-300">
+            <h3
+              className="text-xl font-bold text-blue-900 mb-4 uppercase tracking-wider"
+              data-testid="current-projects-title"
+            >
+              CURRENT PROJECTS
+            </h3>
+            <button
+              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"
+              style={{ backgroundColor: "#87CEEB", color: "#1C356B" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#e6ae1f";
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#87CEEB";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+              data-testid="projects-read-more"
+              onClick={() => {
+                // Navigate to the events page
+                navigate("/events");
+              }}
+            >
+              READ MORE →
+            </button>
+          </div>
+
+          {/* About Indaba Card */}
+          <div className="rounded-xl p-4 text-center transition-all duration-300">
+            <h3
+              className="text-xl font-bold mb-4 text-blue-900 uppercase tracking-wider"
+              data-testid="upcoming-events-title"
+            >
+              UPCOMING EVENTS
+            </h3>
+            <button
+              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"
+              style={{ backgroundColor: "#1C356B", color: "#87CEEB" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#0f1e3d";
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#1C356B";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+              data-testid="events-read-more"
+              onClick={() => {
+                // Navigate to the events page
+                navigate("/events");
+              }}
+            >
+              SEE UPCOMING EVENTS →
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );

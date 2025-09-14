@@ -5,42 +5,57 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
+import { AuthGuard } from "@/components/auth-guard";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
 import Services from "@/pages/services";
 import About from "@/pages/about";
+import Events from "@/pages/events";
 import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { user, loading, isAdmin, isSuperAdmin } = useAuth();
-
-  // Show loading while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const { isAdmin } = useAuth();
 
   return (
     <Switch>
+      {/* Public routes */}
       <Route path="/" component={Home} />
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
+      <Route path="/login">
+        <AuthGuard requireAuth={false} redirectTo="/dashboard">
+          <Login />
+        </AuthGuard>
+      </Route>
+      <Route path="/register">
+        <AuthGuard requireAuth={false} redirectTo="/dashboard">
+          <Register />
+        </AuthGuard>
+      </Route>
+      <Route path="/forgot-password">
+        <AuthGuard requireAuth={false} redirectTo="/dashboard">
+          <ForgotPassword />
+        </AuthGuard>
+      </Route>
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/services" component={Services} />
       <Route path="/about" component={About} />
+      <Route path="/events" component={Events} />
       
-      {/* Protected routes with role-based access */}
+      {/* Protected routes */}
       <Route path="/dashboard">
-        {user ? (isAdmin ? <AdminDashboard /> : <Dashboard />) : <Login />}
+        <AuthGuard>
+          {isAdmin ? <AdminDashboard /> : <Dashboard />}
+        </AuthGuard>
       </Route>
       
       <Route path="/admin-dashboard">
-        {isAdmin ? <AdminDashboard /> : <Login />}
+        <AuthGuard requireAuth={isAdmin} redirectTo="/dashboard">
+          <AdminDashboard />
+        </AuthGuard>
       </Route>
       
       <Route component={NotFound} />

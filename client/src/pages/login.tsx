@@ -71,9 +71,9 @@ const LoginPage = () => {
       } else {
         toast({
           title: "Welcome back!",
-          description: "Redirecting to your dashboard...",
+          description: "Ready to register for events?",
         });
-        navigate("/dashboard");
+        navigate("/events?from=auth");
       }
     } catch (err: any) {
       toast({
@@ -123,12 +123,19 @@ const LoginPage = () => {
 
         {/* Content Overlay */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
-          <div className="mb-8">
-            <img
-              src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-              alt="Alliance Procurement Logo"
-              className="w-32 h-32 object-contain mb-6"
-            />
+          <div className="mb-12 w-full flex justify-center">
+            <div className="relative w-72 h-72">
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                alt="Alliance Procurement & Capacity Building Logo"
+                className="w-full h-full object-contain rounded-lg"
+                onError={(e) => {
+                  // Fallback styling if image fails to load
+                  e.currentTarget.className = "w-full h-full bg-white/10 rounded-lg flex items-center justify-center";
+                  e.currentTarget.innerHTML = '<span class="text-[#87CEEB] text-2xl font-bold">APCB</span>';
+                }}
+              />
+            </div>
           </div>
           <h2 className="text-4xl font-bold mb-4">
             Welcome Back to <span style={{ color: "#87CEEB" }}>Alliance</span>
@@ -158,11 +165,18 @@ const LoginPage = () => {
         <div className="w-full max-w-md">
           {/* Mobile Header */}
           <div className="lg:hidden text-center mb-8">
-            <img
-              src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-              alt="Alliance Procurement Logo"
-              className="w-20 h-20 object-contain mx-auto mb-4"
-            />
+            <div className="relative w-32 h-32 mx-auto mb-4">
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                alt="Alliance Procurement & Capacity Building Logo"
+                className="w-full h-full object-contain rounded-lg"
+                onError={(e) => {
+                  // Fallback styling if image fails to load
+                  e.currentTarget.className = "w-full h-full bg-gray-100 rounded-lg flex items-center justify-center";
+                  e.currentTarget.innerHTML = '<span class="text-[#1C356B] text-lg font-bold">APCB</span>';
+                }}
+              />
+            </div>
             <h1 className="text-2xl font-bold" style={{ color: "#1C356B" }}>
               Welcome Back
             </h1>
@@ -269,13 +283,7 @@ const LoginPage = () => {
                 type="button"
                 className="text-sm font-medium hover:underline"
                 style={{ color: "#87CEEB" }}
-                onClick={() => {
-                  toast({
-                    title: "Password Reset",
-                    description:
-                      "Password reset functionality will be available soon.",
-                  });
-                }}
+                onClick={() => navigate("/forgot-password")}
               >
                 Forgot your password?
               </button>
