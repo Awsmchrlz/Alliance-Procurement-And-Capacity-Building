@@ -637,9 +637,17 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                       <div className="space-y-1">
                        
                         <div className="flex items-center justify-between p-2 bg-white rounded border border-[#87CEEB]/20 shadow-sm">
-                          <span className="text-xs font-medium text-[#1C356B]">Airtel</span>
+                          <span className="text-xs font-medium text-[#1C356B]">Airtel - Chipo Buumba</span>
                           <Button variant="ghost" size="sm" className="gap-1 h-6 px-2 hover:bg-[#87CEEB]/10">
-                            <span className="text-xs font-mono">0974 318 440 
+                            <span className="text-xs font-mono">0773 484 004
+                            </span>
+                            <Copy className="h-3 w-3 text-[#1C356B]" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between p-2 bg-white rounded border border-[#87CEEB]/20 shadow-sm">
+                          <span className="text-xs font-medium text-[#1C356B]">MTN - Chipo Buumba</span>
+                          <Button variant="ghost" size="sm" className="gap-1 h-6 px-2 hover:bg-[#87CEEB]/10">
+                            <span className="text-xs font-mono">096 4024532
                             </span>
                             <Copy className="h-3 w-3 text-[#1C356B]" />
                           </Button>
