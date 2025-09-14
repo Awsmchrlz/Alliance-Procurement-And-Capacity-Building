@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="post prod fixes" />
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="prod environment clean up" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -108,14 +108,42 @@
       <option name="project" value="LOCAL" />
       <updated>1757651652008</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="post prod fixes">
+      <option name="closed" value="true" />
+      <created>1757840773438</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1757840773438</updated>
+    </task>
+    <task id="LOCAL-00007" summary="prod environment clean up">
+      <option name="closed" value="true" />
+      <created>1757841232967</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1757841232967</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="clean up" />
     <MESSAGE value="please work" />
     <MESSAGE value="going live" />
     <MESSAGE value="post prod fixes" />
-    <option name="LAST_COMMIT_MESSAGE" value="post prod fixes" />
+    <MESSAGE value="prod environment clean up" />
+    <option name="LAST_COMMIT_MESSAGE" value="prod environment clean up" />
   </component>
 </project>
