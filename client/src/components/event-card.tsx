@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { RegistrationDialog } from "./registration-dialog";
 import { useState } from "react";
 import { format } from "date-fns";
+import { LocationModal } from "./location-modal";
 
 interface EventCardProps {
   event: Event;
@@ -29,6 +30,8 @@ export function EventCard({
 }: EventCardProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  
   const handleRegister = () => {
     if (user) {
       setOpen(true);
@@ -36,6 +39,19 @@ export function EventCard({
     }
     if (onRegister) onRegister(event.id);
   };
+
+  const handleLocationClick = () => {
+    setIsLocationModalOpen(true);
+  };
+
+  // Create location data for the event
+  const eventLocationData = event.location ? {
+    name: event.title,
+    address: event.location,
+    description: `Join us for this exciting event at ${event.location}. This training session will provide valuable insights and networking opportunities in procurement and capacity building.`,
+    mapUrl: "https://maps.app.goo.gl/qPRVWi3AbsFMHTR8A", // Using the event location URL you provided
+    imageUrl: event.imageUrl || "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&h=400&fit=crop&crop=center"
+  } : undefined;
 
   return (
     <Card
@@ -120,11 +136,19 @@ export function EventCard({
 
               {event.location && (
                 <div
-                  className="flex items-center text-gray-600 text-xs"
+                  className="flex items-center text-gray-600 text-xs group"
                   data-testid={`event-location-${event.id}`}
                 >
-                  <MapPin className="w-3 h-3 mr-2 text-primary-yellow" />
-                  <span className="font-medium">{event.location}</span>
+                  <div className="flex items-center bg-primary-yellow/10 hover:bg-primary-yellow/20 rounded-full px-2 py-1 transition-all duration-200 group-hover:shadow-sm">
+                    <MapPin className="w-3 h-3 mr-1 text-primary-yellow animate-pulse" />
+                    <button 
+                      onClick={handleLocationClick}
+                      className="font-medium text-primary-blue hover:text-primary-yellow transition-colors cursor-pointer text-left flex items-center"
+                    >
+                      {event.location}
+                      <span className="ml-1 text-[10px] opacity-70 group-hover:opacity-100 transition-opacity">📍 View</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -154,6 +178,24 @@ export function EventCard({
                 </div>
               )}
             </div>
+
+            {/* Guest of Honor Section - Only for featured events */}
+            {featured && (
+              <div className="bg-gradient-to-r from-primary-blue/5 to-primary-yellow/5 border border-primary-yellow/30 rounded-lg p-3 mb-4">
+                <div className="flex items-center mb-2">
+                  <Crown className="w-4 h-4 mr-2 text-primary-yellow" />
+                  <h4 className="text-xs font-bold text-primary-blue uppercase tracking-wider">Guest of Honor</h4>
+                </div>
+                <div className="text-center">
+                  <p className="text-primary-blue font-bold text-xs leading-tight">
+                    His Excellency Mr. Hakainde Hichilema
+                  </p>
+                  <p className="text-gray-600 text-[10px] font-medium">
+                    President of the Republic of Zambia
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Tags */}
             {event.tags && event.tags.length > 0 && (
@@ -315,11 +357,19 @@ export function EventCard({
 
               {event.location && (
                 <div
-                  className="flex items-center text-gray-600 text-sm"
+                  className="flex items-center text-gray-600 text-sm group"
                   data-testid={`event-location-${event.id}`}
                 >
-                  <MapPin className="w-4 h-4 mr-2 text-primary-yellow" />
-                  <span className="font-medium">{event.location}</span>
+                  <div className="flex items-center bg-primary-yellow/10 hover:bg-primary-yellow/20 rounded-full px-3 py-1.5 transition-all duration-200 group-hover:shadow-md">
+                    <MapPin className="w-4 h-4 mr-2 text-primary-yellow animate-pulse" />
+                    <button 
+                      onClick={handleLocationClick}
+                      className="font-medium text-primary-blue hover:text-primary-yellow transition-colors cursor-pointer text-left flex items-center"
+                    >
+                      {event.location}
+                      <span className="ml-2 text-xs opacity-70 group-hover:opacity-100 transition-opacity">📍 View Location</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -351,6 +401,24 @@ export function EventCard({
                 </div>
               )}
             </div>
+
+            {/* Guest of Honor Section - Only for featured events */}
+            {featured && (
+              <div className="bg-gradient-to-r from-primary-blue/5 to-primary-yellow/5 border border-primary-yellow/30 rounded-lg p-4 mb-6">
+                <div className="flex items-center mb-3">
+                  <Crown className="w-5 h-5 mr-2 text-primary-yellow" />
+                  <h4 className="text-sm font-bold text-primary-blue uppercase tracking-wider">Guest of Honor</h4>
+                </div>
+                <div className="text-center">
+                  <p className="text-primary-blue font-bold text-sm leading-tight">
+                    His Excellency Mr. Hakainde Hichilema
+                  </p>
+                  <p className="text-gray-600 text-xs font-medium">
+                    President of the Republic of Zambia
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Tags */}
             {event.tags && event.tags.length > 0 && (
@@ -433,6 +501,12 @@ export function EventCard({
       {user && featured && (
         <RegistrationDialog open={open} onOpenChange={setOpen} event={event} />
       )}
+      
+      <LocationModal 
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        locationData={eventLocationData}
+      />
     </Card>
   );
 }

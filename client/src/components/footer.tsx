@@ -8,8 +8,12 @@ import {
   Linkedin,
   Youtube,
 } from "lucide-react";
+import { useState } from "react";
+import { LocationModal } from "./location-modal";
 
 export function Footer() {
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  
   const quickLinks = [
     { href: "#about", label: "About Us" },
     { href: "#services", label: "Our Services" },
@@ -144,35 +148,39 @@ export function Footer() {
               <div className="flex items-start">
                 <Phone className="text-primary-yellow mr-3 mt-1 w-4 h-4" />
                 <div>
-                  <p
-                    className="text-gray-300"
+                  <a
+                    href="tel:+260974486945"
+                    className="text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer"
                     data-testid="footer-contact-phone-1"
                   >
                     +260 974486945
-                  </p>
-                  <p
-                    className="text-gray-300"
+                  </a>
+                  <a
+                    href="tel:+260977897943"
+                    className="text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer"
                     data-testid="footer-contact-phone-2"
                   >
                     +260977897943
-                  </p>
-                  <p
-                    className="text-gray-300"
+                  </a>
+                  <a
+                    href="tel:+260977414203"
+                    className="text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer"
                     data-testid="footer-contact-phone-3"
                   >
                     +260977414203
-                  </p>
+                  </a>
                 </div>
               </div>
               <div className="flex items-start">
                 <MapPin className="text-primary-yellow mr-3 mt-1 w-4 h-4" />
                 <div>
-                  <p
-                    className="text-gray-300"
+                  <button
+                    onClick={() => setIsLocationModalOpen(true)}
+                    className="text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer text-left"
                     data-testid="footer-contact-location"
                   >
                     Lusaka, Zambia
-                  </p>
+                  </button>
                 </div>
               </div>
             </div>
@@ -182,12 +190,17 @@ export function Footer() {
         <div className="border-t border-gray-700 pt-8">
           <div className="text-center text-gray-400">
             <p data-testid="footer-copyright">
-              &copy; 2024 Alliance Procurement & Capacity Building Ltd. All
+              &copy; 2025 Alliance Procurement & Capacity Building Ltd. All
               rights reserved.
             </p>
           </div>
         </div>
       </div>
+      
+      <LocationModal 
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+      />
     </footer>
   );
 }

@@ -43,9 +43,12 @@ export function Header() {
           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-transparent border border-white sm:border-2 rounded-full flex items-center justify-center flex-shrink-0">
             <Mail className="w-3 h-3 sm:w-5 sm:h-5 text-white" />
           </div>
-          <span className="text-[10px] leading-tight sm:text-lg font-medium text-gray-800 text-center sm:text-left break-all sm:break-normal max-w-[100px] sm:max-w-none">
+          <a 
+            href="mailto:globaltrainingalliance@gmail.com"
+            className="text-[10px] leading-tight sm:text-lg font-medium text-gray-800 text-center sm:text-left break-all sm:break-normal max-w-[100px] sm:max-w-none hover:text-white transition-colors duration-200 cursor-pointer"
+          >
             globaltrainingalliance@gmail.com
-          </span>
+          </a>
         </div>
       </div>
     </div>
