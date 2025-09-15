@@ -50,8 +50,7 @@ export function Footer() {
                 </h1>
                 <p
                   className="text-sm text-gray-400"
-                  data-testid="footer-logo-subtitle"
-                >
+                  data-testid="footer-logo-subtitle">
                   Supply Chain Matters
                 </p>
               </div>
@@ -86,7 +85,7 @@ export function Footer() {
               className="text-lg font-semibold mb-6"
               data-testid="footer-quick-links-title"
             >
-              Quick Links
+               Links
             </h3>
             <ul className="space-y-3">
               {quickLinks.map((link, index) => (
