@@ -86,7 +86,8 @@
     "ws": "^8.18.0",
     "xlsx": "^0.18.5",
     "zod": "^3.25.76",
-    "zod-validation-error": "^3.4.0"
+    "zod-validation-error": "^3.4.0",
+    "vite": "^5.4.19"
   },
   "devDependencies": {
     "@replit/vite-plugin-cartographer": "^0.2.8",
