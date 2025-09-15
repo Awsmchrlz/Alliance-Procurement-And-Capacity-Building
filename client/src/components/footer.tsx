@@ -85,7 +85,7 @@ export function Footer() {
               className="text-lg font-semibold mb-6"
               data-testid="footer-quick-links-title"
             >
-               Links
+              Quick Links
             </h3>
             <ul className="space-y-3">
               {quickLinks.map((link, index) => (
