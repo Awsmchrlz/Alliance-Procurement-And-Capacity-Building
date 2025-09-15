@@ -50,8 +50,7 @@ export function Footer() {
                 </h1>
                 <p
                   className="text-sm text-gray-400"
-                  data-testid="footer-logo-subtitle"
-                >
+                  data-testid="footer-logo-subtitle">
                   Supply Chain Matters
                 </p>
               </div>
