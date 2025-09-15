@@ -11,7 +11,9 @@ export function HeroSection() {
       "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
       "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858602/groupPhoto7_bjfam9.jpg",
       "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858601/groupPhoto3_vvwwcr.jpg",
-      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858600/groupPhoto5_ule4va.jpg"
+      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858600/groupPhoto5_ule4va.jpg",
+      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757918449/WhatsApp_Image_2025-07-29_at_04.07.20_58831626_zyst0l.jpg",
+      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757918939/IMG_0210_2_1_mesjpk.jpg"
   ];
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
