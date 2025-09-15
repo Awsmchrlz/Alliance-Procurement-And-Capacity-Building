@@ -152,7 +152,7 @@ const teamMembers = [
   {
     name: "Ms. Chomba Chileshe",
     position: "Manager – Consultancy Services",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757576481/WhatsApp_Image_2025-09-09_at_23.27.04_nenm2g.jpg",
+    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.48.51_tfmqm9.jpg",
     bio: "Ms. Chomba Chileshe is a procurement and supply chain consultant with over 12 years of experience in procurement planning, contract management, and supply chain coordination. She holds a BSc in Purchasing & Supply Management and is pursuing an MBA in Strategic Management. A full member of ZIPS, she is recognized for integrity, stakeholder engagement, and ability to enhance efficiency and accountability. She has experience designing procurement strategies, optimizing inventory, supervising performance, and providing consultancy services that improve organizational capacity.",
     expertise: [
       "Procurement Strategy",

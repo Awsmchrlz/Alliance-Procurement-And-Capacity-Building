@@ -25,7 +25,7 @@ const LoginPage = () => {
   // Background images
   const backgroundImages = [
     "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
-    "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858600/groupPhoto4_shvwfy.jpg",
+    "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757918917/WhatsApp_Image_2025-09-12_at_09.34.29_2_lxhwza.jpg",
   ];
 
   // Image rotation effect

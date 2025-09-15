@@ -4,7 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="prod environment clean up" />
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="prod environment clean up">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/components/hero-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/hero-section.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/about.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/about.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/login.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/register.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/register.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -28,6 +34,16 @@
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/Awsmchrlz/Alliance-Procurement-And-Capacity-Building.git&quot;,
     &quot;accountId&quot;: &quot;f0dba6a5-28f7-416f-9bb2-c4f54280317c&quot;
+  },
+  &quot;recentNewPullRequestHead&quot;: {
+    &quot;server&quot;: {
+      &quot;useHttp&quot;: false,
+      &quot;host&quot;: &quot;github.com&quot;,
+      &quot;port&quot;: null,
+      &quot;suffix&quot;: null
+    },
+    &quot;owner&quot;: &quot;Awsmchrlz&quot;,
+    &quot;repository&quot;: &quot;Alliance-Procurement-And-Capacity-Building&quot;
   }
 }</component>
   <component name="ProjectColorInfo">{
@@ -39,14 +55,14 @@
     <option name="showLibraryContents" value="true" />
     <option name="showVisibilityIcons" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;fixes/feedback1&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "fixes/feedback1"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration default="true" type="JetRunConfigurationType">
       <module name="Alliance-Procurement-And-Capacity-Building" />
@@ -124,7 +140,23 @@
       <option name="project" value="LOCAL" />
       <updated>1757841232967</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="prod environment clean up">
+      <option name="closed" value="true" />
+      <created>1757847205489</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1757847205489</updated>
+    </task>
+    <task id="LOCAL-00009" summary="prod environment clean up">
+      <option name="closed" value="true" />
+      <created>1757847231376</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1757847231376</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
