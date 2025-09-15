@@ -46,7 +46,7 @@ export function Footer() {
                   className="text-xl font-bold"
                   data-testid="footer-logo-title"
                 >
-                  APCB Ltdd
+                  APCB Ltd
                 </h1>
                 <p
                   className="text-sm text-gray-400"
