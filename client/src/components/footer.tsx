@@ -147,24 +147,24 @@ export function Footer() {
               </div>
               <div className="flex items-start">
                 <Phone className="text-primary-yellow mr-3 mt-1 w-4 h-4" />
-                <div>
+                <div className="space-y-1">
                   <a
                     href="tel:+260974486945"
-                    className="text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer"
+                    className="block text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer"
                     data-testid="footer-contact-phone-1"
                   >
                     +260 974486945
                   </a>
                   <a
                     href="tel:+260977897943"
-                    className="text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer"
+                    className="block text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer"
                     data-testid="footer-contact-phone-2"
                   >
                     +260977897943
                   </a>
                   <a
                     href="tel:+260977414203"
-                    className="text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer"
+                    className="block text-gray-300 hover:text-primary-yellow transition-colors cursor-pointer"
                     data-testid="footer-contact-phone-3"
                   >
                     +260977414203
