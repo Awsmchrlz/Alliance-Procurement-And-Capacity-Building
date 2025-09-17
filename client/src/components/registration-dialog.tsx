@@ -520,38 +520,49 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
         {!success ? (
           <div className="flex flex-col h-full">
             <DialogHeader className="relative overflow-hidden shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-[#87CEEB]/10" />
-              <div className="relative px-3 sm:px-6 py-2 sm:py-4 text-center border-b border-gray-200">
-                <h2 className="text-base sm:text-xl font-bold text-gray-900">Register for {event?.title}</h2>
-                <p className="text-gray-600 mt-0.5 sm:mt-1 text-xs sm:text-sm">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#1C356B] to-[#2563eb]" />
+              <div className="relative px-4 sm:px-6 py-4 sm:py-6 text-center text-white">
+                <div className="w-12 h-12 mx-auto mb-3 p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+                  <div className="w-full h-full bg-white/20 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">APCB</span>
+                  </div>
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold mb-1">Event Registration</h2>
+                <p className="text-white/90 text-sm font-medium">{event?.title}</p>
+                <p className="text-white/70 text-xs mt-1">
                   {format(new Date(event.startDate), 'MMM d, yyyy')} • {event.location}
                 </p>
               </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-2 sm:py-4 min-h-0">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 min-h-0 bg-gray-50/50">
               {/* Step 1: Personal Information */}
               {currentStep === 1 && (
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
-                    <div>
-                      <Label htmlFor="firstName" className="text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1 block">First Name</Label>
+                <div className="space-y-4">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Personal Information</h3>
+                    <p className="text-sm text-gray-600">Tell us about yourself</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">First Name</Label>
                       <Input
                         id="firstName"
                         value={formData.firstName}
                         onChange={(e) => updateField('firstName', e.target.value)}
-                        className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200 hover:border-[#87CEEB]/50"
-                        placeholder="First name"
+                        className="w-full h-11 px-4 text-sm border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1C356B] focus:border-[#1C356B] transition-all duration-200 hover:border-gray-300 bg-white"
+                        placeholder="Enter first name"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="lastName" className="text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1 block">Last Name</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">Last Name</Label>
                       <Input
                         id="lastName"
                         value={formData.lastName}
                         onChange={(e) => updateField('lastName', e.target.value)}
-                        className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200 hover:border-[#87CEEB]/50"
-                        placeholder="Last name"
+                        className="w-full h-11 px-4 text-sm border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1C356B] focus:border-[#1C356B] transition-all duration-200 hover:border-gray-300 bg-white"
+                        placeholder="Enter last name"
                       />
                     </div>
                   </div>

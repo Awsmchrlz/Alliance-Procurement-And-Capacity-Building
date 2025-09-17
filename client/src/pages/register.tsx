@@ -162,25 +162,27 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Background Image (Hidden on Mobile) */}
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Left Side - Enhanced Background (Hidden on Mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        {/* Background Gradient */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(135deg, #1C356B 0%, #0f1e3d 100%)`,
-          }}
-        />
+        {/* Modern Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1C356B] via-[#2563eb] to-[#1e40af]" />
 
-        {/* Dynamic Background Images */}
+        {/* Animated Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-32 h-32 bg-white rounded-full animate-pulse"></div>
+          <div className="absolute bottom-32 right-16 w-24 h-24 bg-[#87CEEB] rounded-full animate-bounce"></div>
+          <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-white/50 rounded-full animate-ping"></div>
+        </div>
+
+        {/* Dynamic Background Images with Better Overlay */}
         <div className="absolute inset-0">
           {backgroundImages.map((image, index) => (
             <div
               key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentImageIndex && isImageVisible
-                ? "opacity-40"
-                : "opacity-0"
+              className={`absolute inset-0 transition-all duration-1000 ease-in-out ${index === currentImageIndex && isImageVisible
+                ? "opacity-30 scale-105"
+                : "opacity-0 scale-100"
                 }`}
               style={{
                 backgroundImage: `url(${image})`,
@@ -192,177 +194,163 @@ const RegisterPage = () => {
           ))}
         </div>
 
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/30" />
+        {/* Enhanced Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
 
-        {/* Content Overlay */}
+        {/* Content Overlay with Better Spacing */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
-          <div className="mb-12 w-full flex justify-center">
-            <div className="relative w-72 h-72">
+          <div className="mb-8 w-full flex justify-center">
+            <div className="relative w-48 h-48 p-6 bg-white/10 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
                 alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain rounded-lg"
+                className="w-full h-full object-contain drop-shadow-lg"
                 onError={(e) => {
-                  // Fallback styling if image fails to load
-                  e.currentTarget.className = "w-full h-full bg-white/10 rounded-lg flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-[#87CEEB] text-2xl font-bold">APCB</span>';
+                  e.currentTarget.className = "w-full h-full flex items-center justify-center text-[#87CEEB] text-3xl font-bold";
+                  e.currentTarget.innerHTML = 'APCB';
                 }}
               />
             </div>
           </div>
-          <h2 className="text-4xl font-bold mb-4">
-            Join <span style={{ color: "#87CEEB" }}>Alliance</span>
-          </h2>
-          <p className="text-xl text-white/90 mb-8 leading-relaxed">
-            Advance your procurement and capacity building skills with industry
-            experts.
-          </p>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <CheckCircle className="w-5 h-5" style={{ color: "#87CEEB" }} />
-              <span>Expert-led training programs</span>
+          
+          <div className="text-center mb-8">
+            <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-white to-[#87CEEB] bg-clip-text text-transparent">
+              Join Alliance
+            </h2>
+            <p className="text-xl text-white/90 leading-relaxed max-w-md mx-auto">
+              Advance your procurement and capacity building skills with industry experts.
+            </p>
+          </div>
+          
+          <div className="space-y-4 max-w-sm mx-auto">
+            <div className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+              <CheckCircle className="w-5 h-5 text-[#87CEEB] flex-shrink-0" />
+              <span className="text-sm">Expert-led training programs</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <CheckCircle className="w-5 h-5" style={{ color: "#87CEEB" }} />
-              <span>Professional certification opportunities</span>
+            <div className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+              <CheckCircle className="w-5 h-5 text-[#87CEEB] flex-shrink-0" />
+              <span className="text-sm">Professional certification opportunities</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <CheckCircle className="w-5 h-5" style={{ color: "#87CEEB" }} />
-              <span>Network with industry professionals</span>
+            <div className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+              <CheckCircle className="w-5 h-5 text-[#87CEEB] flex-shrink-0" />
+              <span className="text-sm">Network with industry professionals</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Registration Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-3 sm:p-8 bg-gray-50">
-        <div className="w-full max-w-lg">
-          {/* Mobile Header */}
-          <div className="lg:hidden text-center mb-6">
-            <div className="relative w-32 h-32 mx-auto mb-4 p-3 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-xl shadow-lg">
-              <img
-                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-                alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain drop-shadow-sm"
-                onError={(e) => {
-                  e.currentTarget.className = "w-full h-full flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-white text-lg font-bold">APCB</span>';
-                }}
-              />
-            </div>
-            <h1 className="text-xl font-bold" style={{ color: "#1C356B" }}>
-              Join Alliance
-            </h1>
-            <p className="text-gray-600 mt-1 text-sm">
-              Start your professional development journey
-            </p>
-          </div>
-
-          {/* Desktop Header */}
-          <div className="hidden lg:block text-center mb-8">
-            <div className="relative w-24 h-24 mx-auto mb-4 p-2 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-lg shadow-md">
-              <img
-                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-                alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain drop-shadow-sm"
-                onError={(e) => {
-                  e.currentTarget.className = "w-full h-full flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-white text-sm font-bold">APCB</span>';
-                }}
-              />
-            </div>
-            <h1
-              className="text-3xl font-bold mb-2"
-              style={{ color: "#1C356B" }}
-            >
-              Join Alliance
-            </h1>
-            <p className="text-gray-600 mb-6">
-              Start your professional development journey with us
-            </p>
-          </div>
-
-          <div className="space-y-3 sm:space-y-6">
-            {/* Name Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="firstName"
-                  className="text-xs sm:text-sm font-medium"
-                  style={{ color: "#1C356B" }}
-                >
-                  First Name
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="firstName"
-                    type="text"
-                    placeholder="Enter first name"
-                    value={formData.firstName}
-                    onChange={(e) =>
-                      handleInputChange("firstName", e.target.value)
-                    }
-                    className="pl-10 h-10 sm:h-12 text-sm border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
-                  />
-                </div>
-                {errors.firstName && (
-                  <p className="text-red-500 text-sm">{errors.firstName}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="lastName"
-                  className="text-xs sm:text-sm font-medium"
-                  style={{ color: "#1C356B" }}
-                >
-                  Last Name
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="lastName"
-                    type="text"
-                    placeholder="Enter last name"
-                    value={formData.lastName}
-                    onChange={(e) =>
-                      handleInputChange("lastName", e.target.value)
-                    }
-                    className="pl-10 h-10 sm:h-12 text-sm border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
-                  />
-                </div>
-                {errors.lastName && (
-                  <p className="text-red-500 text-sm">{errors.lastName}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium"
-                style={{ color: "#1C356B" }}
-              >
-                Email Address
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="pl-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+      {/* Right Side - Enhanced Registration Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+          {/* Enhanced Header */}
+          <div className="bg-gradient-to-r from-[#1C356B] to-[#2563eb] p-6 text-center text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="relative z-10">
+              <div className="w-16 h-16 mx-auto mb-3 p-2 bg-white/20 backdrop-blur-sm rounded-2xl">
+                <img
+                  src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                  alt="Alliance Procurement & Capacity Building Logo"
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.className = "w-full h-full flex items-center justify-center text-white text-sm font-bold";
+                    e.currentTarget.innerHTML = 'APCB';
+                  }}
                 />
               </div>
-              {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email}</p>
-              )}
+              <h1 className="text-2xl font-bold mb-1">Create Your Account</h1>
+              <p className="text-white/80 text-sm">Join the Alliance community today</p>
             </div>
+          </div>
+
+          {/* Form Container */}
+          <div className="p-6 sm:p-8">
+
+            <div className="space-y-5">
+              {/* Name Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="firstName"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    First Name
+                  </Label>
+                  <div className="relative group">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-[#87CEEB] transition-colors" />
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="Enter first name"
+                      value={formData.firstName}
+                      onChange={(e) =>
+                        handleInputChange("firstName", e.target.value)
+                      }
+                      className="pl-10 h-12 text-sm border-gray-200 rounded-xl focus:border-[#87CEEB] focus:ring-[#87CEEB] focus:ring-2 transition-all duration-200 hover:border-gray-300"
+                    />
+                  </div>
+                  {errors.firstName && (
+                    <p className="text-red-500 text-xs flex items-center gap-1">
+                      <X className="w-3 h-3" />
+                      {errors.firstName}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="lastName"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Last Name
+                  </Label>
+                  <div className="relative group">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-[#87CEEB] transition-colors" />
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Enter last name"
+                      value={formData.lastName}
+                      onChange={(e) =>
+                        handleInputChange("lastName", e.target.value)
+                      }
+                      className="pl-10 h-12 text-sm border-gray-200 rounded-xl focus:border-[#87CEEB] focus:ring-[#87CEEB] focus:ring-2 transition-all duration-200 hover:border-gray-300"
+                    />
+                  </div>
+                  {errors.lastName && (
+                    <p className="text-red-500 text-xs flex items-center gap-1">
+                      <X className="w-3 h-3" />
+                      {errors.lastName}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Email Address
+                </Label>
+                <div className="relative group">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-[#87CEEB] transition-colors" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    className="pl-10 h-12 border-gray-200 rounded-xl focus:border-[#87CEEB] focus:ring-[#87CEEB] focus:ring-2 transition-all duration-200 hover:border-gray-300"
+                  />
+                </div>
+                {errors.email && (
+                  <p className="text-red-500 text-xs flex items-center gap-1">
+                    <X className="w-3 h-3" />
+                    {errors.email}
+                  </p>
+                )}
+              </div>
 
             {/* Phone and Gender */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -491,47 +479,37 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            {/* Submit Button */}
-            <Button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="w-full h-10 sm:h-12 text-white font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg"
-              style={{
-                backgroundColor: "#87CEEB",
-                borderColor: "#87CEEB",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#e6ae1f")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#87CEEB")
-              }
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Creating Account...</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center space-x-2">
-                  <span>Create Account</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
-              )}
-            </Button>
+              {/* Submit Button */}
+              <Button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="w-full h-12 text-white font-semibold text-base bg-gradient-to-r from-[#1C356B] to-[#2563eb] hover:from-[#2563eb] hover:to-[#1C356B] transition-all duration-300 hover:shadow-xl hover:scale-[1.02] rounded-xl border-0"
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span>Creating Account...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center space-x-2">
+                    <span>Create Account</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </div>
+                )}
+              </Button>
 
-            {/* Login Link */}
-            <div className="lg:hidden text-center pt-4">
-              <p className="text-gray-600 text-sm">
-                Already have an account?{" "}
-                <button
-                  onClick={() => setLocation("/login")}
-                  className="font-medium hover:underline"
-                  style={{ color: "#87CEEB" }}
-                >
-                  Sign in
-                </button>
-              </p>
+              {/* Login Link */}
+              <div className="text-center pt-4">
+                <p className="text-gray-600 text-sm">
+                  Already have an account?{" "}
+                  <button
+                    onClick={() => setLocation("/login")}
+                    className="font-medium text-[#1C356B] hover:text-[#2563eb] hover:underline transition-colors"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              </div>
             </div>
           </div>
         </div>
