@@ -54,7 +54,7 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "#12 on fixes/feedback1"
+    "git-widget-placeholder": "#16 on fixes/feedback1"
   }
 }]]></component>
   <component name="RunManager">
@@ -262,7 +262,39 @@
       <option name="project" value="LOCAL" />
       <updated>1757946169384</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="SEO and few other changes">
+      <option name="closed" value="true" />
+      <created>1757946215294</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1757946215294</updated>
+    </task>
+    <task id="LOCAL-00025" summary="SEO and few other changes">
+      <option name="closed" value="true" />
+      <created>1757946410774</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1757946410774</updated>
+    </task>
+    <task id="LOCAL-00026" summary="SEO and few other changes">
+      <option name="closed" value="true" />
+      <created>1757947022732</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1757947022733</updated>
+    </task>
+    <task id="LOCAL-00027" summary="SEO and few other changes">
+      <option name="closed" value="true" />
+      <created>1757947546715</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1757947546715</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

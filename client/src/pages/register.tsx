@@ -131,45 +131,19 @@ const RegisterPage = () => {
         throw new Error(data.message || "Registration failed");
       }
 
-      // Auto-login the user after successful registration
-      try {
-        const loginResponse = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-          }),
-        });
+      // Auto-login using Supabase directly after successful registration
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
 
-        if (loginResponse.ok) {
-          const loginData = await loginResponse.json();
-          
-          // Sign in with Supabase to update auth state
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: formData.email,
-            password: formData.password,
-          });
-          
-          if (!error && data.user) {
-            toast({
-              title: "Welcome to Alliance!",
-              description: "Account created and logged in successfully.",
-            });
-            setLocation("/events?from=auth");
-          } else {
-            window.location.href = "/events?from=auth";
-          }
-        } else {
-          toast({
-            title: "Account Created Successfully!",
-            description: "Please log in with your new credentials.",
-          });
-          setLocation("/login");
-        }
-      } catch (loginError) {
+      if (authData.user && !authError) {
+        toast({
+          title: "Welcome to Alliance!",
+          description: "Account created and logged in successfully.",
+        });
+        setLocation("/events?from=auth");
+      } else {
         toast({
           title: "Account Created Successfully!",
           description: "Please log in with your new credentials.",
@@ -204,11 +178,10 @@ const RegisterPage = () => {
           {backgroundImages.map((image, index) => (
             <div
               key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                index === currentImageIndex && isImageVisible
-                  ? "opacity-40"
-                  : "opacity-0"
-              }`}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentImageIndex && isImageVisible
+                ? "opacity-40"
+                : "opacity-0"
+                }`}
               style={{
                 backgroundImage: `url(${image})`,
                 backgroundSize: "cover",
@@ -267,14 +240,14 @@ const RegisterPage = () => {
         <div className="w-full max-w-lg">
           {/* Mobile Header */}
           <div className="lg:hidden text-center mb-6">
-            <div className="relative w-42 h-42 mx-auto mb-4">
+            <div className="relative w-32 h-32 mx-auto mb-4 p-3 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-xl shadow-lg">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
                 alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain rounded-lg"
+                className="w-full h-full object-contain drop-shadow-sm"
                 onError={(e) => {
-                  e.currentTarget.className = "w-full h-full bg-gray-100 rounded-lg flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-[#1C356B] text-lg font-bold">APCB</span>';
+                  e.currentTarget.className = "w-full h-full flex items-center justify-center";
+                  e.currentTarget.innerHTML = '<span class="text-white text-lg font-bold">APCB</span>';
                 }}
               />
             </div>
@@ -288,6 +261,17 @@ const RegisterPage = () => {
 
           {/* Desktop Header */}
           <div className="hidden lg:block text-center mb-8">
+            <div className="relative w-24 h-24 mx-auto mb-4 p-2 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-lg shadow-md">
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                alt="Alliance Procurement & Capacity Building Logo"
+                className="w-full h-full object-contain drop-shadow-sm"
+                onError={(e) => {
+                  e.currentTarget.className = "w-full h-full flex items-center justify-center";
+                  e.currentTarget.innerHTML = '<span class="text-white text-sm font-bold">APCB</span>';
+                }}
+              />
+            </div>
             <h1
               className="text-3xl font-bold mb-2"
               style={{ color: "#1C356B" }}

@@ -5,21 +5,19 @@ import { createClient } from "@supabase/supabase-js";
 import { EvidenceResolver } from "./evidence-resolver";
 import { storage } from "./storage";
 import { emailService } from "./email-service";
-import { insertUserSchema, insertEventRegistrationSchema, insertNewsletterSubscriptionSchema } from "../shared/schema";
+import { insertUserSchema, insertEventRegistrationSchema, insertNewsletterSubscriptionSchema, type RoleValue } from "../shared/schema";
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const Roles = {
+const Roles: Record<string, RoleValue> = {
   SuperAdmin: "super_admin",
   Finance: "finance_person",
   EventManager: "event_manager",
   Ordinary: "ordinary_user",
 };
-
-type RoleValue = "super_admin" | "finance_person" | "event_manager" | "ordinary_user";
 
 // Helper function to check if user has any of the required roles
 const hasAnyRole = (userRole: RoleValue | undefined, allowedRoles: RoleValue[]): boolean => {
@@ -94,17 +92,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userData = insertUserSchema.parse(req.body);
       console.log("✅ Request data validated successfully");
 
-      // Check if user already exists
-      console.log(`🔍 Checking if user ${userData.email} already exists...`);
-      const existingUser = await storage.getUserByEmail(userData.email);
-      if (existingUser) {
-        console.log(`❌ User ${userData.email} already exists`);
+      // Check if user already exists by phone number (unique identifier)
+      console.log(`🔍 Checking if user with phone ${userData.phoneNumber} already exists...`);
+      const { emailExists, phoneExists } = await storage.checkUserExists(userData.email, userData.phoneNumber);
+      
+      if (phoneExists) {
+        console.log(`❌ User with phone ${userData.phoneNumber} already exists`);
         return res.status(400).json({ 
-          message: "User already exists",
-          details: "A user with this email address is already registered"
+          message: "Phone number already registered",
+          details: "A user with this phone number is already registered. Phone numbers must be unique."
         });
       }
-      console.log("✅ Email is available for registration");
+      
+      // Note: Multiple users can share the same email (company emails)
+      if (emailExists) {
+        console.log(`ℹ️ Email ${userData.email} is already in use (shared company email allowed)`);
+      } else {
+        console.log(`✅ Email ${userData.email} is available`);
+      }
+      console.log(`✅ Phone number ${userData.phoneNumber} is available for registration`);
 
       // Check if this is the first user (make them super_admin)
       console.log("🔍 Checking if this is the first user...");
@@ -236,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🔄 Promoting user ${userId} to role: ${role}`);
 
         // Update user metadata in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.admin.updateUserById(userId, {
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
           user_metadata: { role }
         });
 
@@ -332,12 +338,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Find user endpoint for login (to get email from phone number)
+  app.post("/api/auth/find-user", async (req, res) => {
+    try {
+      const { identifier } = req.body;
+      if (!identifier) {
+        return res.status(400).json({ message: "Identifier required" });
+      }
+
+      // Find user by email or phone
+      const user = await storage.getUserByEmailOrPhone(identifier);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return only the email (needed for Supabase auth)
+      res.json({ email: user.email });
+    } catch (error) {
+      console.error("Find user error:", error);
+      res.status(500).json({ message: "Failed to find user" });
+    }
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password required" });
+      const { identifier, password } = req.body;
+      if (!identifier || !password) {
+        return res.status(400).json({ message: "Email/phone and password required" });
       }
+
+      console.log(`🔐 Login attempt with identifier: ${identifier}`);
+
+      // Find user by email or phone
+      const user = await storage.getUserByEmailOrPhone(identifier);
+      if (!user) {
+        console.log(`❌ No user found with identifier: ${identifier}`);
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      console.log(`✅ User found: ${user.email} (${user.phoneNumber})`);
 
       const supabaseUrl = process.env.SUPABASE_URL;
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -348,19 +387,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const supabase = createClient(supabaseUrl, serviceRoleKey);
+      // Always use email for Supabase auth (since that's what was used during registration)
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: user.email,
         password,
       });
       if (error || !data.user) {
+        console.log(`❌ Supabase auth failed: ${error?.message}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const user = await storage.getUser(data.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
+      console.log(`✅ Login successful for user: ${user.email}`);
       res.json({ user, token: data.session.access_token });
     } catch (error) {
       console.error("Login error:", error);
@@ -1210,7 +1247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (!altError && altData) {
                 console.log(`✅ Success with alternative path: ${altPath}`);
                 const buffer = Buffer.from(await altData.arrayBuffer());
-                const filename = altPath.split("/").pop() || "evidence";
+                const filename = altPath?.split("/").pop() || "evidence";
                 const ext = filename.toLowerCase().split(".").pop() || "";
 
                 let contentType = "application/octet-stream";
@@ -1359,7 +1396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (!altError && altData) {
                 console.log(`✅ Success with alternative path: ${altPath}`);
                 const buffer = Buffer.from(await altData.arrayBuffer());
-                const filename = altPath.split("/").pop() || "evidence";
+                const filename = altPath?.split("/").pop() || "evidence";
                 const ext = filename.toLowerCase().split(".").pop() || "";
 
                 let contentType = "application/octet-stream";

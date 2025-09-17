@@ -28,9 +28,14 @@ interface FormDataType {
   country: string;
   organization: string;
   position: string;
-  paymentMethod: "mobile" | "bank" | "cash" | "";
+  paymentMethod: "mobile" | "bank" | "cash" | "group_payment" | "org_paid" | "";
   delegateType: "private" | "public" | "international" | "";
   bankCurrency?: "ZMK" | "USD";
+  // Group payment fields
+  groupSize?: number;
+  groupPaymentAmount?: number;
+  groupPaymentCurrency?: "ZMW" | "USD";
+  organizationReference?: string;
 }
 
 interface PricingTier {
@@ -71,6 +76,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
   const [success, setSuccess] = useState(false);
+  const [registrationData, setRegistrationData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<FormDataType>({
@@ -83,7 +89,12 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
     position: '',
     delegateType: 'private',
     paymentMethod: '',
-    bankCurrency: 'ZMK',
+    bankCurrency: 'ZMW',
+    // Group payment defaults
+    groupSize: 1,
+    groupPaymentAmount: 0,
+    groupPaymentCurrency: 'ZMW',
+    organizationReference: '',
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -165,7 +176,12 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
         position: '',
         delegateType: 'private',
         paymentMethod: '',
-        bankCurrency: 'ZMK',
+        bankCurrency: 'ZMW',
+        // Group payment defaults
+        groupSize: 1,
+        groupPaymentAmount: 0,
+        groupPaymentCurrency: 'ZMW',
+        organizationReference: '',
       });
       
       // Auto-populate country from timezone
@@ -203,7 +219,12 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
       position: '',
       delegateType: 'private',
       paymentMethod: '',
-      bankCurrency: 'ZMK',
+      bankCurrency: 'ZMW',
+      // Group payment defaults
+      groupSize: 1,
+      groupPaymentAmount: 0,
+      groupPaymentCurrency: 'ZMW',
+      organizationReference: '',
     });
   };
 
@@ -275,8 +296,37 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
         };
       }
       
-      // If payment method is mobile, require evidence
-      if (formData.paymentMethod === 'mobile' && !evidenceFile) {
+      // Validation for group payment
+      if (formData.paymentMethod === 'group_payment') {
+        if (!formData.groupSize || formData.groupSize < 1) {
+          return { 
+            isValid: false, 
+            message: 'Please specify the number of people you are registering for',
+            field: 'groupSize'
+          };
+        }
+        if (!evidenceFile) {
+          return { 
+            isValid: false, 
+            message: 'Please upload payment evidence for group payment',
+            field: 'evidenceFile'
+          };
+        }
+      }
+      
+      // Validation for organization already paid
+      if (formData.paymentMethod === 'org_paid') {
+        if (!formData.organizationReference?.trim()) {
+          return { 
+            isValid: false, 
+            message: 'Please provide an organization reference to verify payment',
+            field: 'organizationReference'
+          };
+        }
+      }
+      
+      // If payment method is mobile or bank, require evidence
+      if ((formData.paymentMethod === 'mobile' || formData.paymentMethod === 'bank') && !evidenceFile) {
         return { 
           isValid: false, 
           message: 'Please upload payment evidence',
@@ -331,7 +381,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
 
     try {
       let evidenceUrl = null;
-      if (evidenceFile && (formData.paymentMethod === 'mobile' || formData.paymentMethod === 'bank')) {
+      if (evidenceFile && (formData.paymentMethod === 'mobile' || formData.paymentMethod === 'bank' || formData.paymentMethod === 'group_payment')) {
         try {
           const fileName = `evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
           const filePath = `${user.id}/${event.id}/${fileName}`;
@@ -364,19 +414,24 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
         country: formData.country.trim(),
         organization: formData.organization.trim(),
         position: formData.position.trim(),
-        notes: "",
+        notes: formData.organizationReference ? `Organization Reference: ${formData.organizationReference}` : "",
         paymentMethod: formData.paymentMethod,
         delegateType: formData.delegateType,
-        hasPaid: false,
+        hasPaid: formData.paymentMethod === 'org_paid', // Mark as paid if organization already paid
         paymentEvidence: evidenceUrl,
-        paymentStatus: "pending",
+        paymentStatus: formData.paymentMethod === 'org_paid' ? "paid" : "pending",
+        // Group payment specific fields
+        groupSize: formData.groupSize || 1,
+        groupPaymentAmount: formData.groupPaymentAmount,
+        groupPaymentCurrency: formData.groupPaymentCurrency,
       };
 
       console.log("Sending registration payload:", registrationPayload);
 
-      await apiRequest("POST", "/api/events/register", registrationPayload);
+      const registration = await apiRequest("POST", "/api/events/register", registrationPayload);
 
       console.log("✅ Registration completed successfully");
+      setRegistrationData(registration);
       setSuccess(true);
 
       // Invalidate relevant queries to refresh dashboard data
@@ -461,7 +516,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] sm:max-h-[95vh] overflow-hidden bg-white border-0 shadow-2xl rounded-lg sm:rounded-xl flex flex-col p-0">
+      <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden bg-white border-0 shadow-2xl rounded-lg sm:rounded-xl flex flex-col p-0">
         {!success ? (
           <div className="flex flex-col h-full">
             <DialogHeader className="relative overflow-hidden shrink-0">
@@ -594,42 +649,174 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Payment Method</Label>
-                    <div className="grid grid-cols-3 gap-3 mt-3">
-                      <button
-                        type="button"
-                        onClick={() => updateField('paymentMethod', 'mobile')}
-                        className={`relative px-3 py-3 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
-                          formData.paymentMethod === 'mobile'
-                            ? 'bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5'
-                        }`}
-                      >
-                        Mobile
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateField('paymentMethod', 'bank')}
-                        className={`relative px-3 py-3 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
-                          formData.paymentMethod === 'bank'
-                            ? 'bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5'
-                        }`}
-                      >
-                        Bank
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateField('paymentMethod', 'cash')}
-                        className={`relative px-3 py-3 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
-                          formData.paymentMethod === 'cash'
-                            ? 'bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5'
-                        }`}
-                      >
-                        Cash
-                      </button>
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      {/* Individual Payment Options */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-medium text-gray-600 uppercase tracking-wide">Individual Payment</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateField('paymentMethod', 'mobile')}
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
+                              formData.paymentMethod === 'mobile'
+                                ? 'bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5'
+                            }`}
+                          >
+                            Mobile Money
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateField('paymentMethod', 'bank')}
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
+                              formData.paymentMethod === 'bank'
+                                ? 'bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5'
+                            }`}
+                          >
+                            Bank Transfer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateField('paymentMethod', 'cash')}
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
+                              formData.paymentMethod === 'cash'
+                                ? 'bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5'
+                            }`}
+                          >
+                            Cash at Event
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Group Payment Options */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-medium text-gray-600 uppercase tracking-wide">Organization Payment</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateField('paymentMethod', 'group_payment')}
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
+                              formData.paymentMethod === 'group_payment'
+                                ? 'bg-green-500 text-white border-green-500 shadow-lg'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:text-green-700 hover:bg-green-50'
+                            }`}
+                          >
+                            🏢 Group Payment
+                            <div className="text-xs opacity-80 mt-0.5">Pay for multiple people</div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateField('paymentMethod', 'org_paid')}
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
+                              formData.paymentMethod === 'org_paid'
+                                ? 'bg-blue-500 text-white border-blue-500 shadow-lg'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:text-blue-700 hover:bg-blue-50'
+                            }`}
+                          >
+                            ✅ Already Paid
+                            <div className="text-xs opacity-80 mt-0.5">My organization paid</div>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Group Payment Configuration */}
+                  {formData.paymentMethod === 'group_payment' && (
+                    <div className="p-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+                      <h4 className="font-medium text-xs text-green-800 mb-2 flex items-center gap-1">
+                        🏢 Group Payment Setup
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        {/* Group Size & Total in one row */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs font-medium text-green-700 mb-1 block">
+                              Group Size
+                            </Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="50"
+                              value={formData.groupSize || 1}
+                              onChange={(e) => {
+                                const size = parseInt(e.target.value) || 1;
+                                const amount = selectedPricing ? parseFloat(selectedPricing.price.replace(',', '')) * size : 0;
+                                updateField('groupSize', size);
+                                updateField('groupPaymentAmount', amount);
+                                updateField('groupPaymentCurrency', selectedPricing?.currency === 'USD' ? 'USD' : 'ZMW');
+                              }}
+                              className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:ring-1 focus:ring-green-500"
+                              placeholder="# people"
+                            />
+                          </div>
+
+                          {/* Calculated Total */}
+                          {formData.groupSize && selectedPricing && (
+                            <div>
+                              <Label className="text-xs font-medium text-green-700 mb-1 block">Total Amount</Label>
+                              <div className="px-2 py-1 bg-white border border-green-200 rounded text-xs">
+                                <div className="font-bold text-green-800">
+                                  {selectedPricing.currency} {(parseFloat(selectedPricing.price.replace(',', '')) * (formData.groupSize || 1)).toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Organization Reference */}
+                        <div>
+                          <Label className="text-xs font-medium text-green-700 mb-1 block">
+                            Reference (Optional)
+                          </Label>
+                          <Input
+                            value={formData.organizationReference || ''}
+                            onChange={(e) => updateField('organizationReference', e.target.value)}
+                            className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:ring-1 focus:ring-green-500"
+                            placeholder="PO #, Department, etc."
+                          />
+                        </div>
+
+                        {/* Compact Instructions */}
+                        <div className="p-1.5 bg-green-100 border border-green-300 rounded text-xs text-green-800">
+                          <strong>Steps:</strong> Complete registration → Make payment → Upload evidence → Share with team
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Organization Already Paid */}
+                  {formData.paymentMethod === 'org_paid' && (
+                    <div className="p-2 bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-medium text-xs text-blue-800 mb-2 flex items-center gap-1">
+                        ✅ Organization Already Paid
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        {/* Organization Reference */}
+                        <div>
+                          <Label className="text-xs font-medium text-blue-700 mb-1 block">
+                            Organization Reference (Required)
+                          </Label>
+                          <Input
+                            value={formData.organizationReference || ''}
+                            onChange={(e) => updateField('organizationReference', e.target.value)}
+                            className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:ring-1 focus:ring-blue-500"
+                            placeholder="Coordinator name, PO number, etc."
+                            required
+                          />
+                        </div>
+
+                        {/* Compact Confirmation Notice */}
+                        <div className="p-1.5 bg-blue-100 border border-blue-300 rounded text-xs text-blue-800">
+                          <strong>Note:</strong> Confirming your organization already paid. Finance team will verify.
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {formData.paymentMethod === 'mobile' && (
                     <div className="p-2 bg-gradient-to-r from-[#87CEEB]/10 to-blue-50 border border-[#87CEEB]/30 rounded-lg shadow-sm">
@@ -750,10 +937,12 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                     </div>
                   )}
 
-                  {(formData.paymentMethod === 'mobile' || (formData.paymentMethod === 'bank' && formData.bankCurrency)) && (
+                  {(formData.paymentMethod === 'mobile' || (formData.paymentMethod === 'bank' && formData.bankCurrency) || formData.paymentMethod === 'group_payment') && (
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <Label className="text-sm font-medium text-gray-700">Proof of Payment</Label>
+                        <Label className="text-sm font-medium text-gray-700">
+                          {formData.paymentMethod === 'group_payment' ? 'Group Payment Evidence' : 'Proof of Payment'}
+                        </Label>
                         {evidenceFile && (
                           <button
                             type="button"
@@ -844,9 +1033,16 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                   <Button 
                     onClick={handleRegister}
                     disabled={isSubmitting}
-                    className="bg-[#87CEEB] hover:bg-[#1C356B] text-white border-2 border-[#87CEEB] hover:border-[#1C356B] shadow-lg hover:shadow-xl transition-all duration-200 font-medium disabled:opacity-50"
+                    className="bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600 text-white font-semibold border border-sky-300 hover:border-blue-400 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5 disabled:opacity-50"
                   >
-                    {isSubmitting ? 'Submitting...' : 'Complete Registration'}
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        Submitting...
+                      </span>
+                    ) : (
+                      'Complete Registration'
+                    )}
                   </Button>
                 )}
               </div>
@@ -854,13 +1050,42 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
           </div>
         ) : (
           <div className="p-8 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r from-green-100 to-emerald-100 mb-6 shadow-lg">
+              <CheckCircle className="h-12 w-12 text-green-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h3>
+            <h3 className="text-3xl font-bold text-gray-900 mb-4">🎉 Registration Successful!</h3>
             <p className="text-gray-600 mb-6">
               Thank you for registering. We've sent a confirmation email with event details.
             </p>
+            
+            {/* Registration Number Display */}
+            <div className="mb-6">
+              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-xl p-6 shadow-lg">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <span className="text-2xl">🎫</span>
+                  <h4 className="text-xl font-bold text-amber-800">Your Registration Number</h4>
+                </div>
+                
+                <div className="bg-white rounded-lg border-2 border-amber-200 p-4 mb-4">
+                  <div className="text-4xl font-mono font-black text-gray-900 tracking-wider">
+                    {registrationData?.registrationNumber || 'Loading...'}
+                  </div>
+                </div>
+                
+                <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 justify-center mb-2">
+                    <span className="text-xl">⚠️</span>
+                    <span className="font-bold text-red-800 text-lg">IMPORTANT - KEEP THIS SAFE!</span>
+                  </div>
+                  <div className="text-sm text-red-700 space-y-1">
+                    <p>• <strong>Write down</strong> or <strong>screenshot</strong> this registration number</p>
+                    <p>• You'll need it for event check-in and payment verification</p>
+                    <p>• This number is also in your confirmation email</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div className="space-y-3">
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center gap-2 justify-center">
@@ -873,7 +1098,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
               <Button
                 type="button"
                 onClick={close}
-                className="w-full sm:w-auto bg-[#87CEEB] hover:bg-[#1C356B] text-white border-2 border-[#87CEEB] hover:border-[#1C356B] shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
+                className="w-full sm:w-auto bg-[#87CEEB] hover:bg-[#1C356B] text-black font-bold border-2 border-[#87CEEB] hover:border-[#1C356B] shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 Close
               </Button>

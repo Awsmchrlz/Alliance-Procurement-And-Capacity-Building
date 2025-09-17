@@ -79,11 +79,14 @@ BEGIN
 END $$;
 
 -- Users table - Primary user data with role-based access
+-- Updated for flexible authentication: phone number is required and unique, email can be shared
 CREATE TABLE users (
     id VARCHAR PRIMARY KEY,  -- References auth.users.id
+    email TEXT NOT NULL,     -- Email from auth.users (can be shared for company accounts)
+    password TEXT NOT NULL,  -- For compatibility with schema
     first_name TEXT NOT NULL CHECK (length(first_name) >= 1),
     last_name TEXT NOT NULL CHECK (length(last_name) >= 1),
-    phone_number TEXT,
+    phone_number TEXT NOT NULL UNIQUE,  -- Phone number is required and unique for flexible login
     gender TEXT CHECK (gender IN ('Male', 'Female', 'Other', 'Prefer not to say')),
     role TEXT NOT NULL DEFAULT 'ordinary_user'
         CHECK (role IN ('super_admin', 'finance_person', 'event_manager', 'ordinary_user')),

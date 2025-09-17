@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   Mail,
+  Phone,
   Lock,
   ArrowRight,
   Shield,
@@ -53,14 +54,42 @@ const LoginPage = () => {
   const onSubmit = async (data: any) => {
     try {
       setIsLoading(true);
-      const { error, data: authData } = await supabase.auth.signInWithPassword({
-        email: data.email,
+      
+      // First, find the user by email or phone using our backend
+      const findUserResponse = await fetch('/api/auth/find-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier: data.identifier,
+        }),
+      });
+
+      let userEmail = data.identifier;
+      
+      // If identifier is not an email, get the email from backend
+      if (!data.identifier.includes('@')) {
+        if (findUserResponse.ok) {
+          const userData = await findUserResponse.json();
+          userEmail = userData.email;
+        } else {
+          throw new Error('User not found');
+        }
+      }
+
+      // Use Supabase signInWithPassword directly
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
         password: data.password,
       });
-      if (error) throw error;
+      
+      if (authError || !authData.user) {
+        throw new Error(authError?.message || 'Login failed');
+      }
 
-      // Check user role and redirect accordingly
-      const userRole = authData.user?.user_metadata?.role || "ordinary_user";
+      // Check user role from Supabase user metadata and redirect accordingly
+      const userRole = authData.user.user_metadata?.role || "ordinary_user";
 
       if (userRole === "super_admin" || userRole === "finance_person") {
         toast({
@@ -165,15 +194,14 @@ const LoginPage = () => {
         <div className="w-full max-w-md">
           {/* Mobile Header */}
           <div className="lg:hidden text-center mb-8">
-            <div className="relative w-32 h-32 mx-auto mb-4">
+            <div className="relative w-32 h-32 mx-auto mb-4 p-3 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-xl shadow-lg">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
                 alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain rounded-lg"
+                className="w-full h-full object-contain drop-shadow-sm"
                 onError={(e) => {
-                  // Fallback styling if image fails to load
-                  e.currentTarget.className = "w-full h-full bg-gray-100 rounded-lg flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-[#1C356B] text-lg font-bold">APCB</span>';
+                  e.currentTarget.className = "w-full h-full flex items-center justify-center";
+                  e.currentTarget.innerHTML = '<span class="text-white text-lg font-bold">APCB</span>';
                 }}
               />
             </div>
@@ -187,6 +215,17 @@ const LoginPage = () => {
 
           {/* Desktop Header */}
           <div className="hidden lg:block text-center mb-8">
+            <div className="relative w-24 h-24 mx-auto mb-4 p-2 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-lg shadow-md">
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                alt="Alliance Procurement & Capacity Building Logo"
+                className="w-full h-full object-contain drop-shadow-sm"
+                onError={(e) => {
+                  e.currentTarget.className = "w-full h-full flex items-center justify-center";
+                  e.currentTarget.innerHTML = '<span class="text-white text-sm font-bold">APCB</span>';
+                }}
+              />
+            </div>
             <h1
               className="text-3xl font-bold mb-2"
               style={{ color: "#1C356B" }}
@@ -206,36 +245,48 @@ const LoginPage = () => {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Email */}
+            {/* Email or Phone */}
             <div className="space-y-2">
               <Label
-                htmlFor="email"
+                htmlFor="identifier"
                 className="text-sm font-medium"
                 style={{ color: "#1C356B" }}
               >
-                Email Address
+                Email or Phone Number
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                {/* Dynamic icon based on input */}
+                <div className="absolute left-3 top-3 h-4 w-4 text-gray-400">
+                  <Mail className="h-4 w-4" />
+                </div>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^\S+@\S+$/i,
-                      message: "Please enter a valid email",
+                  id="identifier"
+                  type="text"
+                  placeholder="Enter your email or phone number"
+                  {...register("identifier", {
+                    required: "Email or phone number is required",
+                    validate: (value) => {
+                      // Check if it's a valid email or phone number
+                      const emailPattern = /^\S+@\S+$/i;
+                      const phonePattern = /^[+]?[0-9\s\-()]+$/;
+                      
+                      if (emailPattern.test(value) || phonePattern.test(value)) {
+                        return true;
+                      }
+                      return "Please enter a valid email address or phone number";
                     },
                   })}
                   className="pl-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
                 />
               </div>
-              {errors.email && (
+              {errors.identifier && (
                 <p className="text-red-500 text-sm">
-                  {errors.email.message as string}
+                  {errors.identifier.message as string}
                 </p>
               )}
+              <p className="text-xs text-gray-500">
+                You can sign in with either your email address or phone number
+              </p>
             </div>
 
             {/* Password */}

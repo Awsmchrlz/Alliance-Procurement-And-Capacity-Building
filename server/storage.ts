@@ -134,12 +134,78 @@ export const storage = {
     }
   },
 
+  async getUserByPhone(phoneNumber: string): Promise<UserResponse | undefined> {
+    try {
+      // Fetch from public.users by phone number
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id, first_name, last_name, phone_number, gender, created_at")
+        .eq("phone_number", phoneNumber)
+        .single();
+      if (userError || !userData) {
+        console.error(
+          "Error fetching user by phone from users table:",
+          userError?.message,
+        );
+        return undefined;
+      }
+
+      // Fetch auth user by ID to get email and role
+      const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userData.id);
+      if (authError || !authUser.user) {
+        console.error("Error fetching auth user by ID:", authError?.message);
+        return undefined;
+      }
+
+      return {
+        id: userData.id,
+        email: authUser.user.email || "",
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        phoneNumber: userData.phone_number,
+        gender: userData.gender,
+        role: authUser.user.user_metadata?.role || "ordinary_user",
+        createdAt: userData.created_at,
+      };
+    } catch (error: any) {
+      console.error("Error in getUserByPhone:", error.message);
+      return undefined;
+    }
+  },
+
+  async getUserByEmailOrPhone(identifier: string): Promise<UserResponse | undefined> {
+    // Check if identifier looks like an email (contains @)
+    if (identifier.includes('@')) {
+      return this.getUserByEmail(identifier);
+    } else {
+      return this.getUserByPhone(identifier);
+    }
+  },
+
+  async checkUserExists(email: string, phoneNumber: string): Promise<{ emailExists: boolean; phoneExists: boolean }> {
+    try {
+      const [emailUser, phoneUser] = await Promise.all([
+        this.getUserByEmail(email),
+        this.getUserByPhone(phoneNumber)
+      ]);
+      
+      return {
+        emailExists: !!emailUser,
+        phoneExists: !!phoneUser
+      };
+    } catch (error: any) {
+      console.error("Error checking user existence:", error.message);
+      return { emailExists: false, phoneExists: false };
+    }
+  },
+
   async createUser(user: InsertUser): Promise<UserResponse> {
     console.log("🚀 Starting user creation process...");
     console.log("📝 User data:", {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      phoneNumber: user.phoneNumber,
       role: user.role,
     });
 
@@ -781,6 +847,11 @@ export const storage = {
           currency: registration.currency,
           price_paid: registration.pricePaid,
           delegate_type: registration.delegateType,
+          // Group payment fields
+          group_size: registration.groupSize || 1,
+          group_payment_amount: registration.groupPaymentAmount,
+          group_payment_currency: registration.groupPaymentCurrency,
+          organization_reference: registration.organizationReference,
         })
         .select()
         .single();
@@ -811,6 +882,11 @@ export const storage = {
         pricePaid: data.price_paid,
         delegateType: data.delegate_type,
         registeredAt: data.registered_at,
+        // Group payment fields
+        groupSize: data.group_size,
+        groupPaymentAmount: data.group_payment_amount,
+        groupPaymentCurrency: data.group_payment_currency,
+        organizationReference: data.organization_reference,
       };
     } catch (error: any) {
       console.error("Error in createEventRegistration:", error.message);
