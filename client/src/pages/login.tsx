@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   Mail,
+  Phone,
   Lock,
   ArrowRight,
   Shield,
@@ -53,14 +54,42 @@ const LoginPage = () => {
   const onSubmit = async (data: any) => {
     try {
       setIsLoading(true);
-      const { error, data: authData } = await supabase.auth.signInWithPassword({
-        email: data.email,
+
+      // First, find the user by email or phone using our backend
+      const findUserResponse = await fetch('/api/auth/find-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier: data.identifier,
+        }),
+      });
+
+      let userEmail = data.identifier;
+
+      // If identifier is not an email, get the email from backend
+      if (!data.identifier.includes('@')) {
+        if (findUserResponse.ok) {
+          const userData = await findUserResponse.json();
+          userEmail = userData.email;
+        } else {
+          throw new Error('User not found');
+        }
+      }
+
+      // Use Supabase signInWithPassword directly
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
         password: data.password,
       });
-      if (error) throw error;
 
-      // Check user role and redirect accordingly
-      const userRole = authData.user?.user_metadata?.role || "ordinary_user";
+      if (authError || !authData.user) {
+        throw new Error(authError?.message || 'Login failed');
+      }
+
+      // Check user role from Supabase user metadata and redirect accordingly
+      const userRole = authData.user.user_metadata?.role || "ordinary_user";
 
       if (userRole === "super_admin" || userRole === "finance_person") {
         toast({
@@ -103,11 +132,10 @@ const LoginPage = () => {
           {backgroundImages.map((image, index) => (
             <div
               key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                index === currentImageIndex && isImageVisible
-                  ? "opacity-40"
-                  : "opacity-0"
-              }`}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentImageIndex && isImageVisible
+                ? "opacity-80"
+                : "opacity-0"
+                }`}
               style={{
                 backgroundImage: `url(${image})`,
                 backgroundSize: "cover",
@@ -119,20 +147,25 @@ const LoginPage = () => {
         </div>
 
         {/* Overlay */}
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black/10" />
 
         {/* Content Overlay */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
           <div className="mb-12 w-full flex justify-center">
-            <div className="relative w-72 h-72">
+            <div className="relative w-64 h-64 p-1">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-                alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain rounded-lg"
+                alt="APCB Logo"
+                className="w-full h-full object-contain filter drop-shadow-lg"
                 onError={(e) => {
-                  // Fallback styling if image fails to load
-                  e.currentTarget.className = "w-full h-full bg-white/10 rounded-lg flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-[#87CEEB] text-2xl font-bold">APCB</span>';
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.style.display = 'flex';
+                  target.style.alignItems = 'center';
+                  target.style.justifyContent = 'center';
+                  target.style.color = '#87CEEB';
+                  target.style.fontSize = '24px';
+                  target.style.fontWeight = 'bold';
+                  target.textContent = 'APCB';
                 }}
               />
             </div>
@@ -161,44 +194,33 @@ const LoginPage = () => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-gray-50">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 bg-white">
         <div className="w-full max-w-md">
-          {/* Mobile Header */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="relative w-32 h-32 mx-auto mb-4">
+          {/* Clean Header */}
+          <div className="text-center mb-8">
+            <div className="w-12 h-12 mx-auto mb-4 p-2 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-lg shadow-sm">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-                alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain rounded-lg"
+                alt="APCB Logo"
+                className="w-full h-full object-contain"
                 onError={(e) => {
-                  // Fallback styling if image fails to load
-                  e.currentTarget.className = "w-full h-full bg-gray-100 rounded-lg flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-[#1C356B] text-lg font-bold">APCB</span>';
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.style.display = 'flex';
+                  target.style.alignItems = 'center';
+                  target.style.justifyContent = 'center';
+                  target.style.color = 'white';
+                  target.style.fontSize = '10px';
+                  target.style.fontWeight = 'bold';
+                  target.textContent = 'APCB';
                 }}
               />
             </div>
-            <h1 className="text-2xl font-bold" style={{ color: "#1C356B" }}>
-              Welcome Back
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Sign in to your Alliance account
-            </p>
-          </div>
-
-          {/* Desktop Header */}
-          <div className="hidden lg:block text-center mb-8">
-            <h1
-              className="text-3xl font-bold mb-2"
-              style={{ color: "#1C356B" }}
-            >
-              Sign In
-            </h1>
+            <h1 className="text-3xl font-bold mb-2 text-[#1C356B]">Welcome Back</h1>
             <p className="text-gray-600">
               Don't have an account?{" "}
               <button
                 onClick={() => navigate("/register")}
-                className="font-medium hover:underline"
-                style={{ color: "#87CEEB" }}
+                className="font-medium text-[#87CEEB] hover:underline"
               >
                 Create one
               </button>
@@ -206,49 +228,46 @@ const LoginPage = () => {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Email */}
+            {/* Email or Phone */}
             <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium"
-                style={{ color: "#1C356B" }}
-              >
-                Email Address
+              <Label htmlFor="identifier" className="text-sm font-medium text-gray-700">
+                Email or Phone Number
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^\S+@\S+$/i,
-                      message: "Please enter a valid email",
+                  id="identifier"
+                  type="text"
+                  placeholder="Enter your email or phone number"
+                  {...register("identifier", {
+                    required: "Email or phone number is required",
+                    validate: (value) => {
+                      const emailPattern = /^\S+@\S+$/i;
+                      const phonePattern = /^[+]?[0-9\s\-()]+$/;
+
+                      if (emailPattern.test(value) || phonePattern.test(value)) {
+                        return true;
+                      }
+                      return "Please enter a valid email address or phone number";
                     },
                   })}
-                  className="pl-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                  className="pl-10 h-11 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
                 />
               </div>
-              {errors.email && (
-                <p className="text-red-500 text-sm">
-                  {errors.email.message as string}
+              {errors.identifier && (
+                <p className="text-red-500 text-xs">
+                  {errors.identifier.message as string}
                 </p>
               )}
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-sm font-medium"
-                style={{ color: "#1C356B" }}
-              >
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                 Password
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -260,18 +279,18 @@ const LoginPage = () => {
                       message: "Password must be at least 6 characters",
                     },
                   })}
-                  className="pl-10 pr-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                  className="pl-10 pr-10 h-11 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff /> : <Eye />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-xs">
                   {errors.password.message as string}
                 </p>
               )}
@@ -293,21 +312,11 @@ const LoginPage = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 text-white font-semibold text-base transition-all duration-300 hover:shadow-lg"
-              style={{
-                backgroundColor: "#87CEEB",
-                borderColor: "#87CEEB",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#e6ae1f")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#87CEEB")
-              }
+              className="w-full h-12 text-white font-semibold bg-[#1C356B] hover:bg-[#2563eb] transition-all duration-300"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                   <span>Signing In...</span>
                 </div>
               ) : (
@@ -319,28 +328,16 @@ const LoginPage = () => {
             </Button>
 
             {/* Mobile Create Account Link */}
-            <div className="lg:hidden text-center pt-4">
-              <p className="text-gray-600">
+            <div className="lg:hidden text-center">
+              <p className="text-gray-600 text-sm">
                 Don't have an account?{" "}
                 <button
                   onClick={() => navigate("/register")}
-                  className="font-medium hover:underline"
-                  style={{ color: "#87CEEB" }}
+                  className="font-medium text-[#1C356B] hover:text-[#87CEEB] hover:underline transition-colors"
                 >
                   Create one
                 </button>
               </p>
-            </div>
-
-            {/* Security Notice */}
-            <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <Shield className="w-5 h-5 mt-0.5" style={{ color: "#87CEEB" }} />
-              <div className="text-sm text-gray-700">
-                <p className="font-medium mb-1">Secure Login</p>
-                <p className="text-gray-600">
-                  Your login credentials are encrypted and secure.
-                </p>
-              </div>
             </div>
           </form>
         </div>

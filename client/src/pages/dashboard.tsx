@@ -68,6 +68,10 @@ export default function Dashboard() {
     fileName?: string;
     registrationId?: string;
   }>({ open: false, evidencePath: null });
+  const [registrationModal, setRegistrationModal] = useState<{
+    open: boolean;
+    registrations: RegistrationWithEvent[];
+  }>({ open: false, registrations: [] });
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -90,6 +94,30 @@ export default function Dashboard() {
     },
     enabled: !!user,
   });
+
+  // Check for new registrations and show modal
+  useEffect(() => {
+    if (registrations && registrations.length > 0) {
+      // Check if there are recent registrations (within last 5 minutes)
+      const recentRegistrations = registrations.filter(reg => {
+        if (!reg.registeredAt) return false;
+        const registrationTime = new Date(reg.registeredAt);
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        return registrationTime > fiveMinutesAgo && reg.paymentStatus === 'pending';
+      });
+      
+      if (recentRegistrations.length > 0) {
+        // Check if we haven't shown this modal for these registrations yet
+        const hasShownModal = sessionStorage.getItem('registrationModalShown');
+        const currentRegistrationIds = recentRegistrations.map(r => r.id).sort().join(',');
+        
+        if (hasShownModal !== currentRegistrationIds) {
+          setRegistrationModal({ open: true, registrations: recentRegistrations });
+          sessionStorage.setItem('registrationModalShown', currentRegistrationIds);
+        }
+      }
+    }
+  }, [registrations]);
 
   const { paidRegistrations, pendingRegistrations, cancelledRegistrations } =
     useMemo(() => {
@@ -657,6 +685,73 @@ export default function Dashboard() {
               className="bg-primary-blue text-white hover:bg-[#2d4a7a]"
             >
               {uploading ? "Uploading..." : "Upload Evidence"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registration Numbers Modal */}
+      <Dialog
+        open={registrationModal.open}
+        onOpenChange={(open) => setRegistrationModal({ ...registrationModal, open })}
+      >
+        <DialogContent className="sm:max-w-2xl bg-slate-50 border border-slate-200 shadow-2xl">
+          <DialogHeader className="bg-[#1C356B] text-white rounded-t-lg -m-6 mb-6 p-6">
+            <DialogTitle className="text-2xl font-bold text-center mb-2">
+              🎉 Registration Successful!
+            </DialogTitle>
+            <DialogDescription className="text-center text-slate-100">
+              Your registration{registrationModal.registrations.length > 1 ? 's have' : ' has'} been completed successfully.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {registrationModal.registrations.map((registration) => (
+              <div key={registration.id} className="bg-white border border-slate-300 rounded-xl p-6 shadow-md">
+                <div className="text-center mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{registration.event.title}</h3>
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <span className="text-2xl">🎫</span>
+                    <h4 className="text-xl font-bold text-[#1C356B]">Your Registration Number</h4>
+                  </div>
+                  
+                  <div className="bg-slate-100 rounded-lg border-2 border-slate-300 p-4 mb-4">
+                    <div className="text-3xl font-mono font-black text-gray-900 tracking-wider">
+                      {registration.registrationNumber}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 justify-center mb-2">
+                    <span className="text-xl">💡</span>
+                    <span className="font-bold text-blue-800 text-lg">Important - Keep This Safe!</span>
+                  </div>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>• <strong>Write down</strong> or <strong>screenshot</strong> this registration number</p>
+                    <p>• You'll need it for event check-in and payment verification</p>
+                    <p>• This number is also in your confirmation email</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            <div className="bg-slate-100 border border-slate-300 rounded-lg p-4">
+              <div className="flex items-center gap-2 justify-center">
+                <span className="text-slate-600">📋</span>
+                <span className="text-sm font-medium text-slate-700">
+                  You can always find your registration numbers in the "Active" tab below
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="mt-6">
+            <Button
+              onClick={() => setRegistrationModal({ open: false, registrations: [] })}
+              className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white font-semibold py-3 shadow-lg"
+            >
+              Perfect! I've got my registration number
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1149,7 +1149,7 @@ This confirmation was sent to ${eventData.email}`;
   /**
    * Generate a modern, responsive HTML email template with professional design
    */
-  private generateCampaignTemplate(
+  public generateCampaignTemplate(
     title: string,
     content: string,
     preheader?: string
