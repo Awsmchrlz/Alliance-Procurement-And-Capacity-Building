@@ -200,15 +200,21 @@ const RegisterPage = () => {
 
         {/* Content Overlay with Better Spacing */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
-          <div className="mb-8 w-full flex justify-center">
-            <div className="relative w-40 h-40 p-4 bg-white rounded-2xl shadow-lg">
+          <div className="mb-12 w-full flex justify-center">
+            <div className="relative w-64 h-64 p-1">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-                alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain"
+                alt="APCB Logo"
+                className="w-full h-full object-contain filter drop-shadow-lg"
                 onError={(e) => {
-                  e.currentTarget.className = "w-full h-full flex items-center justify-center text-[#1C356B] text-2xl font-bold";
-                  e.currentTarget.innerHTML = 'APCB';
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.style.display = 'flex';
+                  target.style.alignItems = 'center';
+                  target.style.justifyContent = 'center';
+                  target.style.color = '#87CEEB';
+                  target.style.fontSize = '24px';
+                  target.style.fontWeight = 'bold';
+                  target.textContent = 'APCB';
                 }}
               />
             </div>
@@ -245,6 +251,23 @@ const RegisterPage = () => {
         <div className="w-full max-w-md">
           {/* Clean Header */}
           <div className="text-center mb-8">
+            <div className="w-12 h-12 mx-auto mb-4 p-2 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-lg shadow-sm">
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                alt="APCB Logo"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.style.display = 'flex';
+                  target.style.alignItems = 'center';
+                  target.style.justifyContent = 'center';
+                  target.style.color = 'white';
+                  target.style.fontSize = '10px';
+                  target.style.fontWeight = 'bold';
+                  target.textContent = 'APCB';
+                }}
+              />
+            </div>
             <h1 className="text-3xl font-bold mb-2 text-[#1C356B]">Create Account</h1>
             <p className="text-gray-600">Join the Alliance community today</p>
           </div>

@@ -54,7 +54,7 @@ const LoginPage = () => {
   const onSubmit = async (data: any) => {
     try {
       setIsLoading(true);
-      
+
       // First, find the user by email or phone using our backend
       const findUserResponse = await fetch('/api/auth/find-user', {
         method: 'POST',
@@ -67,7 +67,7 @@ const LoginPage = () => {
       });
 
       let userEmail = data.identifier;
-      
+
       // If identifier is not an email, get the email from backend
       if (!data.identifier.includes('@')) {
         if (findUserResponse.ok) {
@@ -83,7 +83,7 @@ const LoginPage = () => {
         email: userEmail,
         password: data.password,
       });
-      
+
       if (authError || !authData.user) {
         throw new Error(authError?.message || 'Login failed');
       }
@@ -132,11 +132,10 @@ const LoginPage = () => {
           {backgroundImages.map((image, index) => (
             <div
               key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                index === currentImageIndex && isImageVisible
-                  ? "opacity-80"
-                  : "opacity-0"
-              }`}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentImageIndex && isImageVisible
+                ? "opacity-80"
+                : "opacity-0"
+                }`}
               style={{
                 backgroundImage: `url(${image})`,
                 backgroundSize: "cover",
@@ -153,14 +152,20 @@ const LoginPage = () => {
         {/* Content Overlay */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
           <div className="mb-12 w-full flex justify-center">
-            <div className="relative w-40 h-40 p-4 bg-white rounded-2xl shadow-lg">
+            <div className="relative w-64 h-64 p-1">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-                alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain"
+                alt="APCB Logo"
+                className="w-full h-full object-contain filter drop-shadow-lg"
                 onError={(e) => {
-                  e.currentTarget.className = "w-full h-full flex items-center justify-center text-[#1C356B] text-2xl font-bold";
-                  e.currentTarget.innerHTML = 'APCB';
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.style.display = 'flex';
+                  target.style.alignItems = 'center';
+                  target.style.justifyContent = 'center';
+                  target.style.color = '#87CEEB';
+                  target.style.fontSize = '24px';
+                  target.style.fontWeight = 'bold';
+                  target.textContent = 'APCB';
                 }}
               />
             </div>
@@ -193,6 +198,23 @@ const LoginPage = () => {
         <div className="w-full max-w-md">
           {/* Clean Header */}
           <div className="text-center mb-8">
+            <div className="w-12 h-12 mx-auto mb-4 p-2 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-lg shadow-sm">
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                alt="APCB Logo"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.style.display = 'flex';
+                  target.style.alignItems = 'center';
+                  target.style.justifyContent = 'center';
+                  target.style.color = 'white';
+                  target.style.fontSize = '10px';
+                  target.style.fontWeight = 'bold';
+                  target.textContent = 'APCB';
+                }}
+              />
+            </div>
             <h1 className="text-3xl font-bold mb-2 text-[#1C356B]">Welcome Back</h1>
             <p className="text-gray-600">
               Don't have an account?{" "}
@@ -222,7 +244,7 @@ const LoginPage = () => {
                     validate: (value) => {
                       const emailPattern = /^\S+@\S+$/i;
                       const phonePattern = /^[+]?[0-9\s\-()]+$/;
-                      
+
                       if (emailPattern.test(value) || phonePattern.test(value)) {
                         return true;
                       }
@@ -290,21 +312,11 @@ const LoginPage = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 text-white font-semibold text-base transition-all duration-300 hover:shadow-lg"
-              style={{
-                backgroundColor: "#87CEEB",
-                borderColor: "#87CEEB",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#e6ae1f")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#87CEEB")
-              }
+              className="w-full h-12 text-white font-semibold bg-[#1C356B] hover:bg-[#2563eb] transition-all duration-300"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                   <span>Signing In...</span>
                 </div>
               ) : (
@@ -316,28 +328,16 @@ const LoginPage = () => {
             </Button>
 
             {/* Mobile Create Account Link */}
-            <div className="lg:hidden text-center pt-4">
-              <p className="text-gray-600">
+            <div className="lg:hidden text-center">
+              <p className="text-gray-600 text-sm">
                 Don't have an account?{" "}
                 <button
                   onClick={() => navigate("/register")}
-                  className="font-medium hover:underline"
-                  style={{ color: "#87CEEB" }}
+                  className="font-medium text-[#1C356B] hover:text-[#87CEEB] hover:underline transition-colors"
                 >
                   Create one
                 </button>
               </p>
-            </div>
-
-            {/* Security Notice */}
-            <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <Shield className="w-5 h-5 mt-0.5" style={{ color: "#87CEEB" }} />
-              <div className="text-sm text-gray-700">
-                <p className="font-medium mb-1">Secure Login</p>
-                <p className="text-gray-600">
-                  Your login credentials are encrypted and secure.
-                </p>
-              </div>
             </div>
           </form>
         </div>
