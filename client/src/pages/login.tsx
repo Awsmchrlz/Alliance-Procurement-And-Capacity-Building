@@ -134,7 +134,7 @@ const LoginPage = () => {
               key={index}
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
                 index === currentImageIndex && isImageVisible
-                  ? "opacity-40"
+                  ? "opacity-80"
                   : "opacity-0"
               }`}
               style={{
@@ -148,7 +148,7 @@ const LoginPage = () => {
         </div>
 
         {/* Overlay */}
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black/10" />
 
         {/* Content Overlay */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">

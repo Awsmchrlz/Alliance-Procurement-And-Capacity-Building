@@ -162,7 +162,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen flex bg-gray-50">
       {/* Left Side - Enhanced Background (Hidden on Mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Modern Gradient Background */}
@@ -181,8 +181,8 @@ const RegisterPage = () => {
             <div
               key={index}
               className={`absolute inset-0 transition-all duration-1000 ease-in-out ${index === currentImageIndex && isImageVisible
-                ? "opacity-30 scale-105"
-                : "opacity-0 scale-100"
+                ? "opacity-80"
+                : "opacity-0"
                 }`}
               style={{
                 backgroundImage: `url(${image})`,
@@ -194,19 +194,19 @@ const RegisterPage = () => {
           ))}
         </div>
 
-        {/* Enhanced Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+        {/* Clean Overlay */}
+        <div className="absolute inset-0 bg-black/10" />
 
         {/* Content Overlay with Better Spacing */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
           <div className="mb-8 w-full flex justify-center">
-            <div className="relative w-48 h-48 p-6 bg-white/10 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20">
+            <div className="relative w-40 h-40 p-4 bg-white rounded-2xl shadow-lg">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
                 alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain drop-shadow-lg"
+                className="w-full h-full object-contain"
                 onError={(e) => {
-                  e.currentTarget.className = "w-full h-full flex items-center justify-center text-[#87CEEB] text-3xl font-bold";
+                  e.currentTarget.className = "w-full h-full flex items-center justify-center text-[#1C356B] text-2xl font-bold";
                   e.currentTarget.innerHTML = 'APCB';
                 }}
               />
@@ -223,15 +223,15 @@ const RegisterPage = () => {
           </div>
           
           <div className="space-y-4 max-w-sm mx-auto">
-            <div className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+            <div className="flex items-center space-x-3">
               <CheckCircle className="w-5 h-5 text-[#87CEEB] flex-shrink-0" />
               <span className="text-sm">Expert-led training programs</span>
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+            <div className="flex items-center space-x-3">
               <CheckCircle className="w-5 h-5 text-[#87CEEB] flex-shrink-0" />
               <span className="text-sm">Professional certification opportunities</span>
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+            <div className="flex items-center space-x-3">
               <CheckCircle className="w-5 h-5 text-[#87CEEB] flex-shrink-0" />
               <span className="text-sm">Network with industry professionals</span>
             </div>
@@ -239,27 +239,24 @@ const RegisterPage = () => {
         </div>
       </div>
 
-      {/* Right Side - Enhanced Registration Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
-          {/* Enhanced Header */}
-          <div className="bg-gradient-to-r from-[#1C356B] to-[#2563eb] p-6 text-center text-white relative overflow-hidden">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="relative z-10">
-              <div className="w-16 h-16 mx-auto mb-3 p-2 bg-white/20 backdrop-blur-sm rounded-2xl">
-                <img
-                  src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-                  alt="Alliance Procurement & Capacity Building Logo"
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.currentTarget.className = "w-full h-full flex items-center justify-center text-white text-sm font-bold";
-                    e.currentTarget.innerHTML = 'APCB';
-                  }}
-                />
-              </div>
-              <h1 className="text-2xl font-bold mb-1">Create Your Account</h1>
-              <p className="text-white/80 text-sm">Join the Alliance community today</p>
+      {/* Right Side - Registration Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-white">
+        <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg border border-gray-100">
+          {/* Clean Header */}
+          <div className="p-6 text-center border-b border-gray-100">
+            <div className="w-16 h-16 mx-auto mb-4 p-2 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-xl shadow-sm">
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
+                alt="Alliance Procurement & Capacity Building Logo"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.className = "w-full h-full flex items-center justify-center text-white text-sm font-bold";
+                  e.currentTarget.innerHTML = 'APCB';
+                }}
+              />
             </div>
+            <h1 className="text-2xl font-bold mb-1 text-[#1C356B]">Create Your Account</h1>
+            <p className="text-gray-600 text-sm">Join the Alliance community today</p>
           </div>
 
           {/* Form Container */}
