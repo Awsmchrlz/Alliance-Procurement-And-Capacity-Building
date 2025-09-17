@@ -153,15 +153,14 @@ const LoginPage = () => {
         {/* Content Overlay */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
           <div className="mb-12 w-full flex justify-center">
-            <div className="relative w-72 h-72">
+            <div className="relative w-40 h-40 p-4 bg-white rounded-2xl shadow-lg">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
                 alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain rounded-lg"
+                className="w-full h-full object-contain"
                 onError={(e) => {
-                  // Fallback styling if image fails to load
-                  e.currentTarget.className = "w-full h-full bg-white/10 rounded-lg flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-[#87CEEB] text-2xl font-bold">APCB</span>';
+                  e.currentTarget.className = "w-full h-full flex items-center justify-center text-[#1C356B] text-2xl font-bold";
+                  e.currentTarget.innerHTML = 'APCB';
                 }}
               />
             </div>
@@ -190,54 +189,16 @@ const LoginPage = () => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-gray-50">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 bg-white">
         <div className="w-full max-w-md">
-          {/* Mobile Header */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="relative w-32 h-32 mx-auto mb-4 p-3 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-xl shadow-lg">
-              <img
-                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-                alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain drop-shadow-sm"
-                onError={(e) => {
-                  e.currentTarget.className = "w-full h-full flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-white text-lg font-bold">APCB</span>';
-                }}
-              />
-            </div>
-            <h1 className="text-2xl font-bold" style={{ color: "#1C356B" }}>
-              Welcome Back
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Sign in to your Alliance account
-            </p>
-          </div>
-
-          {/* Desktop Header */}
-          <div className="hidden lg:block text-center mb-8">
-            <div className="relative w-24 h-24 mx-auto mb-4 p-2 bg-gradient-to-br from-[#1C356B] to-[#87CEEB] rounded-lg shadow-md">
-              <img
-                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
-                alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain drop-shadow-sm"
-                onError={(e) => {
-                  e.currentTarget.className = "w-full h-full flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-white text-sm font-bold">APCB</span>';
-                }}
-              />
-            </div>
-            <h1
-              className="text-3xl font-bold mb-2"
-              style={{ color: "#1C356B" }}
-            >
-              Sign In
-            </h1>
+          {/* Clean Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2 text-[#1C356B]">Welcome Back</h1>
             <p className="text-gray-600">
               Don't have an account?{" "}
               <button
                 onClick={() => navigate("/register")}
-                className="font-medium hover:underline"
-                style={{ color: "#87CEEB" }}
+                className="font-medium text-[#87CEEB] hover:underline"
               >
                 Create one
               </button>
@@ -247,18 +208,11 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Email or Phone */}
             <div className="space-y-2">
-              <Label
-                htmlFor="identifier"
-                className="text-sm font-medium"
-                style={{ color: "#1C356B" }}
-              >
+              <Label htmlFor="identifier" className="text-sm font-medium text-gray-700">
                 Email or Phone Number
               </Label>
               <div className="relative">
-                {/* Dynamic icon based on input */}
-                <div className="absolute left-3 top-3 h-4 w-4 text-gray-400">
-                  <Mail className="h-4 w-4" />
-                </div>
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="identifier"
                   type="text"
@@ -266,7 +220,6 @@ const LoginPage = () => {
                   {...register("identifier", {
                     required: "Email or phone number is required",
                     validate: (value) => {
-                      // Check if it's a valid email or phone number
                       const emailPattern = /^\S+@\S+$/i;
                       const phonePattern = /^[+]?[0-9\s\-()]+$/;
                       
@@ -276,30 +229,23 @@ const LoginPage = () => {
                       return "Please enter a valid email address or phone number";
                     },
                   })}
-                  className="pl-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                  className="pl-10 h-11 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
                 />
               </div>
               {errors.identifier && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-xs">
                   {errors.identifier.message as string}
                 </p>
               )}
-              <p className="text-xs text-gray-500">
-                You can sign in with either your email address or phone number
-              </p>
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-sm font-medium"
-                style={{ color: "#1C356B" }}
-              >
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                 Password
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -311,18 +257,18 @@ const LoginPage = () => {
                       message: "Password must be at least 6 characters",
                     },
                   })}
-                  className="pl-10 pr-10 h-12 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
+                  className="pl-10 pr-10 h-11 border-gray-300 focus:border-[#87CEEB] focus:ring-[#87CEEB]"
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff /> : <Eye />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-xs">
                   {errors.password.message as string}
                 </p>
               )}

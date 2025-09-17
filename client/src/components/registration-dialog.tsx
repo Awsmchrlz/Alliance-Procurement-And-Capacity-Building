@@ -647,7 +647,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
               {/* Step 3: Payment */}
               {currentStep === 3 && (
                 <div className="space-y-3">
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="p-3 bg-gradient-to-r from-[#87CEEB]/10 to-blue-50 border border-[#87CEEB]/20 rounded-lg">
                     <h3 className="font-medium mb-2 text-sm text-[#1C356B]">Registration Fee</h3>
                     {selectedPricing && (
                       <div className="flex justify-between items-center">
