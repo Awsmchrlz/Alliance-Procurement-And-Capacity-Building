@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
-import { Upload, FileText, Copy, Check, X, CheckCircle, Info } from 'lucide-react';
+import { Upload, FileText, Copy, X, CheckCircle, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Event } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +30,7 @@ interface FormDataType {
   position: string;
   paymentMethod: "mobile" | "bank" | "cash" | "group_payment" | "org_paid" | "";
   delegateType: "private" | "public" | "international" | "";
-  bankCurrency?: "ZMK" | "USD";
+  bankCurrency?: "ZMW" | "USD";
   // Group payment fields
   groupSize?: number;
   groupPaymentAmount?: number;
@@ -77,7 +77,6 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
   const [currentStep, setCurrentStep] = useState(1);
   const [success, setSuccess] = useState(false);
   const [registrationData, setRegistrationData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<FormDataType>({
     firstName: user?.firstName || '',
@@ -96,9 +95,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
     groupPaymentCurrency: 'ZMW',
     organizationReference: '',
   });
-  const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   // Simple country detection using browser timezone
   const getCountryFromTimezone = () => {
     try {
@@ -164,7 +161,6 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
     if (open) {
       setCurrentStep(1);
       setSuccess(false);
-      setLoading(false);
       setEvidenceFile(null);
       setFormData({
         firstName: user?.firstName || '',
@@ -207,7 +203,6 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
   const reset = () => {
     setCurrentStep(1);
     setSuccess(false);
-    setLoading(false);
     setEvidenceFile(null);
     setFormData({
       firstName: user?.firstName || '',
@@ -305,13 +300,8 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
             field: 'groupSize'
           };
         }
-        if (!evidenceFile) {
-          return { 
-            isValid: false, 
-            message: 'Please upload payment evidence for group payment',
-            field: 'evidenceFile'
-          };
-        }
+        // For group payment, evidence is optional at registration - can be uploaded later
+        // This allows organizations to register first, then handle payment separately
       }
       
       // Validation for organization already paid
@@ -377,7 +367,6 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
     }
 
     setIsSubmitting(true);
-    setError("");
 
     try {
       let evidenceUrl = null;
@@ -398,12 +387,21 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
           evidenceUrl = filePath;
         } catch (error) {
           console.error('File upload error:', error);
-          toast({
-            title: "File upload failed",
-            description: "Failed to upload payment evidence. Please try again.",
-            variant: "destructive",
-          });
-          return;
+          // For group payments, don't block registration if file upload fails
+          if (formData.paymentMethod === 'group_payment') {
+            toast({
+              title: "File upload failed",
+              description: "Registration will continue. You can upload payment evidence later from your dashboard.",
+              variant: "default",
+            });
+          } else {
+            toast({
+              title: "File upload failed",
+              description: "Failed to upload payment evidence. Please try again.",
+              variant: "destructive",
+            });
+            return;
+          }
         }
       }
 
@@ -446,32 +444,25 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
     } catch (err: any) {
       console.error("Registration error:", err);
       
-      if (err.message?.includes("Storage bucket") || err.message?.includes("bucket")) {
-        setError(
-          "File upload system temporarily unavailable. You can complete registration without evidence and upload it later from your dashboard.",
-        );
-      } else if (err.message?.includes("Evidence upload failed")) {
-        setError(err.message);
-      } else if (err.message?.includes("null value in column")) {
-        const match = err.message.match(/column "([^"]+)"/);
-        const columnName = match ? match[1] : "required field";
-        setError(`Missing required field: ${columnName}`);
-      } else if (err.message?.includes("Already registered")) {
-        setError("You are already registered for this event.");
+      if (err.message?.includes("Already registered")) {
         toast({
           title: "Already Registered",
           description: "You are already registered for this event. Check your dashboard to view your registration details.",
           variant: "destructive",
         });
       } else if (err.message?.includes("Event is full")) {
-        setError("Sorry, this event is now full.");
         toast({
           title: "Event Full",
           description: "Sorry, this event is now full. Please check other available events.",
           variant: "destructive",
         });
+      } else if (err.message?.includes("Storage bucket") || err.message?.includes("bucket")) {
+        toast({
+          title: "Registration Completed",
+          description: "File upload system temporarily unavailable. You can upload payment evidence later from your dashboard.",
+          variant: "default",
+        });
       } else {
-        setError(err.message || "Registration failed. Please try again.");
         toast({
           title: "Registration Failed",
           description: err.message || "Registration failed. Please try again.",
@@ -551,7 +542,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                         id="firstName"
                         value={formData.firstName}
                         onChange={(e) => updateField('firstName', e.target.value)}
-                        className="w-full h-11 px-4 text-sm border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1C356B] focus:border-[#1C356B] transition-all duration-200 hover:border-gray-300 bg-white"
+                        className="w-full h-11 px-4 text-sm border border-[#87CEEB]/30 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200 hover:border-[#87CEEB]/50 bg-white"
                         placeholder="Enter first name"
                       />
                     </div>
@@ -561,7 +552,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                         id="lastName"
                         value={formData.lastName}
                         onChange={(e) => updateField('lastName', e.target.value)}
-                        className="w-full h-11 px-4 text-sm border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1C356B] focus:border-[#1C356B] transition-all duration-200 hover:border-gray-300 bg-white"
+                        className="w-full h-11 px-4 text-sm border border-[#87CEEB]/30 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200 hover:border-[#87CEEB]/50 bg-white"
                         placeholder="Enter last name"
                       />
                     </div>
@@ -793,7 +784,12 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
 
                         {/* Compact Instructions */}
                         <div className="p-1.5 bg-green-100 border border-green-300 rounded text-xs text-green-800">
-                          <strong>Steps:</strong> Complete registration → Make payment → Upload evidence → Share with team
+                          <strong>Next Steps:</strong> Complete registration → Make payment → Upload evidence from dashboard → Share with team
+                        </div>
+                        
+                        {/* Optional Evidence Note */}
+                        <div className="p-1.5 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                          💡 <strong>Payment Evidence:</strong> You can upload payment proof now or later from your dashboard after making the payment.
                         </div>
                       </div>
                     </div>
@@ -868,7 +864,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                             <SelectValue placeholder="Choose currency" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="ZMK">Kwacha (K)</SelectItem>
+                            <SelectItem value="ZMW">Kwacha (K)</SelectItem>
                             <SelectItem value="USD">Dollar ($)</SelectItem>
                           </SelectContent>
                         </Select>
@@ -880,7 +876,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                         <div className="bg-white rounded border border-gray-200 p-1.5">
                           <div className="text-xs">
                             <div className="font-semibold text-center text-[#1C356B] mb-1">
-                              {formData.bankCurrency === 'ZMK' ? 'SME Account (ZMK)' : 'Call Global Account (USD)'}
+                              {formData.bankCurrency === 'ZMW' ? 'SME Account (ZMW)' : 'Call Global Account (USD)'}
                             </div>
                             
                             {/* Bank Info with Labels */}
@@ -900,13 +896,13 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                               <div className="text-xs text-gray-500 mb-0.5">Account Number:</div>
                               <div className="flex items-center justify-center bg-[#87CEEB]/8 p-1 rounded">
                                 <span className="font-mono text-xs font-bold text-[#1C356B] mr-1">
-                                  {formData.bankCurrency === 'ZMK' ? '63136716785' : '63136717006'}
+                                  {formData.bankCurrency === 'ZMW' ? '63136716785' : '63136717006'}
                                 </span>
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
                                   className="h-3 w-3 p-0 hover:bg-[#87CEEB]/20"
-                                  onClick={() => navigator.clipboard.writeText(formData.bankCurrency === 'ZMK' ? '63136716785' : '63136717006')}
+                                  onClick={() => navigator.clipboard.writeText(formData.bankCurrency === 'ZMW' ? '63136716785' : '63136717006')}
                                 >
                                   <Copy className="h-2 w-2 text-[#1C356B]" />
                                 </Button>
@@ -952,7 +948,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <Label className="text-sm font-medium text-gray-700">
-                          {formData.paymentMethod === 'group_payment' ? 'Group Payment Evidence' : 'Proof of Payment'}
+                          {formData.paymentMethod === 'group_payment' ? 'Group Payment Evidence (Optional)' : 'Proof of Payment'}
                         </Label>
                         {evidenceFile && (
                           <button
@@ -985,6 +981,11 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                             <p className="text-xs text-[#1C356B]/70">
                               JPG, PNG, PDF (5MB max)
                             </p>
+                            {formData.paymentMethod === 'group_payment' && (
+                              <p className="text-xs text-green-600 font-medium">
+                                Optional: Upload now or later from dashboard
+                              </p>
+                            )}
                           </div>
                         </div>
                       ) : (
@@ -1007,14 +1008,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
                               <X className="h-3 w-3" />
                             </button>
                           </div>
-                          {isUploading && (
-                            <div className="mt-1 w-full bg-gray-200 rounded-full h-1">
-                              <div 
-                                className="bg-gradient-to-r from-[#87CEEB] to-[#1C356B] h-1 rounded-full" 
-                                style={{ width: '75%' }}
-                              />
-                            </div>
-                          )}
+
                         </div>
                       )}
                     </div>

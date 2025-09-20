@@ -6,22 +6,16 @@
   <component name="ChangeListManager">
     <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="Group payments and unique identifier as email and phone">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DATABASE_SETUP.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/GROUP_PAYMENT_FEATURE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/register.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/register.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/complete-setup-with-samples.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/create-admin-user.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/debug-evidence-update.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/enhanced-email-templates.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/fix-evidence-paths.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/group_payment_migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/migrations/0000_tiresome_lilandra.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/migrations/add_group_payment_fields.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/migrations/meta/0000_snapshot.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/migrations/meta/_journal.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test-email-system.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test-email-template.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test-user-registration.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ULTIMATE_DATABASE_SETUP.sql" beforeDir="false" afterPath="$PROJECT_DIR$/ULTIMATE_DATABASE_SETUP.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/components/registration-dialog.backup.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/components/upcoming-events.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/upcoming-events.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/events.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/events.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/home.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/server/routes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/storage.ts" beforeDir="false" afterPath="$PROJECT_DIR$/server/storage.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shared/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/shared/schema.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -72,7 +66,7 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;#17 on fixes/feedback1&quot;
+    &quot;git-widget-placeholder&quot;: &quot;fixes/feedback1&quot;
   }
 }</component>
   <component name="RunManager">
@@ -320,7 +314,39 @@
       <option name="project" value="LOCAL" />
       <updated>1758115402748</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="Group payments and unique identifier as email and phone">
+      <option name="closed" value="true" />
+      <created>1758123179125</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1758123179125</updated>
+    </task>
+    <task id="LOCAL-00030" summary="Group payments and unique identifier as email and phone">
+      <option name="closed" value="true" />
+      <created>1758123521349</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1758123521350</updated>
+    </task>
+    <task id="LOCAL-00031" summary="Group payments and unique identifier as email and phone">
+      <option name="closed" value="true" />
+      <created>1758123818765</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1758123818765</updated>
+    </task>
+    <task id="LOCAL-00032" summary="Group payments and unique identifier as email and phone">
+      <option name="closed" value="true" />
+      <created>1758124786388</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1758124786388</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

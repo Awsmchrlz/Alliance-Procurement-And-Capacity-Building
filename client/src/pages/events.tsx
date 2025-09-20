@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { RegistrationDialog } from "@/components/registration-dialog";
+import { SponsorshipDialog } from "@/components/sponsorship-dialog";
+import { ExhibitionDialog } from "@/components/exhibition-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +22,8 @@ import {
   Sparkles,
   CheckCircle,
   AlertCircle,
+  Crown,
+  Store,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Event } from "@shared/schema";
@@ -30,6 +34,8 @@ const EventsPage = () => {
   const { toast } = useToast();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
+  const [showSponsorshipDialog, setShowSponsorshipDialog] = useState(false);
+  const [showExhibitionDialog, setShowExhibitionDialog] = useState(false);
   const [autoOpenDialog, setAutoOpenDialog] = useState(false);
 
   // Fetch events
@@ -114,6 +120,16 @@ const EventsPage = () => {
     setShowRegistrationDialog(true);
   };
 
+  const handleSponsorClick = (event: Event) => {
+    setSelectedEvent(event);
+    setShowSponsorshipDialog(true);
+  };
+
+  const handleExhibitorClick = (event: Event) => {
+    setSelectedEvent(event);
+    setShowExhibitionDialog(true);
+  };
+
   const isUserRegistered = (eventId: string) => {
     return registrationsArray.some((reg: any) => reg.eventId === eventId);
   };
@@ -190,8 +206,132 @@ const EventsPage = () => {
         </div>
       </section>
 
+      {/* Partnership Opportunities Section */}
+      <section className="py-8 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Partnership Opportunities</h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Join us as a sponsor or exhibitor and showcase your brand to industry professionals from across the region.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Sponsorship Card */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden">
+              <div className="relative">
+                <div className="h-32 bg-gradient-to-br from-yellow-400 to-yellow-600 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Crown className="w-12 h-12 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-yellow-600 transition-colors">
+                  Become a Sponsor
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  Gain premium visibility and connect with key decision-makers in procurement and supply chain management.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                    <span>Premium branding opportunities</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                    <span>Speaking opportunities</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                    <span>Networking with industry leaders</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                    <span>Packages from $9,000 - $15,000 USD</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  {eventsArray.length > 0 && (
+                    <Button
+                      onClick={() => handleSponsorClick(eventsArray[0])}
+                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 transition-all duration-300 group"
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      <span>Apply to Sponsor</span>
+                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Exhibition Card */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden">
+              <div className="relative">
+                <div className="h-32 bg-gradient-to-br from-emerald-500 to-emerald-700 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Store className="w-12 h-12 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
+                  Become an Exhibitor
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  Showcase your products and services directly to procurement professionals and potential clients.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 mr-2" />
+                    <span>Dedicated exhibition space</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 mr-2" />
+                    <span>Direct client interaction</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 mr-2" />
+                    <span>Product demonstration opportunities</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 mr-2" />
+                    <span>Packages from $7,000 - $15,000 USD</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  {eventsArray.length > 0 && (
+                    <Button
+                      onClick={() => handleExhibitorClick(eventsArray[0])}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 transition-all duration-300 group"
+                    >
+                      <Store className="w-4 h-4 mr-2" />
+                      <span>Apply to Exhibit</span>
+                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Events Grid */}
-      <section className="py-4">
+      <section className="py-4 bg-gray-50">
         <div className="container mx-auto px-4">
           {eventsArray.length === 0 ? (
             <div className="text-center py-16">
@@ -271,24 +411,74 @@ const EventsPage = () => {
                         )}
                       </div>
 
-                      <div className="pt-4 border-t border-gray-100">
+                      <div className="pt-4 border-t border-gray-100 space-y-3">
                         {status === "upcoming" && !isRegistered ? (
-                          <Button
-                            onClick={() => handleRegisterClick(event)}
-                            className="w-full bg-[#87CEEB] hover:bg-[#7bb8d4] text-white font-semibold py-3 transition-all duration-300 group"
-                          >
-                            <span>Register Now</span>
-                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                          </Button>
+                          <>
+                            <Button
+                              onClick={() => handleRegisterClick(event)}
+                              className="w-full bg-[#87CEEB] hover:bg-[#7bb8d4] text-white font-semibold py-3 transition-all duration-300 group"
+                            >
+                              <span>Register as Delegate</span>
+                              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                            </Button>
+                            
+                            {/* Partnership Opportunities */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                onClick={() => handleSponsorClick(event)}
+                                variant="outline"
+                                size="sm"
+                                className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 hover:border-yellow-600 transition-all duration-200"
+                              >
+                                <Crown className="w-3 h-3 mr-1" />
+                                <span className="text-xs">Sponsor</span>
+                              </Button>
+                              
+                              <Button
+                                onClick={() => handleExhibitorClick(event)}
+                                variant="outline"
+                                size="sm"
+                                className="border-emerald-500 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-600 transition-all duration-200"
+                              >
+                                <Store className="w-3 h-3 mr-1" />
+                                <span className="text-xs">Exhibit</span>
+                              </Button>
+                            </div>
+                          </>
                         ) : isRegistered ? (
-                          <Button
-                            variant="outline"
-                            className="w-full border-[#87CEEB] text-[#87CEEB] hover:bg-[#87CEEB] hover:text-white"
-                            disabled
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Already Registered
-                          </Button>
+                          <>
+                            <Button
+                              variant="outline"
+                              className="w-full border-[#87CEEB] text-[#87CEEB] hover:bg-[#87CEEB] hover:text-white"
+                              disabled
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Already Registered
+                            </Button>
+                            
+                            {/* Partnership Opportunities for registered users */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                onClick={() => handleSponsorClick(event)}
+                                variant="outline"
+                                size="sm"
+                                className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 hover:border-yellow-600 transition-all duration-200"
+                              >
+                                <Crown className="w-3 h-3 mr-1" />
+                                <span className="text-xs">Sponsor</span>
+                              </Button>
+                              
+                              <Button
+                                onClick={() => handleExhibitorClick(event)}
+                                variant="outline"
+                                size="sm"
+                                className="border-emerald-500 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-600 transition-all duration-200"
+                              >
+                                <Store className="w-3 h-3 mr-1" />
+                                <span className="text-xs">Exhibit</span>
+                              </Button>
+                            </div>
+                          </>
                         ) : (
                           <Button
                             variant="outline"
@@ -349,32 +539,60 @@ const EventsPage = () => {
 
       <Footer />
 
-      {/* Registration Dialog */}
+      {/* Registration Dialogs */}
       {selectedEvent && (
-        <RegistrationDialog
-          open={showRegistrationDialog}
-          onOpenChange={(open) => {
-            setShowRegistrationDialog(open);
-            // Clear auto-open flag when modal is closed
-            if (!open) {
+        <>
+          <RegistrationDialog
+            open={showRegistrationDialog}
+            onOpenChange={(open) => {
+              setShowRegistrationDialog(open);
+              // Clear auto-open flag when modal is closed
+              if (!open) {
+                localStorage.removeItem('autoOpenEventModal');
+              }
+            }}
+            event={selectedEvent}
+            onSuccess={() => {
+              setShowRegistrationDialog(false);
+              // Clear auto-open flag after successful registration
               localStorage.removeItem('autoOpenEventModal');
-            }
-          }}
-          event={selectedEvent}
-          onSuccess={() => {
-            setShowRegistrationDialog(false);
-            // Clear auto-open flag after successful registration
-            localStorage.removeItem('autoOpenEventModal');
-            toast({
-              title: "Registration Successful! 🎉",
-              description: "You've been registered for the event. Check your email for confirmation.",
-            });
-            // Route to dashboard after successful registration
-            setTimeout(() => {
-              navigate("/dashboard");
-            }, 2000);
-          }}
-        />
+              toast({
+                title: "Registration Successful! 🎉",
+                description: "You've been registered for the event. Check your email for confirmation.",
+              });
+              // Route to dashboard after successful registration
+              setTimeout(() => {
+                navigate("/dashboard");
+              }, 2000);
+            }}
+          />
+
+          <SponsorshipDialog
+            open={showSponsorshipDialog}
+            onOpenChange={setShowSponsorshipDialog}
+            event={selectedEvent}
+            onSuccess={() => {
+              setShowSponsorshipDialog(false);
+              toast({
+                title: "Sponsorship Application Submitted! 🎉",
+                description: "We'll review your application and contact you within 2 business days.",
+              });
+            }}
+          />
+
+          <ExhibitionDialog
+            open={showExhibitionDialog}
+            onOpenChange={setShowExhibitionDialog}
+            event={selectedEvent}
+            onSuccess={() => {
+              setShowExhibitionDialog(false);
+              toast({
+                title: "Exhibition Application Submitted! 🎉",
+                description: "We'll review your application and contact you within 2 business days.",
+              });
+            }}
+          />
+        </>
       )}
     </div>
   );
