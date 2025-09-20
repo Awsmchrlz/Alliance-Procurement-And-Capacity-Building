@@ -9,6 +9,10 @@ import {
   InsertEventRegistration,
   NewsletterSubscription,
   InsertNewsletterSubscription,
+  Sponsorship,
+  InsertSponsorship,
+  Exhibition,
+  InsertExhibition,
 } from "@shared/schema";
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -1133,6 +1137,362 @@ export const storage = {
     } catch (error: any) {
       console.error("Error in getAllNewsletterSubscriptions:", error.message);
       throw new Error(`Failed to fetch subscriptions: ${error.message}`);
+    }
+  },
+
+  // Sponsorship methods
+  async createSponsorship(sponsorshipData: any): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from("sponsorships")
+        .insert({
+          event_id: sponsorshipData.eventId,
+          company_name: sponsorshipData.companyName,
+          contact_person: sponsorshipData.contactPerson,
+          email: sponsorshipData.email,
+          phone_number: sponsorshipData.phoneNumber,
+          website: sponsorshipData.website,
+          company_address: sponsorshipData.companyAddress,
+          sponsorship_level: sponsorshipData.sponsorshipLevel,
+          amount: sponsorshipData.amount,
+          currency: sponsorshipData.currency || 'USD',
+          payment_evidence: sponsorshipData.paymentEvidence,
+          special_requirements: sponsorshipData.specialRequirements,
+          marketing_materials: sponsorshipData.marketingMaterials,
+          notes: sponsorshipData.notes,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating sponsorship:", error.message);
+        throw new Error(`Failed to create sponsorship: ${error.message}`);
+      }
+
+      return {
+        id: data.id,
+        eventId: data.event_id,
+        companyName: data.company_name,
+        contactPerson: data.contact_person,
+        email: data.email,
+        phoneNumber: data.phone_number,
+        website: data.website,
+        companyAddress: data.company_address,
+        sponsorshipLevel: data.sponsorship_level,
+        amount: data.amount,
+        currency: data.currency,
+        status: data.status,
+        paymentStatus: data.payment_status,
+        paymentEvidence: data.payment_evidence,
+        specialRequirements: data.special_requirements,
+        marketingMaterials: data.marketing_materials,
+        notes: data.notes,
+        submittedAt: data.submitted_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in createSponsorship:", error.message);
+      throw new Error(`Failed to create sponsorship: ${error.message}`);
+    }
+  },
+
+  async getAllSponsorships(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from("sponsorships")
+        .select(`
+          *,
+          events (
+            id,
+            title,
+            start_date,
+            location
+          )
+        `)
+        .order("submitted_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching sponsorships:", error.message);
+        throw new Error(`Failed to fetch sponsorships: ${error.message}`);
+      }
+
+      return data.map((s: any) => ({
+        id: s.id,
+        eventId: s.event_id,
+        companyName: s.company_name,
+        contactPerson: s.contact_person,
+        email: s.email,
+        phoneNumber: s.phone_number,
+        website: s.website,
+        companyAddress: s.company_address,
+        sponsorshipLevel: s.sponsorship_level,
+        amount: s.amount,
+        currency: s.currency,
+        status: s.status,
+        paymentStatus: s.payment_status,
+        paymentEvidence: s.payment_evidence,
+        specialRequirements: s.special_requirements,
+        marketingMaterials: s.marketing_materials,
+        notes: s.notes,
+        submittedAt: s.submitted_at,
+        updatedAt: s.updated_at,
+        event: s.events ? {
+          id: s.events.id,
+          title: s.events.title,
+          startDate: s.events.start_date,
+          location: s.events.location,
+        } : null,
+      }));
+    } catch (error: any) {
+      console.error("Error in getAllSponsorships:", error.message);
+      throw new Error(`Failed to fetch sponsorships: ${error.message}`);
+    }
+  },
+
+  async updateSponsorshipStatus(id: string, status: string, paymentStatus?: string): Promise<any> {
+    try {
+      const updates: any = { status, updated_at: new Date().toISOString() };
+      if (paymentStatus) {
+        updates.payment_status = paymentStatus;
+      }
+
+      const { data, error } = await supabase
+        .from("sponsorships")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating sponsorship status:", error.message);
+        throw new Error(`Failed to update sponsorship status: ${error.message}`);
+      }
+
+      return {
+        id: data.id,
+        eventId: data.event_id,
+        companyName: data.company_name,
+        contactPerson: data.contact_person,
+        email: data.email,
+        phoneNumber: data.phone_number,
+        sponsorshipLevel: data.sponsorship_level,
+        amount: data.amount,
+        currency: data.currency,
+        status: data.status,
+        paymentStatus: data.payment_status,
+        submittedAt: data.submitted_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in updateSponsorshipStatus:", error.message);
+      throw new Error(`Failed to update sponsorship status: ${error.message}`);
+    }
+  },
+
+  // Exhibition methods
+  async createExhibition(exhibitionData: any): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from("exhibitions")
+        .insert({
+          event_id: exhibitionData.eventId,
+          company_name: exhibitionData.companyName,
+          contact_person: exhibitionData.contactPerson,
+          email: exhibitionData.email,
+          phone_number: exhibitionData.phoneNumber,
+          website: exhibitionData.website,
+          company_address: exhibitionData.companyAddress,
+          booth_size: exhibitionData.boothSize || 'standard',
+          amount: exhibitionData.amount || 7000,
+          currency: exhibitionData.currency || 'USD',
+          products_services: exhibitionData.productsServices,
+          booth_requirements: exhibitionData.boothRequirements,
+          electrical_requirements: exhibitionData.electricalRequirements || false,
+          internet_requirements: exhibitionData.internetRequirements || false,
+          notes: exhibitionData.notes,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating exhibition:", error.message);
+        throw new Error(`Failed to create exhibition: ${error.message}`);
+      }
+
+      return {
+        id: data.id,
+        eventId: data.event_id,
+        companyName: data.company_name,
+        contactPerson: data.contact_person,
+        email: data.email,
+        phoneNumber: data.phone_number,
+        website: data.website,
+        companyAddress: data.company_address,
+        boothSize: data.booth_size,
+        amount: data.amount,
+        currency: data.currency,
+        status: data.status,
+        paymentStatus: data.payment_status,
+        paymentEvidence: data.payment_evidence,
+        productsServices: data.products_services,
+        boothRequirements: data.booth_requirements,
+        electricalRequirements: data.electrical_requirements,
+        internetRequirements: data.internet_requirements,
+        notes: data.notes,
+        submittedAt: data.submitted_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in createExhibition:", error.message);
+      throw new Error(`Failed to create exhibition: ${error.message}`);
+    }
+  },
+
+  async getAllExhibitions(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from("exhibitions")
+        .select(`
+          *,
+          events (
+            id,
+            title,
+            start_date,
+            location
+          )
+        `)
+        .order("submitted_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching exhibitions:", error.message);
+        throw new Error(`Failed to fetch exhibitions: ${error.message}`);
+      }
+
+      return data.map((e: any) => ({
+        id: e.id,
+        eventId: e.event_id,
+        companyName: e.company_name,
+        contactPerson: e.contact_person,
+        email: e.email,
+        phoneNumber: e.phone_number,
+        website: e.website,
+        companyAddress: e.company_address,
+        boothSize: e.booth_size,
+        amount: e.amount,
+        currency: e.currency,
+        status: e.status,
+        paymentStatus: e.payment_status,
+        paymentEvidence: e.payment_evidence,
+        productsServices: e.products_services,
+        boothRequirements: e.booth_requirements,
+        electricalRequirements: e.electrical_requirements,
+        internetRequirements: e.internet_requirements,
+        notes: e.notes,
+        submittedAt: e.submitted_at,
+        updatedAt: e.updated_at,
+        event: e.events ? {
+          id: e.events.id,
+          title: e.events.title,
+          startDate: e.events.start_date,
+          location: e.events.location,
+        } : null,
+      }));
+    } catch (error: any) {
+      console.error("Error in getAllExhibitions:", error.message);
+      throw new Error(`Failed to fetch exhibitions: ${error.message}`);
+    }
+  },
+
+  async updateExhibitionStatus(id: string, status: string, paymentStatus?: string): Promise<any> {
+    try {
+      const updates: any = { status, updated_at: new Date().toISOString() };
+      if (paymentStatus) {
+        updates.payment_status = paymentStatus;
+      }
+
+      const { data, error } = await supabase
+        .from("exhibitions")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating exhibition status:", error.message);
+        throw new Error(`Failed to update exhibition status: ${error.message}`);
+      }
+
+      return {
+        id: data.id,
+        eventId: data.event_id,
+        companyName: data.company_name,
+        contactPerson: data.contact_person,
+        email: data.email,
+        phoneNumber: data.phone_number,
+        boothSize: data.booth_size,
+        amount: data.amount,
+        currency: data.currency,
+        status: data.status,
+        paymentStatus: data.payment_status,
+        submittedAt: data.submitted_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      console.error("Error in updateExhibitionStatus:", error.message);
+      throw new Error(`Failed to update exhibition status: ${error.message}`);
+    }
+  },
+
+  // Public methods for approved partners (for showcase)
+  async getApprovedSponsorships(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from("sponsorships")
+        .select("id, company_name, website, sponsorship_level")
+        .eq("status", "approved")
+        .order("sponsorship_level", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching approved sponsorships:", error.message);
+        return [];
+      }
+
+      return data.map((s: any) => ({
+        id: s.id,
+        companyName: s.company_name,
+        website: s.website,
+        sponsorshipLevel: s.sponsorship_level,
+        status: 'approved',
+      }));
+    } catch (error: any) {
+      console.error("Error in getApprovedSponsorships:", error.message);
+      return [];
+    }
+  },
+
+  async getApprovedExhibitions(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from("exhibitions")
+        .select("id, company_name, website, booth_size")
+        .eq("status", "approved")
+        .order("booth_size", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching approved exhibitions:", error.message);
+        return [];
+      }
+
+      return data.map((e: any) => ({
+        id: e.id,
+        companyName: e.company_name,
+        website: e.website,
+        boothSize: e.booth_size,
+        status: 'approved',
+      }));
+    } catch (error: any) {
+      console.error("Error in getApprovedExhibitions:", error.message);
+      return [];
     }
   },
 };

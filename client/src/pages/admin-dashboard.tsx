@@ -61,6 +61,7 @@ import {
   Send,
   MoreHorizontal,
   Crown,
+  Store,
   Building2,
   CheckCircle,
   XCircle,
@@ -90,9 +91,13 @@ import {
   X,
   Check,
   Info,
+  Upload,
+  Save
 } from "lucide-react";
 
 import { EvidenceViewer } from "@/components/evidence-viewer";
+import { SponsorshipDialog } from "@/components/sponsorship-dialog";
+import { ExhibitionDialog } from "@/components/exhibition-dialog";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -154,6 +159,8 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [sponsorships, setSponsorships] = useState<any[]>([]);
+  const [exhibitions, setExhibitions] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -227,16 +234,20 @@ export default function AdminDashboard() {
     Registration[]
   >([]);
 
+  // Admin creation dialogs
+  const [showCreateSponsorshipDialog, setShowCreateSponsorshipDialog] = useState(false);
+  const [showCreateExhibitionDialog, setShowCreateExhibitionDialog] = useState(false);
+
   // Email campaign helper functions
   const getEmailRecipients = () => {
     let recipients = [];
-    
+
     if (emailRecipientType === "all") {
       recipients = users;
     } else {
       recipients = users.filter((user) => user.role === emailRecipientType);
     }
-    
+
     // Filter out excluded users
     return recipients
       .filter(user => !excludedUserIds.has(user.id))
@@ -246,7 +257,7 @@ export default function AdminDashboard() {
         name: `${user.firstName} ${user.lastName}`,
       }));
   };
-  
+
   const toggleExcludeUser = (userId: string) => {
     setExcludedUserIds(prev => {
       const newSet = new Set(prev);
@@ -258,11 +269,11 @@ export default function AdminDashboard() {
       return newSet;
     });
   };
-  
+
   const resetExcludedUsers = () => {
     setExcludedUserIds(new Set());
   };
-  
+
   const getFilteredUsers = () => {
     if (emailRecipientType === "all") {
       return users;
@@ -284,7 +295,7 @@ export default function AdminDashboard() {
       setEmailSending(true);
 
       const recipients = getEmailRecipients();
-      
+
       // Format recipients to match the expected API format
       const formattedRecipients = recipients.map(({ email, name }) => ({ email, name }));
 
@@ -467,6 +478,48 @@ export default function AdminDashboard() {
         } catch (err) {
           console.error("Error fetching registrations:", err);
         }
+
+        // Fetch sponsorships
+        try {
+          const sponsorshipsResponse = await fetch(`/api/admin/sponsorships`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+          if (sponsorshipsResponse.ok) {
+            const { sponsorships: sponsorshipsData } = await sponsorshipsResponse.json();
+            setSponsorships(sponsorshipsData || []);
+          } else {
+            console.error(
+              "Failed to fetch sponsorships:",
+              sponsorshipsResponse.status,
+              sponsorshipsResponse.statusText,
+            );
+          }
+        } catch (err) {
+          console.error("Error fetching sponsorships:", err);
+        }
+
+        // Fetch exhibitions
+        try {
+          const exhibitionsResponse = await fetch(`/api/admin/exhibitions`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+          if (exhibitionsResponse.ok) {
+            const { exhibitions: exhibitionsData } = await exhibitionsResponse.json();
+            setExhibitions(exhibitionsData || []);
+          } else {
+            console.error(
+              "Failed to fetch exhibitions:",
+              exhibitionsResponse.status,
+              exhibitionsResponse.statusText,
+            );
+          }
+        } catch (err) {
+          console.error("Error fetching exhibitions:", err);
+        }
       }
     } catch (err: any) {
       console.error("Error fetching data:", err);
@@ -526,6 +579,64 @@ export default function AdminDashboard() {
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Sponsorship status update handler
+  const handleSponsorshipStatusUpdate = async (
+    sponsorshipId: string,
+    newStatus: string,
+    paymentStatus?: string,
+  ) => {
+    try {
+      await apiRequest("PATCH", `/api/admin/sponsorships/${sponsorshipId}/status`, {
+        status: newStatus,
+        paymentStatus,
+      });
+
+      toast({
+        title: "Sponsorship Status Updated",
+        description: `Sponsorship marked as ${newStatus}`,
+      });
+
+      // Refresh the data
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error updating sponsorship status:", error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update sponsorship status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Exhibition status update handler
+  const handleExhibitionStatusUpdate = async (
+    exhibitionId: string,
+    newStatus: string,
+    paymentStatus?: string,
+  ) => {
+    try {
+      await apiRequest("PATCH", `/api/admin/exhibitions/${exhibitionId}/status`, {
+        status: newStatus,
+        paymentStatus,
+      });
+
+      toast({
+        title: "Exhibition Status Updated",
+        description: `Exhibition marked as ${newStatus}`,
+      });
+
+      // Refresh the data
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error updating exhibition status:", error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update exhibition status",
         variant: "destructive",
       });
     }
@@ -1099,17 +1210,25 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="hidden lg:flex items-center space-x-6 text-right">
-                <div className="text-white/90">
+                  <div className="text-white/90">
                     <div className="text-2xl font-bold">{users.length}</div>
                     <div className="text-sm text-blue-200">Total Users</div>
                   </div>
-                <div className="text-white/90">
+                  <div className="text-white/90">
                     <div className="text-2xl font-bold">{registrations.length}</div>
-                    <div className="text-sm text-blue-200">Total Registrations</div>
+                    <div className="text-sm text-blue-200">Registrations</div>
+                  </div>
+                  <div className="text-white/90">
+                    <div className="text-2xl font-bold">{sponsorships.length}</div>
+                    <div className="text-sm text-blue-200">Sponsorships</div>
+                  </div>
+                  <div className="text-white/90">
+                    <div className="text-2xl font-bold">{exhibitions.length}</div>
+                    <div className="text-sm text-blue-200">Exhibitions</div>
                   </div>
                   <div className="text-white/90">
                     <div className="text-2xl font-bold">{events.length}</div>
-                    <div className="text-sm text-blue-200">Active Events</div>
+                    <div className="text-sm text-blue-200">Events</div>
                   </div>
                 </div>
               </div>
@@ -1299,7 +1418,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="overview" className="space-y-6">
           <div className="bg-white rounded-xl border border-slate-200/60 p-1 shadow-sm overflow-x-auto">
             <TabsList
-              className={`grid w-full ${canManageUsers && canManageEvents ? "grid-cols-5" : canManageUsers || canManageEvents ? "grid-cols-4" : "grid-cols-3"} bg-transparent gap-1 min-w-[600px] sm:min-w-0`}
+              className={`grid w-full ${canManageUsers && canManageEvents && isSuperAdmin ? "grid-cols-8" : canManageUsers && canManageEvents ? "grid-cols-7" : canManageUsers || canManageEvents ? "grid-cols-6" : "grid-cols-5"} bg-transparent gap-1 min-w-[800px] sm:min-w-0`}
             >
               {/* Overview - All admin roles can see */}
               <TabsTrigger
@@ -1341,6 +1460,24 @@ export default function AdminDashboard() {
                 <span className="hidden xs:inline">Regs</span>
               </TabsTrigger>
 
+              {/* Sponsorships - All admin roles can see */}
+              <TabsTrigger
+                value="sponsorships"
+                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+              >
+                <Crown className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Sponsors</span>
+              </TabsTrigger>
+
+              {/* Exhibitions - All admin roles can see */}
+              <TabsTrigger
+                value="exhibitions"
+                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+              >
+                <Store className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Exhibits</span>
+              </TabsTrigger>
+
               {/* Emails - Only super_admin can send emails */}
               {isSuperAdmin && (
                 <TabsTrigger
@@ -1349,6 +1486,17 @@ export default function AdminDashboard() {
                 >
                   <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">Emails</span>
+                </TabsTrigger>
+              )}
+
+              {/* Settings - Only super_admin can access settings */}
+              {isSuperAdmin && (
+                <TabsTrigger
+                  value="settings"
+                  className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+                >
+                  <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Settings</span>
                 </TabsTrigger>
               )}
             </TabsList>
@@ -2007,7 +2155,7 @@ export default function AdminDashboard() {
                           <TableHead className="font-semibold">
                             Pricing
                           </TableHead>
-                        
+
                           <TableHead className="font-semibold">
                             Status
                           </TableHead>
@@ -2055,7 +2203,7 @@ export default function AdminDashboard() {
                                 K{event.price}
                               </div>
                             </TableCell>
-                          
+
                             <TableCell>
                               {event.featured ? (
                                 <Badge className="bg-gradient-to-r from-[#FDC123] to-amber-500 text-[#1C356B] font-semibold">
@@ -2376,7 +2524,7 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>
                             {registration.paymentEvidence &&
-                            registration.paymentEvidence.trim() ? (
+                              registration.paymentEvidence.trim() ? (
                               <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
@@ -2422,7 +2570,7 @@ export default function AdminDashboard() {
                                     <DropdownMenuItem
                                       disabled={
                                         registration.paymentStatus ===
-                                          "completed" ||
+                                        "completed" ||
                                         registration.paymentStatus === "paid"
                                       }
                                       className="text-emerald-600"
@@ -2604,7 +2752,7 @@ export default function AdminDashboard() {
                                     console.log('  - registration.id:', registration.id);
                                     console.log('  - registration.user:', registration.user);
                                     console.log('  - registration object:', registration);
-                                    
+
                                     setEvidenceViewer({
                                       open: true,
                                       evidencePath:
@@ -2756,20 +2904,18 @@ export default function AdminDashboard() {
                         ].map(({ value, label, count, icon: Icon }) => (
                           <div
                             key={value}
-                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                              emailRecipientType === value
+                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${emailRecipientType === value
                                 ? "border-[#1C356B] bg-[#1C356B]/5 shadow-lg"
                                 : "border-slate-200 hover:border-slate-300 hover:shadow-md"
-                            }`}
+                              }`}
                             onClick={() => setEmailRecipientType(value)}
                           >
                             <div className="flex items-center gap-3">
                               <div
-                                className={`p-2 rounded-lg ${
-                                  emailRecipientType === value
+                                className={`p-2 rounded-lg ${emailRecipientType === value
                                     ? "bg-[#1C356B] text-white"
                                     : "bg-slate-100 text-slate-600"
-                                }`}
+                                  }`}
                               >
                                 <Icon className="w-4 h-4" />
                               </div>
@@ -2844,7 +2990,7 @@ export default function AdminDashboard() {
                           </Button>
                         )}
                       </div>
-                      
+
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2">
                           <Select
@@ -2866,15 +3012,15 @@ export default function AdminDashboard() {
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <div className="max-h-60 overflow-y-auto bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
                           {getFilteredUsers().length === 0 ? (
                             <p className="text-sm text-slate-500 text-center py-4">No users found in this group</p>
                           ) : (
                             <div className="space-y-1">
                               {getFilteredUsers().map((user) => (
-                                <div 
-                                  key={user.id} 
+                                <div
+                                  key={user.id}
                                   className={`flex items-center justify-between p-2 rounded-md ${excludedUserIds.has(user.id) ? 'bg-red-50' : 'bg-white'}`}
                                 >
                                   <div className="flex-1 min-w-0">
@@ -2907,13 +3053,13 @@ export default function AdminDashboard() {
                             </div>
                           )}
                         </div>
-                        
+
                         {excludedUserIds.size > 0 && (
                           <div className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-md p-2">
                             <div className="flex items-start">
                               <Info className="w-3.5 h-3.5 mt-0.5 mr-1.5 flex-shrink-0" />
                               <span>
-                                {excludedUserIds.size} user{excludedUserIds.size !== 1 ? 's' : ''} excluded from this campaign. 
+                                {excludedUserIds.size} user{excludedUserIds.size !== 1 ? 's' : ''} excluded from this campaign.
                                 They will not receive this email.
                               </span>
                             </div>
@@ -2982,6 +3128,525 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
           )}
+
+          {/* Sponsorships Tab */}
+          <TabsContent value="sponsorships">
+            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+              <CardHeader className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg">
+                      <Crown className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl text-gray-900">Sponsorship Applications</CardTitle>
+                      <CardDescription>Manage sponsorship applications and partnerships</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      onClick={() => setShowCreateSponsorshipDialog(true)}
+                      className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Sponsorship
+                    </Button>
+                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                      {sponsorships.length}
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {sponsorships.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Crown className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Sponsorship Applications</h3>
+                    <p className="text-gray-600">Sponsorship applications will appear here when submitted.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Level</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Payment Evidence</TableHead>
+                          <TableHead>Event</TableHead>
+                          <TableHead>Submitted</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sponsorships.map((sponsorship) => (
+                          <TableRow key={sponsorship.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{sponsorship.companyName}</div>
+                                <div className="text-sm text-gray-500">{sponsorship.email}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{sponsorship.contactPerson}</div>
+                                <div className="text-sm text-gray-500">{sponsorship.phoneNumber}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                className={`${sponsorship.sponsorshipLevel === 'platinum' ? 'bg-gray-100 text-gray-800' :
+                                    sponsorship.sponsorshipLevel === 'gold' ? 'bg-yellow-100 text-yellow-800' :
+                                      sponsorship.sponsorshipLevel === 'silver' ? 'bg-gray-100 text-gray-600' :
+                                        'bg-orange-100 text-orange-800'
+                                  }`}
+                              >
+                                {sponsorship.sponsorshipLevel.charAt(0).toUpperCase() + sponsorship.sponsorshipLevel.slice(1)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">${sponsorship.amount?.toLocaleString()} {sponsorship.currency}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  sponsorship.status === 'approved' ? 'default' :
+                                    sponsorship.status === 'rejected' ? 'destructive' :
+                                      'secondary'
+                                }
+                              >
+                                {sponsorship.status.charAt(0).toUpperCase() + sponsorship.status.slice(1)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {sponsorship.paymentEvidence ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(`${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/payment-evidence/${sponsorship.paymentEvidence}`, '_blank')}
+                                  className="text-xs"
+                                >
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  View Evidence
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-gray-500">No evidence</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div className="font-medium">{sponsorship.event?.title || 'N/A'}</div>
+                                <div className="text-gray-500">{sponsorship.event?.location || ''}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm text-gray-500">
+                                {new Date(sponsorship.submittedAt).toLocaleDateString()}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => handleSponsorshipStatusUpdate(sponsorship.id, 'approved')}
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Approve & Activate
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleSponsorshipStatusUpdate(sponsorship.id, 'rejected')}
+                                  >
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Reject
+                                  </DropdownMenuItem>
+                                  {sponsorship.status === 'approved' && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleSponsorshipStatusUpdate(sponsorship.id, 'pending')}
+                                    >
+                                      <XCircle className="mr-2 h-4 w-4" />
+                                      Deactivate
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          {isSuperAdmin && (
+            <TabsContent value="settings">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Logo Management */}
+                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                  <CardHeader>
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg">
+                        <Upload className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl text-gray-900">Logo Management</CardTitle>
+                        <CardDescription>Update your organization's logo and branding</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Current Logo Display */}
+                    <div className="text-center">
+                      <div className="w-32 h-32 mx-auto mb-4 bg-gradient-to-br from-[#1C356B] to-[#2563eb] rounded-xl flex items-center justify-center shadow-lg">
+                        <span className="text-white text-2xl font-bold">APCB</span>
+                      </div>
+                      <p className="text-sm text-gray-600">Current Logo</p>
+                    </div>
+
+                    {/* Logo Upload */}
+                    <div className="space-y-4">
+                      <Label className="text-sm font-medium text-gray-700">Upload New Logo</Label>
+                      <div className="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                        <input
+                          type="file"
+                          id="logoUpload"
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        <label htmlFor="logoUpload" className="cursor-pointer">
+                          <div className="flex flex-col items-center space-y-2">
+                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                              <Upload className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
+                            </div>
+                            <div className="text-xs text-gray-500">PNG, JPG up to 2MB</div>
+                          </div>
+                        </label>
+                      </div>
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                        <Save className="w-4 h-4 mr-2" />
+                        Update Logo
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Organization Information */}
+                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+                  <CardHeader>
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-gradient-to-r from-green-500 to-green-600 rounded-lg">
+                        <Building2 className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl text-gray-900">Organization Information</CardTitle>
+                        <CardDescription>Update your organization's details and contact information</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="orgName" className="text-sm font-medium text-gray-700">Organization Name</Label>
+                        <Input
+                          id="orgName"
+                          defaultValue="Alliance Procurement & Capacity Building"
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="orgEmail" className="text-sm font-medium text-gray-700">Contact Email</Label>
+                        <Input
+                          id="orgEmail"
+                          type="email"
+                          defaultValue="globaltrainingalliance@gmail.com"
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="orgPhone" className="text-sm font-medium text-gray-700">Phone Numbers</Label>
+                        <Textarea
+                          id="orgPhone"
+                          defaultValue="+260 974486945 | +260 977675449 | +260 968579172"
+                          className="w-full"
+                          rows={2}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="orgAddress" className="text-sm font-medium text-gray-700">Address</Label>
+                        <Textarea
+                          id="orgAddress"
+                          defaultValue="Lusaka, Zambia"
+                          className="w-full"
+                          rows={3}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="orgDescription" className="text-sm font-medium text-gray-700">Organization Description</Label>
+                        <Textarea
+                          id="orgDescription"
+                          defaultValue="Leading provider of procurement training and capacity building services across Africa."
+                          className="w-full"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+
+                    <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Information
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Payment Information */}
+                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm lg:col-span-2">
+                  <CardHeader>
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg">
+                        <CreditCard className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl text-gray-900">Payment Information</CardTitle>
+                        <CardDescription>Update bank account details for payments</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* USD Account */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-gray-900">USD Account Details</h4>
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Account Number</Label>
+                            <Input defaultValue="0020130005578" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Bank Name</Label>
+                            <Input defaultValue="Stanbic Bank" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Branch</Label>
+                            <Input defaultValue="Lusaka Main" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Swift Code</Label>
+                            <Input defaultValue="SBICZMLX" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ZMW Account */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-gray-900">ZMW Account Details</h4>
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Account Number</Label>
+                            <Input defaultValue="0010130005578" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Bank Name</Label>
+                            <Input defaultValue="Stanbic Bank" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Branch</Label>
+                            <Input defaultValue="Lusaka Main" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Account Name</Label>
+                            <Input defaultValue="Global Training Alliance" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t">
+                      <h4 className="font-semibold text-gray-900 mb-4">Mobile Money Details</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Airtel Number</Label>
+                          <Input defaultValue="0773 484 004 - Chipo Buumba" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">MTN Number</Label>
+                          <Input defaultValue="096 4024532 - Chipo Buumba" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button className="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white">
+                      <Save className="w-4 h-4 mr-2" />
+                      Update Payment Information
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          )}
+
+          {/* Exhibitions Tab */}
+          <TabsContent value="exhibitions">
+            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+              <CardHeader className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-gradient-to-r from-emerald-500 to-emerald-700 rounded-lg">
+                      <Store className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl text-gray-900">Exhibition Applications</CardTitle>
+                      <CardDescription>Manage exhibition booth applications</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      onClick={() => setShowCreateExhibitionDialog(true)}
+                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Exhibition
+                    </Button>
+                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                      {exhibitions.length}
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {exhibitions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Store className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Exhibition Applications</h3>
+                    <p className="text-gray-600">Exhibition applications will appear here when submitted.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Payment Evidence</TableHead>
+                          <TableHead>Event</TableHead>
+                          <TableHead>Submitted</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {exhibitions.map((exhibition) => (
+                          <TableRow key={exhibition.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{exhibition.companyName}</div>
+                                <div className="text-sm text-gray-500">{exhibition.email}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{exhibition.contactPerson}</div>
+                                <div className="text-sm text-gray-500">{exhibition.phoneNumber}</div>
+                              </div>
+                            </TableCell>
+
+                            <TableCell>
+                              <div className="font-medium">${exhibition.amount?.toLocaleString()} {exhibition.currency}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  exhibition.status === 'approved' ? 'default' :
+                                    exhibition.status === 'rejected' ? 'destructive' :
+                                      'secondary'
+                                }
+                              >
+                                {exhibition.status.charAt(0).toUpperCase() + exhibition.status.slice(1)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {exhibition.paymentEvidence ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(`${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/payment-evidence/${exhibition.paymentEvidence}`, '_blank')}
+                                  className="text-xs"
+                                >
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  View Evidence
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-gray-500">No evidence</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div className="font-medium">{exhibition.event?.title || 'N/A'}</div>
+                                <div className="text-gray-500">{exhibition.event?.location || ''}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm text-gray-500">
+                                {new Date(exhibition.submittedAt).toLocaleDateString()}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => handleExhibitionStatusUpdate(exhibition.id, 'approved')}
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Approve & Activate
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleExhibitionStatusUpdate(exhibition.id, 'rejected')}
+                                  >
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Reject
+                                  </DropdownMenuItem>
+                                  {exhibition.status === 'approved' && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleExhibitionStatusUpdate(exhibition.id, 'pending')}
+                                    >
+                                      <XCircle className="mr-2 h-4 w-4" />
+                                      Deactivate
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Enhanced Email Blast Dialog */}
@@ -3743,7 +4408,7 @@ export default function AdminDashboard() {
                     organization: "",
 
                     position: "",
-                                    hasPaid: false,
+                    hasPaid: false,
                     paymentStatus: "pending",
                   });
                   setSelectedUser(null);
@@ -3789,7 +4454,7 @@ export default function AdminDashboard() {
                       const errorData = await response.json();
                       throw new Error(
                         errorData.message ||
-                          "Failed to register user for event",
+                        "Failed to register user for event",
                       );
                     }
 
@@ -3809,7 +4474,7 @@ export default function AdminDashboard() {
                       organization: "",
 
                       position: "",
-                                        hasPaid: false,
+                      hasPaid: false,
                       paymentStatus: "pending",
                     });
                     setSelectedUser(null);
@@ -3870,6 +4535,39 @@ export default function AdminDashboard() {
           canUpdate={true}
           isAdmin={true}
         />
+
+        {/* Admin Creation Dialogs */}
+        {events.length > 0 && (
+          <>
+            <SponsorshipDialog
+              open={showCreateSponsorshipDialog}
+              onOpenChange={setShowCreateSponsorshipDialog}
+              event={events[0]} // Use first available event
+              onSuccess={() => {
+                setShowCreateSponsorshipDialog(false);
+                refreshData();
+                toast({
+                  title: "Sponsorship Created!",
+                  description: "The sponsorship application has been created successfully.",
+                });
+              }}
+            />
+
+            <ExhibitionDialog
+              open={showCreateExhibitionDialog}
+              onOpenChange={setShowCreateExhibitionDialog}
+              event={events[0]} // Use first available event
+              onSuccess={() => {
+                setShowCreateExhibitionDialog(false);
+                refreshData();
+                toast({
+                  title: "Exhibition Created!",
+                  description: "The exhibition application has been created successfully.",
+                });
+              }}
+            />
+          </>
+        )}
       </div>
     </div>
   );

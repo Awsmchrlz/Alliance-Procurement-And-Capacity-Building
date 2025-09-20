@@ -49,7 +49,7 @@ END $$;
 
 -- Users table (Enhanced for flexible auth)
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     first_name TEXT NOT NULL CHECK (length(first_name) >= 1),
     last_name TEXT NOT NULL CHECK (length(last_name) >= 1),
     email TEXT NOT NULL,
@@ -61,52 +61,37 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Events table (Complete event management)
+-- Events table (Match schema exactly)
 CREATE TABLE IF NOT EXISTS events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     title TEXT NOT NULL CHECK (length(title) >= 3),
     description TEXT NOT NULL CHECK (length(description) >= 10),
     start_date TIMESTAMP WITH TIME ZONE NOT NULL,
     end_date TIMESTAMP WITH TIME ZONE NOT NULL,
-    location TEXT NOT NULL,
-    capacity INTEGER NOT NULL DEFAULT 100,
-    
-    -- Multi-currency pricing
-    private_price DECIMAL(10,2),
-    public_price DECIMAL(10,2),
-    international_price DECIMAL(10,2),
-    private_price_usd DECIMAL(10,2),
-    public_price_usd DECIMAL(10,2),
-    international_price_usd DECIMAL(10,2),
-    
-    -- Event management
-    is_active BOOLEAN DEFAULT true,
-    featured BOOLEAN DEFAULT false,
+    location TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    max_attendees INTEGER,
+    current_attendees INTEGER DEFAULT 0,
     image_url TEXT,
     tags TEXT[] DEFAULT '{}',
-    
+    featured BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
     -- Business logic constraints
-    CONSTRAINT check_positive_prices CHECK (
-        (private_price IS NULL OR private_price >= 0) AND
-        (public_price IS NULL OR public_price >= 0) AND
-        (international_price IS NULL OR international_price >= 0) AND
-        (private_price_usd IS NULL OR private_price_usd >= 0) AND
-        (public_price_usd IS NULL OR public_price_usd >= 0) AND
-        (international_price_usd IS NULL OR international_price_usd >= 0)
+    CONSTRAINT check_positive_price CHECK (price >= 0),
+    CONSTRAINT check_positive_attendees CHECK (
+        (max_attendees IS NULL OR max_attendees > 0) AND
+        (current_attendees >= 0)
     ),
-    CONSTRAINT check_positive_capacity CHECK (capacity > 0),
     CONSTRAINT check_valid_date_range CHECK (end_date >= start_date)
 );
 
 -- Newsletter subscriptions table
 CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     email TEXT UNIQUE NOT NULL,
-    subscribed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    is_active BOOLEAN DEFAULT true
+    name TEXT,
+    subscribed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- =====================================================
@@ -114,10 +99,10 @@ CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS event_registrations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     registration_number TEXT UNIQUE NOT NULL,
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
     -- Registration details
     country TEXT NOT NULL CHECK (length(country) >= 2),
@@ -181,7 +166,79 @@ ADD CONSTRAINT event_registrations_delegate_type_check
 CHECK (delegate_type IN ('private', 'public', 'international') OR delegate_type IS NULL);
 
 -- =====================================================
--- 4. FUNCTIONS AND TRIGGERS
+-- 4. SPONSORSHIP AND EXHIBITION TABLES
+-- =====================================================
+
+-- Sponsorships table
+CREATE TABLE IF NOT EXISTS sponsorships (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    
+    -- Company Information
+    company_name TEXT NOT NULL CHECK (length(company_name) >= 2),
+    contact_person TEXT NOT NULL CHECK (length(contact_person) >= 2),
+    email TEXT NOT NULL,
+    phone_number TEXT NOT NULL,
+    website TEXT,
+    company_address TEXT,
+    
+    -- Sponsorship Details
+    sponsorship_level TEXT NOT NULL CHECK (sponsorship_level IN ('platinum', 'gold', 'silver', 'bronze')),
+    amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+    currency TEXT DEFAULT 'USD' CHECK (currency IN ('USD', 'ZMW')),
+    
+    -- Status and Payment
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'paid')),
+    payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'cancelled')),
+    payment_evidence TEXT,
+    
+    -- Additional Information
+    special_requirements TEXT,
+    marketing_materials TEXT,
+    notes TEXT,
+    
+    -- Timestamps
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Exhibitions table
+CREATE TABLE IF NOT EXISTS exhibitions (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    
+    -- Company Information
+    company_name TEXT NOT NULL CHECK (length(company_name) >= 2),
+    contact_person TEXT NOT NULL CHECK (length(contact_person) >= 2),
+    email TEXT NOT NULL,
+    phone_number TEXT NOT NULL,
+    website TEXT,
+    company_address TEXT,
+    
+    -- Exhibition Details
+    booth_size TEXT DEFAULT 'standard' CHECK (booth_size IN ('standard', 'premium', 'custom')),
+    amount DECIMAL(10,2) NOT NULL DEFAULT 7000.00 CHECK (amount > 0),
+    currency TEXT DEFAULT 'USD' CHECK (currency IN ('USD', 'ZMW')),
+    
+    -- Status and Payment
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'paid')),
+    payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'cancelled')),
+    payment_evidence TEXT,
+    
+    -- Additional Information
+    products_services TEXT,
+    booth_requirements TEXT,
+    electrical_requirements BOOLEAN DEFAULT false,
+    internet_requirements BOOLEAN DEFAULT false,
+    notes TEXT,
+    
+    -- Timestamps
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =====================================================
+-- 5. FUNCTIONS AND TRIGGERS
 -- =====================================================
 
 -- Function to generate sequential registration numbers
@@ -274,11 +331,7 @@ CREATE TRIGGER update_users_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_events_updated_at ON events;
-CREATE TRIGGER update_events_updated_at
-    BEFORE UPDATE ON events
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+-- Note: Events table doesn't have updated_at column in schema
 
 DROP TRIGGER IF EXISTS update_registrations_updated_at ON event_registrations;
 CREATE TRIGGER update_registrations_updated_at
@@ -287,15 +340,15 @@ CREATE TRIGGER update_registrations_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
--- 5. PERFORMANCE INDEXES
+-- 6. PERFORMANCE INDEXES
 -- =====================================================
 
 -- Core indexes
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone_number);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
-CREATE INDEX IF NOT EXISTS idx_events_active ON events(is_active, start_date);
 CREATE INDEX IF NOT EXISTS idx_events_featured ON events(featured);
-CREATE INDEX IF NOT EXISTS idx_newsletter_active ON newsletter_subscriptions(is_active, email);
+CREATE INDEX IF NOT EXISTS idx_events_start_date ON events(start_date);
+CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscriptions(email);
 
 -- Registration indexes
 CREATE INDEX IF NOT EXISTS idx_registrations_event ON event_registrations(event_id);
@@ -312,8 +365,19 @@ CREATE INDEX IF NOT EXISTS idx_event_registrations_group_payment
 ON event_registrations(payment_method, group_size) 
 WHERE payment_method IN ('group_payment', 'org_paid');
 
+-- Sponsorship indexes
+CREATE INDEX IF NOT EXISTS idx_sponsorships_event ON sponsorships(event_id);
+CREATE INDEX IF NOT EXISTS idx_sponsorships_status ON sponsorships(status);
+CREATE INDEX IF NOT EXISTS idx_sponsorships_level ON sponsorships(sponsorship_level);
+CREATE INDEX IF NOT EXISTS idx_sponsorships_email ON sponsorships(email);
+
+-- Exhibition indexes
+CREATE INDEX IF NOT EXISTS idx_exhibitions_event ON exhibitions(event_id);
+CREATE INDEX IF NOT EXISTS idx_exhibitions_status ON exhibitions(status);
+CREATE INDEX IF NOT EXISTS idx_exhibitions_email ON exhibitions(email);
+
 -- =====================================================
--- 6. ROW LEVEL SECURITY (RLS) POLICIES
+-- 7. ROW LEVEL SECURITY (RLS) POLICIES
 -- =====================================================
 
 -- Enable RLS on all tables
@@ -321,6 +385,8 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE newsletter_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sponsorships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE exhibitions ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies to avoid conflicts
 DROP POLICY IF EXISTS "Users can view own profile" ON users;
@@ -338,16 +404,16 @@ DROP POLICY IF EXISTS "Anyone can subscribe to newsletter" ON newsletter_subscri
 
 -- Users policies
 CREATE POLICY "Users can view own profile" ON users
-    FOR SELECT USING (auth.uid() = id);
+    FOR SELECT USING (auth.uid()::text = id);
 
 CREATE POLICY "Users can update own profile" ON users
-    FOR UPDATE USING (auth.uid() = id);
+    FOR UPDATE USING (auth.uid()::text = id);
 
 CREATE POLICY "Admins can view all users" ON users
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM users
-            WHERE id = auth.uid()
+            WHERE id = auth.uid()::text
             AND role IN ('super_admin', 'finance_person', 'event_manager')
         )
     );
@@ -356,39 +422,39 @@ CREATE POLICY "Super admins can manage users" ON users
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM users
-            WHERE id = auth.uid()
+            WHERE id = auth.uid()::text
             AND role = 'super_admin'
         )
     );
 
 -- Events policies (public read)
 CREATE POLICY "Events are publicly readable" ON events
-    FOR SELECT USING (is_active = true);
+    FOR SELECT USING (true);
 
 CREATE POLICY "Event managers can manage events" ON events
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM users
-            WHERE id = auth.uid()
+            WHERE id = auth.uid()::text
             AND role IN ('super_admin', 'event_manager')
         )
     );
 
 -- Event registrations policies
 CREATE POLICY "Users can view own registrations" ON event_registrations
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING (auth.uid()::text = user_id);
 
 CREATE POLICY "Users can insert own registrations" ON event_registrations
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
 
 CREATE POLICY "Users can update own registrations" ON event_registrations
-    FOR UPDATE USING (auth.uid() = user_id);
+    FOR UPDATE USING (auth.uid()::text = user_id);
 
 CREATE POLICY "Admins can view all registrations" ON event_registrations
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM users
-            WHERE id = auth.uid()
+            WHERE id = auth.uid()::text
             AND role IN ('super_admin', 'finance_person', 'event_manager')
         )
     );
@@ -397,7 +463,7 @@ CREATE POLICY "Admins can manage registrations" ON event_registrations
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM users
-            WHERE id = auth.uid()
+            WHERE id = auth.uid()::text
             AND role IN ('super_admin', 'finance_person', 'event_manager')
         )
     );
@@ -406,8 +472,52 @@ CREATE POLICY "Admins can manage registrations" ON event_registrations
 CREATE POLICY "Anyone can subscribe to newsletter" ON newsletter_subscriptions
     FOR INSERT WITH CHECK (true);
 
+-- Sponsorship policies (public insert, admin management)
+CREATE POLICY "Anyone can submit sponsorship" ON sponsorships
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Admins can view all sponsorships" ON sponsorships
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE id = auth.uid()::text
+            AND role IN ('super_admin', 'finance_person', 'event_manager')
+        )
+    );
+
+CREATE POLICY "Admins can manage sponsorships" ON sponsorships
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE id = auth.uid()::text
+            AND role IN ('super_admin', 'finance_person', 'event_manager')
+        )
+    );
+
+-- Exhibition policies (public insert, admin management)
+CREATE POLICY "Anyone can submit exhibition" ON exhibitions
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Admins can view all exhibitions" ON exhibitions
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE id = auth.uid()::text
+            AND role IN ('super_admin', 'finance_person', 'event_manager')
+        )
+    );
+
+CREATE POLICY "Admins can manage exhibitions" ON exhibitions
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE id = auth.uid()::text
+            AND role IN ('super_admin', 'finance_person', 'event_manager')
+        )
+    );
+
 -- =====================================================
--- 7. STORAGE BUCKET FOR PAYMENT EVIDENCE
+-- 8. STORAGE BUCKET FOR PAYMENT EVIDENCE
 -- =====================================================
 
 -- Create storage bucket for payment evidence
@@ -449,13 +559,13 @@ CREATE POLICY "Admins can view all evidence" ON storage.objects
         bucket_id = 'payment-evidence' AND
         EXISTS (
             SELECT 1 FROM users
-            WHERE id = auth.uid()
+            WHERE id = auth.uid()::text
             AND role IN ('super_admin', 'finance_person', 'event_manager')
         )
     );
 
 -- =====================================================
--- 8. SAMPLE DATA (OPTIONAL - UNCOMMENT IF NEEDED)
+-- 9. SAMPLE DATA (OPTIONAL - UNCOMMENT IF NEEDED)
 -- =====================================================
 
 /*
@@ -466,14 +576,9 @@ INSERT INTO events (
     start_date, 
     end_date, 
     location, 
-    capacity,
-    private_price, 
-    public_price, 
-    international_price,
-    private_price_usd, 
-    public_price_usd, 
-    international_price_usd,
-    is_active,
+    price,
+    max_attendees,
+    current_attendees,
     featured
 ) VALUES (
     'Alliance Procurement Summit 2025',
@@ -481,10 +586,9 @@ INSERT INTO events (
     '2025-03-15 09:00:00+00',
     '2025-03-17 17:00:00+00',
     'Lusaka, Zambia',
+    7000.00,
     200,
-    5000.00, 7000.00, 15000.00,
-    200.00, 280.00, 600.00,
-    true,
+    0,
     true
 ) ON CONFLICT DO NOTHING;
 */
@@ -492,7 +596,7 @@ INSERT INTO events (
 COMMIT;
 
 -- =====================================================
--- 9. VERIFICATION QUERIES
+-- 10. VERIFICATION QUERIES
 -- =====================================================
 
 -- Verify all tables exist
@@ -502,7 +606,7 @@ SELECT
     tableowner
 FROM pg_tables 
 WHERE schemaname = 'public' 
-AND tablename IN ('users', 'events', 'event_registrations', 'newsletter_subscriptions')
+AND tablename IN ('users', 'events', 'event_registrations', 'newsletter_subscriptions', 'sponsorships', 'exhibitions')
 ORDER BY tablename;
 
 -- Verify group payment columns
@@ -515,6 +619,16 @@ FROM information_schema.columns
 WHERE table_name = 'event_registrations' 
 AND column_name IN ('group_size', 'group_payment_amount', 'group_payment_currency', 'organization_reference')
 ORDER BY column_name;
+
+-- Verify sponsorship and exhibition tables
+SELECT 
+    table_name,
+    column_name,
+    data_type,
+    is_nullable
+FROM information_schema.columns 
+WHERE table_name IN ('sponsorships', 'exhibitions')
+ORDER BY table_name, column_name;
 
 -- Verify constraints
 SELECT 

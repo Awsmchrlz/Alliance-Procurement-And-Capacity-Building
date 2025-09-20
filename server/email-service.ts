@@ -1068,6 +1068,163 @@ This confirmation was sent to ${eventData.email}`;
   }
 
   /**
+   * Send sponsorship application confirmation email
+   */
+  async sendSponsorshipConfirmation(sponsorshipData: {
+    companyName: string;
+    contactPerson: string;
+    email: string;
+    sponsorshipLevel: string;
+    amount: number;
+    eventTitle: string;
+    eventDate: string;
+  }): Promise<void> {
+    const subject = `Sponsorship Application Received - ${sponsorshipData.eventTitle}`;
+    
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Sponsorship Application Confirmation</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #1C356B 0%, #2563eb 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">Sponsorship Application Received!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Thank you for your interest in partnering with us</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 18px; margin-bottom: 20px;">Dear ${sponsorshipData.contactPerson},</p>
+            
+            <p>We have successfully received your sponsorship application for <strong>${sponsorshipData.eventTitle}</strong>. Thank you for your interest in partnering with us!</p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #1C356B;">
+                <h3 style="margin-top: 0; color: #1C356B;">Application Details:</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin: 8px 0;"><strong>Company:</strong> ${sponsorshipData.companyName}</li>
+                    <li style="margin: 8px 0;"><strong>Sponsorship Level:</strong> ${sponsorshipData.sponsorshipLevel.charAt(0).toUpperCase() + sponsorshipData.sponsorshipLevel.slice(1)}</li>
+                    <li style="margin: 8px 0;"><strong>Investment:</strong> $${sponsorshipData.amount.toLocaleString()} USD</li>
+                    <li style="margin: 8px 0;"><strong>Event:</strong> ${sponsorshipData.eventTitle}</li>
+                    <li style="margin: 8px 0;"><strong>Event Date:</strong> ${sponsorshipData.eventDate}</li>
+                </ul>
+            </div>
+            
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="margin-top: 0; color: #1565c0;">What happens next?</h4>
+                <ol style="margin: 0; padding-left: 20px;">
+                    <li>Our partnerships team will review your application within 2 business days</li>
+                    <li>We'll contact you to discuss sponsorship benefits and finalize details</li>
+                    <li>Upon approval, we'll send you the sponsorship agreement and payment instructions</li>
+                    <li>Your company will be featured as an official sponsor once payment is confirmed</li>
+                </ol>
+            </div>
+            
+            <p>If you have any questions or need to make changes to your application, please don't hesitate to contact us.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <p style="margin: 0; color: #666;">Thank you for choosing to partner with us!</p>
+                <p style="margin: 5px 0 0 0; font-weight: bold; color: #1C356B;">Alliance Procurement & Capacity Building Team</p>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; padding: 20px; color: #666; font-size: 12px;">
+            <p>This is an automated confirmation email. Please do not reply to this email.</p>
+            <p>For inquiries, contact us at globaltrainingalliance@gmail.com</p>
+        </div>
+    </body>
+    </html>`;
+
+    await this.sendEmail(
+      [{
+        email: sponsorshipData.email,
+        name: sponsorshipData.contactPerson,
+      }],
+      subject,
+      htmlContent
+    );
+  }
+
+  /**
+   * Send exhibition application confirmation email
+   */
+  async sendExhibitionConfirmation(exhibitionData: {
+    companyName: string;
+    contactPerson: string;
+    email: string;
+    amount: number;
+    eventTitle: string;
+    eventDate: string;
+  }): Promise<void> {
+    const subject = `Exhibition Application Received - ${exhibitionData.eventTitle}`;
+    
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Exhibition Application Confirmation</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">Exhibition Application Received!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Thank you for your interest in exhibiting with us</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 18px; margin-bottom: 20px;">Dear ${exhibitionData.contactPerson},</p>
+            
+            <p>We have successfully received your exhibition application for <strong>${exhibitionData.eventTitle}</strong>. Thank you for your interest in showcasing your products and services at our event!</p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+                <h3 style="margin-top: 0; color: #dc2626;">Application Details:</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin: 8px 0;"><strong>Company:</strong> ${exhibitionData.companyName}</li>
+                    <li style="margin: 8px 0;"><strong>Exhibition Package:</strong> Professional Exhibition Booth</li>
+                    <li style="margin: 8px 0;"><strong>Investment:</strong> $${exhibitionData.amount.toLocaleString()} USD</li>
+                    <li style="margin: 8px 0;"><strong>Event:</strong> ${exhibitionData.eventTitle}</li>
+                    <li style="margin: 8px 0;"><strong>Event Date:</strong> ${exhibitionData.eventDate}</li>
+                </ul>
+            </div>
+            
+            <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="margin-top: 0; color: #dc2626;">What happens next?</h4>
+                <ol style="margin: 0; padding-left: 20px;">
+                    <li>Our events team will review your application within 2 business days</li>
+                    <li>We'll contact you to discuss booth requirements and setup details</li>
+                    <li>Upon approval, we'll send you the exhibition agreement and payment instructions</li>
+                    <li>Your booth space will be reserved once payment is confirmed</li>
+                </ol>
+            </div>
+            
+            <p>If you have any questions about booth setup, electrical requirements, or need to make changes to your application, please don't hesitate to contact us.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <p style="margin: 0; color: #666;">Thank you for choosing to exhibit with us!</p>
+                <p style="margin: 5px 0 0 0; font-weight: bold; color: #dc2626;">Alliance Procurement & Capacity Building Team</p>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; padding: 20px; color: #666; font-size: 12px;">
+            <p>This is an automated confirmation email. Please do not reply to this email.</p>
+            <p>For inquiries, contact us at globaltrainingalliance@gmail.com</p>
+        </div>
+    </body>
+    </html>`;
+
+    await this.sendEmail(
+      [{
+        email: exhibitionData.email,
+        name: exhibitionData.contactPerson,
+      }],
+      subject,
+      htmlContent
+    );
+  }
+
+  /**
    * Send custom email campaign to selected user groups
    */
   async sendCampaignEmail(

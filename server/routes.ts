@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import fileUpload from "express-fileupload";
 import { createClient } from "@supabase/supabase-js";
+import { format } from "date-fns";
 import { EvidenceResolver } from "./evidence-resolver";
 import { storage } from "./storage";
 import { emailService } from "./email-service";
@@ -637,6 +638,214 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  // Sponsorship registration endpoint (public)
+  app.post("/api/sponsorships/register", async (req, res) => {
+    try {
+      const sponsorshipData = req.body;
+
+      // Validate required fields
+      if (!sponsorshipData.eventId || !sponsorshipData.companyName || !sponsorshipData.contactPerson || 
+          !sponsorshipData.email || !sponsorshipData.phoneNumber || !sponsorshipData.sponsorshipLevel) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check if event exists
+      const event = await storage.getEvent(sponsorshipData.eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      // Create sponsorship application
+      const sponsorship = await storage.createSponsorship(sponsorshipData);
+
+      // Send confirmation email to applicant (fire-and-forget)
+      emailService
+        .sendSponsorshipConfirmation({
+          companyName: sponsorship.companyName,
+          contactPerson: sponsorship.contactPerson,
+          email: sponsorship.email,
+          sponsorshipLevel: sponsorship.sponsorshipLevel,
+          amount: sponsorship.amount,
+          eventTitle: event.title,
+          eventDate: format(new Date(event.startDate), 'MMM d, yyyy'),
+        })
+        .catch((emailError) => {
+          console.error("Failed to send sponsorship confirmation email:", emailError.message);
+        });
+
+      console.log(`✅ Sponsorship application submitted for event ${sponsorshipData.eventId}`);
+      res.status(201).json({
+        message: "Sponsorship application submitted successfully",
+        sponsorship: {
+          id: sponsorship.id,
+          companyName: sponsorship.companyName,
+          sponsorshipLevel: sponsorship.sponsorshipLevel,
+          status: sponsorship.status,
+          submittedAt: sponsorship.submittedAt,
+        },
+      });
+    } catch (error: any) {
+      console.error("Sponsorship registration error:", error);
+      res.status(500).json({
+        message: "Failed to submit sponsorship application",
+        details: error.message,
+      });
+    }
+  });
+
+  // Exhibition registration endpoint (public)
+  app.post("/api/exhibitions/register", async (req, res) => {
+    try {
+      const exhibitionData = req.body;
+
+      // Validate required fields
+      if (!exhibitionData.eventId || !exhibitionData.companyName || !exhibitionData.contactPerson || 
+          !exhibitionData.email || !exhibitionData.phoneNumber) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check if event exists
+      const event = await storage.getEvent(exhibitionData.eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      // Create exhibition application
+      const exhibition = await storage.createExhibition(exhibitionData);
+
+      // Send confirmation email to applicant (fire-and-forget)
+      emailService
+        .sendExhibitionConfirmation({
+          companyName: exhibition.companyName,
+          contactPerson: exhibition.contactPerson,
+          email: exhibition.email,
+          amount: exhibition.amount,
+          eventTitle: event.title,
+          eventDate: format(new Date(event.startDate), 'MMM d, yyyy'),
+        })
+        .catch((emailError) => {
+          console.error("Failed to send exhibition confirmation email:", emailError.message);
+        });
+
+      console.log(`✅ Exhibition application submitted for event ${exhibitionData.eventId}`);
+      res.status(201).json({
+        message: "Exhibition application submitted successfully",
+        exhibition: {
+          id: exhibition.id,
+          companyName: exhibition.companyName,
+          boothSize: exhibition.boothSize,
+          status: exhibition.status,
+          submittedAt: exhibition.submittedAt,
+        },
+      });
+    } catch (error: any) {
+      console.error("Exhibition registration error:", error);
+      res.status(500).json({
+        message: "Failed to submit exhibition application",
+        details: error.message,
+      });
+    }
+  });
+
+  // Get all sponsorships (admin only)
+  app.get(
+    "/api/admin/sponsorships",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req: any, res) => {
+      try {
+        const sponsorships = await storage.getAllSponsorships();
+        res.json({ sponsorships });
+      } catch (error: any) {
+        console.error("Error fetching sponsorships:", error);
+        res.status(500).json({ message: "Failed to fetch sponsorships", details: error.message });
+      }
+    }
+  );
+
+  // Get all exhibitions (admin only)
+  app.get(
+    "/api/admin/exhibitions",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req: any, res) => {
+      try {
+        const exhibitions = await storage.getAllExhibitions();
+        res.json({ exhibitions });
+      } catch (error: any) {
+        console.error("Error fetching exhibitions:", error);
+        res.status(500).json({ message: "Failed to fetch exhibitions", details: error.message });
+      }
+    }
+  );
+
+  // Update sponsorship status (admin only)
+  app.patch(
+    "/api/admin/sponsorships/:id/status",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+        const { status, paymentStatus } = req.body;
+
+        const updatedSponsorship = await storage.updateSponsorshipStatus(id, status, paymentStatus);
+        
+        res.json({
+          message: "Sponsorship status updated successfully",
+          sponsorship: updatedSponsorship,
+        });
+      } catch (error: any) {
+        console.error("Error updating sponsorship status:", error);
+        res.status(500).json({ message: "Failed to update sponsorship status", details: error.message });
+      }
+    }
+  );
+
+  // Update exhibition status (admin only)
+  app.patch(
+    "/api/admin/exhibitions/:id/status",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+        const { status, paymentStatus } = req.body;
+
+        const updatedExhibition = await storage.updateExhibitionStatus(id, status, paymentStatus);
+        
+        res.json({
+          message: "Exhibition status updated successfully",
+          exhibition: updatedExhibition,
+        });
+      } catch (error: any) {
+        console.error("Error updating exhibition status:", error);
+        res.status(500).json({ message: "Failed to update exhibition status", details: error.message });
+      }
+    }
+  );
+
+  // Public endpoints for approved sponsors and exhibitors (for showcase)
+  app.get("/api/sponsorships/approved", async (req, res) => {
+    try {
+      const sponsors = await storage.getApprovedSponsorships();
+      res.json(sponsors);
+    } catch (error: any) {
+      console.error("Error fetching approved sponsors:", error);
+      res.status(500).json({ message: "Failed to fetch sponsors" });
+    }
+  });
+
+  app.get("/api/exhibitions/approved", async (req, res) => {
+    try {
+      const exhibitors = await storage.getApprovedExhibitions();
+      res.json(exhibitors);
+    } catch (error: any) {
+      console.error("Error fetching approved exhibitors:", error);
+      res.status(500).json({ message: "Failed to fetch exhibitors" });
+    }
+  });
 
   // Newsletter sending endpoint
   app.post(

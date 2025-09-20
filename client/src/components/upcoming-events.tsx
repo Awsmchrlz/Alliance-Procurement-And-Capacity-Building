@@ -108,7 +108,7 @@ export function UpcomingEventsSection() {
         
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-3xl shadow-lg">
+          <div className="text-center py-15 bg-white rounded-3xl shadow-lg">
             <div
               className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8"
               style={{ backgroundColor: "#F0F4FF" }}
@@ -129,7 +129,7 @@ export function UpcomingEventsSection() {
               </svg>
             </div>
             <h3
-              className="text-3xl font-bold mb-4"
+              className="text-3xl font-bold mb-3"
               style={{ color: "#1C356B" }}
             >
               No Events Scheduled
@@ -150,94 +150,7 @@ export function UpcomingEventsSection() {
           onOpenChange={setProjectsModalOpen}
         />
         <IndabaModal open={indabaModalOpen} onOpenChange={setIndabaModalOpen} />
-          {/* Three Header Cards Section */}
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
-          <div className="rounded-xl p-4 text-center transition-all duration-300">
-            <h3
-              className="text-xl font-bold mb-4 text-blue-900 uppercase tracking-wider"
-              data-testid="upcoming-events-title"
-            >
-              UPCOMING EVENTS
-            </h3>
-            <button
-              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"
-              style={{ backgroundColor: "#1C356B", color: "#87CEEB" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#0f1e3d";
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#1C356B";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-              data-testid="events-read-more"
-              onClick={() => {
-                // Navigate to the events page
-                navigate("/events");
-              }}
-            >
-              SEE UPCOMING EVENTS →
-            </button>
-          </div>
-
-          {/* Current Projects Card */}
-          <div className="rounded-xl p-4 text-center transition-all duration-300">
-            <h3
-              className="text-xl font-bold text-blue-900 mb-4 uppercase tracking-wider"
-              data-testid="current-projects-title"
-            >
-              CURRENT PROJECTS
-            </h3>
-            <button
-              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"
-              style={{ backgroundColor: "#87CEEB", color: "#1C356B" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#e6ae1f";
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#87CEEB";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-              data-testid="projects-read-more"
-              onClick={() => {
-                // Navigate to the events page
-                navigate("/events");
-              }}
-            >
-              READ MORE →
-            </button>
-          </div>
-
-          {/* About Indaba Card */}
-          <div className="rounded-xl p-4 text-center transition-all duration-300">
-            <h3
-              className="text-xl font-bold mb-4 text-blue-900 uppercase tracking-wider"
-              data-testid="upcoming-events-title"
-            >
-              UPCOMING EVENTS
-            </h3>
-            <button
-              className="w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider text-lg"
-              style={{ backgroundColor: "#1C356B", color: "#87CEEB" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#0f1e3d";
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#1C356B";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-              data-testid="events-read-more"
-              onClick={() => {
-                // Navigate to the events page
-                navigate("/events");
-              }}
-            >
-              SEE UPCOMING EVENTS →
-            </button>
-          </div>
-        </div>
+  
       </div>
     </section>
   );

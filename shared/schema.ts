@@ -86,6 +86,61 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
   subscribedAt: timestamp("subscribed_at").defaultNow(),
 });
 
+export const sponsorships = pgTable("sponsorships", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id")
+    .notNull()
+    .references(() => events.id),
+  companyName: text("company_name").notNull(),
+  contactPerson: text("contact_person").notNull(),
+  email: text("email").notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  website: text("website"),
+  companyAddress: text("company_address"),
+  sponsorshipLevel: text("sponsorship_level").notNull(), // platinum, gold, silver, bronze
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").default("USD"),
+  status: text("status").default("pending"), // pending, approved, rejected, paid
+  paymentStatus: text("payment_status").default("pending"), // pending, paid, cancelled
+  paymentEvidence: text("payment_evidence"),
+  paymentMethod: text("payment_method"), // mobile, bank, cash
+  specialRequirements: text("special_requirements"),
+  marketingMaterials: text("marketing_materials"),
+  notes: text("notes"),
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const exhibitions = pgTable("exhibitions", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id")
+    .notNull()
+    .references(() => events.id),
+  companyName: text("company_name").notNull(),
+  contactPerson: text("contact_person").notNull(),
+  email: text("email").notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  website: text("website"),
+  companyAddress: text("company_address"),
+  boothSize: text("booth_size").default("standard"), // standard, premium, custom
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull().default("7000.00"),
+  currency: text("currency").default("USD"),
+  status: text("status").default("pending"), // pending, approved, rejected, paid
+  paymentStatus: text("payment_status").default("pending"), // pending, paid, cancelled
+  paymentEvidence: text("payment_evidence"),
+  productsServices: text("products_services"),
+  boothRequirements: text("booth_requirements"),
+  electricalRequirements: boolean("electrical_requirements").default(false),
+  internetRequirements: boolean("internet_requirements").default(false),
+  notes: text("notes"),
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -144,6 +199,40 @@ export const insertNewsletterSubscriptionSchema = z.object({
   name: z.string().optional().nullable(),
 });
 
+export const insertSponsorshipSchema = z.object({
+  eventId: z.string(),
+  companyName: z.string().min(2, "Company name must be at least 2 characters"),
+  contactPerson: z.string().min(2, "Contact person must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  phoneNumber: z.string().min(10, "Phone number must be at least 10 characters"),
+  website: z.string().optional().nullable(),
+  companyAddress: z.string().optional().nullable(),
+  sponsorshipLevel: z.enum(["platinum", "gold", "silver", "bronze"]),
+  amount: z.number().positive("Amount must be positive"),
+  currency: z.string().default("USD"),
+  specialRequirements: z.string().optional().nullable(),
+  marketingMaterials: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+
+export const insertExhibitionSchema = z.object({
+  eventId: z.string(),
+  companyName: z.string().min(2, "Company name must be at least 2 characters"),
+  contactPerson: z.string().min(2, "Contact person must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  phoneNumber: z.string().min(10, "Phone number must be at least 10 characters"),
+  website: z.string().optional().nullable(),
+  companyAddress: z.string().optional().nullable(),
+  boothSize: z.enum(["standard", "premium", "custom"]).default("standard"),
+  amount: z.number().default(7000),
+  currency: z.string().default("USD"),
+  productsServices: z.string().optional().nullable(),
+  boothRequirements: z.string().optional().nullable(),
+  electricalRequirements: z.boolean().default(false),
+  internetRequirements: z.boolean().default(false),
+  notes: z.string().optional().nullable(),
+});
+
 export const evidenceHistorySchema = z.object({
   id: z.string().uuid(),
   registrationId: z.string().uuid(),
@@ -171,3 +260,7 @@ export type InsertNewsletterSubscription = z.infer<
 >;
 export type NewsletterSubscription =
   typeof newsletterSubscriptions.$inferSelect;
+export type InsertSponsorship = z.infer<typeof insertSponsorshipSchema>;
+export type Sponsorship = typeof sponsorships.$inferSelect;
+export type InsertExhibition = z.infer<typeof insertExhibitionSchema>;
+export type Exhibition = typeof exhibitions.$inferSelect;
