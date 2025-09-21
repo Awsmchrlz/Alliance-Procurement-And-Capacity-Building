@@ -1305,6 +1305,8 @@ export const storage = {
           booth_size: exhibitionData.boothSize || 'standard',
           amount: exhibitionData.amount || 7000,
           currency: exhibitionData.currency || 'USD',
+          payment_method: exhibitionData.paymentMethod,
+          payment_evidence: exhibitionData.paymentEvidence,
           products_services: exhibitionData.productsServices,
           booth_requirements: exhibitionData.boothRequirements,
           electrical_requirements: exhibitionData.electricalRequirements || false,

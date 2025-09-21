@@ -92,7 +92,7 @@ import {
   Check,
   Info,
   Upload,
-  Save
+  Edit
 } from "lucide-react";
 
 import { EvidenceViewer } from "@/components/evidence-viewer";
@@ -1418,7 +1418,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="overview" className="space-y-6">
           <div className="bg-white rounded-xl border border-slate-200/60 p-1 shadow-sm overflow-x-auto">
             <TabsList
-              className={`grid w-full ${canManageUsers && canManageEvents && isSuperAdmin ? "grid-cols-8" : canManageUsers && canManageEvents ? "grid-cols-7" : canManageUsers || canManageEvents ? "grid-cols-6" : "grid-cols-5"} bg-transparent gap-1 min-w-[800px] sm:min-w-0`}
+              className={`grid w-full ${canManageUsers && canManageEvents && isSuperAdmin ? "grid-cols-7" : canManageUsers && canManageEvents ? "grid-cols-6" : canManageUsers || canManageEvents ? "grid-cols-5" : "grid-cols-4"} bg-transparent gap-1 min-w-[800px] sm:min-w-0`}
             >
               {/* Overview - All admin roles can see */}
               <TabsTrigger
@@ -1489,16 +1489,6 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
 
-              {/* Settings - Only super_admin can access settings */}
-              {isSuperAdmin && (
-                <TabsTrigger
-                  value="settings"
-                  className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
-                >
-                  <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden xs:inline">Settings</span>
-                </TabsTrigger>
-              )}
             </TabsList>
           </div>
 
@@ -3144,13 +3134,15 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Button
-                      onClick={() => setShowCreateSponsorshipDialog(true)}
-                      className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Sponsorship
-                    </Button>
+                    {canManageFinance && (
+                      <Button
+                        onClick={() => setShowCreateSponsorshipDialog(true)}
+                        className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Sponsorship
+                      </Button>
+                    )}
                     <Badge variant="secondary" className="text-lg px-3 py-1">
                       {sponsorships.length}
                     </Badge>
@@ -3162,7 +3154,12 @@ export default function AdminDashboard() {
                   <div className="text-center py-8">
                     <Crown className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Sponsorship Applications</h3>
-                    <p className="text-gray-600">Sponsorship applications will appear here when submitted.</p>
+                    <p className="text-gray-600">
+                      {canManageFinance 
+                        ? "Sponsorship applications will appear here when submitted." 
+                        : "Sponsorship applications will appear here. Only Super Admins and Finance Managers can create new sponsorships."
+                      }
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -3225,7 +3222,11 @@ export default function AdminDashboard() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(`${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/payment-evidence/${sponsorship.paymentEvidence}`, '_blank')}
+                                  onClick={() => handleViewPaymentEvidence(
+                                    sponsorship.paymentEvidence || "",
+                                    sponsorship.paymentEvidence?.split("/").pop(),
+                                    sponsorship.id
+                                  )}
                                   className="text-xs"
                                 >
                                   <Eye className="w-3 h-3 mr-1" />
@@ -3256,15 +3257,29 @@ export default function AdminDashboard() {
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem
                                     onClick={() => handleSponsorshipStatusUpdate(sponsorship.id, 'approved')}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white focus:bg-emerald-700"
                                   >
                                     <CheckCircle className="mr-2 h-4 w-4" />
                                     Approve & Activate
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => handleSponsorshipStatusUpdate(sponsorship.id, 'rejected')}
+                                    className="border-red-600 text-red-600 hover:bg-red-50 focus:bg-red-50"
                                   >
                                     <XCircle className="mr-2 h-4 w-4" />
                                     Reject
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      toast({
+                                        title: "Edit Functionality",
+                                        description: "Sponsorship editing feature coming soon! Contact admin for manual updates.",
+                                        variant: "default",
+                                      });
+                                    }}
+                                  >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit Details
                                   </DropdownMenuItem>
                                   {sponsorship.status === 'approved' && (
                                     <DropdownMenuItem
@@ -3287,219 +3302,6 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Settings Tab */}
-          {isSuperAdmin && (
-            <TabsContent value="settings">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Logo Management */}
-                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-                  <CardHeader>
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg">
-                        <Upload className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl text-gray-900">Logo Management</CardTitle>
-                        <CardDescription>Update your organization's logo and branding</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Current Logo Display */}
-                    <div className="text-center">
-                      <div className="w-32 h-32 mx-auto mb-4 bg-gradient-to-br from-[#1C356B] to-[#2563eb] rounded-xl flex items-center justify-center shadow-lg">
-                        <span className="text-white text-2xl font-bold">APCB</span>
-                      </div>
-                      <p className="text-sm text-gray-600">Current Logo</p>
-                    </div>
-
-                    {/* Logo Upload */}
-                    <div className="space-y-4">
-                      <Label className="text-sm font-medium text-gray-700">Upload New Logo</Label>
-                      <div className="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                        <input
-                          type="file"
-                          id="logoUpload"
-                          accept="image/*"
-                          className="hidden"
-                        />
-                        <label htmlFor="logoUpload" className="cursor-pointer">
-                          <div className="flex flex-col items-center space-y-2">
-                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                              <Upload className="w-6 h-6 text-blue-600" />
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
-                            </div>
-                            <div className="text-xs text-gray-500">PNG, JPG up to 2MB</div>
-                          </div>
-                        </label>
-                      </div>
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                        <Save className="w-4 h-4 mr-2" />
-                        Update Logo
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Organization Information */}
-                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
-                  <CardHeader>
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-gradient-to-r from-green-500 to-green-600 rounded-lg">
-                        <Building2 className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl text-gray-900">Organization Information</CardTitle>
-                        <CardDescription>Update your organization's details and contact information</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="orgName" className="text-sm font-medium text-gray-700">Organization Name</Label>
-                        <Input
-                          id="orgName"
-                          defaultValue="Alliance Procurement & Capacity Building"
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="orgEmail" className="text-sm font-medium text-gray-700">Contact Email</Label>
-                        <Input
-                          id="orgEmail"
-                          type="email"
-                          defaultValue="globaltrainingalliance@gmail.com"
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="orgPhone" className="text-sm font-medium text-gray-700">Phone Numbers</Label>
-                        <Textarea
-                          id="orgPhone"
-                          defaultValue="+260 974486945 | +260 977675449 | +260 968579172"
-                          className="w-full"
-                          rows={2}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="orgAddress" className="text-sm font-medium text-gray-700">Address</Label>
-                        <Textarea
-                          id="orgAddress"
-                          defaultValue="Lusaka, Zambia"
-                          className="w-full"
-                          rows={3}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="orgDescription" className="text-sm font-medium text-gray-700">Organization Description</Label>
-                        <Textarea
-                          id="orgDescription"
-                          defaultValue="Leading provider of procurement training and capacity building services across Africa."
-                          className="w-full"
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-
-                    <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Information
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Payment Information */}
-                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm lg:col-span-2">
-                  <CardHeader>
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg">
-                        <CreditCard className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl text-gray-900">Payment Information</CardTitle>
-                        <CardDescription>Update bank account details for payments</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* USD Account */}
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-gray-900">USD Account Details</h4>
-                        <div className="space-y-3">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">Account Number</Label>
-                            <Input defaultValue="0020130005578" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">Bank Name</Label>
-                            <Input defaultValue="Stanbic Bank" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">Branch</Label>
-                            <Input defaultValue="Lusaka Main" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">Swift Code</Label>
-                            <Input defaultValue="SBICZMLX" />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ZMW Account */}
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-gray-900">ZMW Account Details</h4>
-                        <div className="space-y-3">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">Account Number</Label>
-                            <Input defaultValue="0010130005578" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">Bank Name</Label>
-                            <Input defaultValue="Stanbic Bank" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">Branch</Label>
-                            <Input defaultValue="Lusaka Main" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">Account Name</Label>
-                            <Input defaultValue="Global Training Alliance" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 pt-6 border-t">
-                      <h4 className="font-semibold text-gray-900 mb-4">Mobile Money Details</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">Airtel Number</Label>
-                          <Input defaultValue="0773 484 004 - Chipo Buumba" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">MTN Number</Label>
-                          <Input defaultValue="096 4024532 - Chipo Buumba" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button className="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white">
-                      <Save className="w-4 h-4 mr-2" />
-                      Update Payment Information
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          )}
 
           {/* Exhibitions Tab */}
           <TabsContent value="exhibitions">
@@ -3516,13 +3318,15 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Button
-                      onClick={() => setShowCreateExhibitionDialog(true)}
-                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Exhibition
-                    </Button>
+                    {canManageFinance && (
+                      <Button
+                        onClick={() => setShowCreateExhibitionDialog(true)}
+                        className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Exhibition
+                      </Button>
+                    )}
                     <Badge variant="secondary" className="text-lg px-3 py-1">
                       {exhibitions.length}
                     </Badge>
@@ -3534,7 +3338,12 @@ export default function AdminDashboard() {
                   <div className="text-center py-8">
                     <Store className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Exhibition Applications</h3>
-                    <p className="text-gray-600">Exhibition applications will appear here when submitted.</p>
+                    <p className="text-gray-600">
+                      {canManageFinance 
+                        ? "Exhibition applications will appear here when submitted." 
+                        : "Exhibition applications will appear here. Only Super Admins and Finance Managers can create new exhibitions."
+                      }
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -3586,7 +3395,11 @@ export default function AdminDashboard() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(`${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/payment-evidence/${exhibition.paymentEvidence}`, '_blank')}
+                                  onClick={() => handleViewPaymentEvidence(
+                                    exhibition.paymentEvidence || "",
+                                    exhibition.paymentEvidence?.split("/").pop(),
+                                    exhibition.id
+                                  )}
                                   className="text-xs"
                                 >
                                   <Eye className="w-3 h-3 mr-1" />
@@ -3617,12 +3430,14 @@ export default function AdminDashboard() {
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem
                                     onClick={() => handleExhibitionStatusUpdate(exhibition.id, 'approved')}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white focus:bg-emerald-700"
                                   >
                                     <CheckCircle className="mr-2 h-4 w-4" />
                                     Approve & Activate
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => handleExhibitionStatusUpdate(exhibition.id, 'rejected')}
+                                    className="border-red-600 text-red-600 hover:bg-red-50 focus:bg-red-50"
                                   >
                                     <XCircle className="mr-2 h-4 w-4" />
                                     Reject

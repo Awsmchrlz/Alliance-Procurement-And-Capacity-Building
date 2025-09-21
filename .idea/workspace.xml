@@ -4,19 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="Group payments and unique identifier as email and phone">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ULTIMATE_DATABASE_SETUP.sql" beforeDir="false" afterPath="$PROJECT_DIR$/ULTIMATE_DATABASE_SETUP.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/registration-dialog.backup.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/upcoming-events.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/upcoming-events.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/events.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/events.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/home.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/server/routes.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/storage.ts" beforeDir="false" afterPath="$PROJECT_DIR$/server/storage.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shared/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/shared/schema.ts" afterDir="false" />
-    </list>
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="Sponsorship and registration dialogs and flow" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -346,7 +334,23 @@
       <option name="project" value="LOCAL" />
       <updated>1758124786388</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="Group payments and unique identifier as email and phone">
+      <option name="closed" value="true" />
+      <created>1758368452053</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1758368452053</updated>
+    </task>
+    <task id="LOCAL-00034" summary="Sponsorship and registration dialogs and flow">
+      <option name="closed" value="true" />
+      <created>1758435314370</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1758435314370</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -370,6 +374,7 @@
     <MESSAGE value="footer clean up" />
     <MESSAGE value="SEO and few other changes" />
     <MESSAGE value="Group payments and unique identifier as email and phone" />
-    <option name="LAST_COMMIT_MESSAGE" value="Group payments and unique identifier as email and phone" />
+    <MESSAGE value="Sponsorship and registration dialogs and flow" />
+    <option name="LAST_COMMIT_MESSAGE" value="Sponsorship and registration dialogs and flow" />
   </component>
 </project>

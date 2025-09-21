@@ -752,7 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/admin/sponsorships",
     authenticateSupabase,
-    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
     async (req: any, res) => {
       try {
         const sponsorships = await storage.getAllSponsorships();
@@ -768,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/admin/exhibitions",
     authenticateSupabase,
-    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
     async (req: any, res) => {
       try {
         const exhibitions = await storage.getAllExhibitions();
@@ -784,7 +784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(
     "/api/admin/sponsorships/:id/status",
     authenticateSupabase,
-    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
     async (req: any, res) => {
       try {
         const { id } = req.params;
@@ -807,7 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(
     "/api/admin/exhibitions/:id/status",
     authenticateSupabase,
-    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
     async (req: any, res) => {
       try {
         const { id } = req.params;
@@ -1429,15 +1429,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`❌ Storage download error:`, error);
 
           // Try alternative path formats if the direct path fails
-          // Updated to handle the new structure: evidence/userId/eventId/filename
+          // Enhanced to handle multiple structures: evidence/, sponsorships/, exhibitions/
           const alternativePaths = [
             decodedPath.replace("/storage/v1/object/", ""),
             decodedPath.replace("/storage/v1/object/public/", ""),
             decodedPath.replace("public/", ""),
-            // Handle the new structure: evidence/userId/eventId/filename
+            // Handle direct paths as-is (for sponsorships/eventId/filename, exhibitions/eventId/filename)
+            decodedPath.includes("/") && decodedPath.split("/").length >= 2 ? decodedPath : null,
+            // Handle the evidence structure: evidence/userId/eventId/filename
             decodedPath.includes("/") && decodedPath.split("/").length >= 3 ? decodedPath : null,
             // If path doesn't start with evidence/, try adding it for paths with proper structure
-            !decodedPath.startsWith("evidence/") && decodedPath.includes("/") && decodedPath.split("/").length >= 3 ? `evidence/${decodedPath}` : null,
+            !decodedPath.startsWith("evidence/") && !decodedPath.startsWith("sponsorships/") && !decodedPath.startsWith("exhibitions/") && decodedPath.includes("/") && decodedPath.split("/").length >= 3 ? `evidence/${decodedPath}` : null,
+            // For sponsorships and exhibitions, ensure they're tried as-is
+            decodedPath.startsWith("sponsorships/") || decodedPath.startsWith("exhibitions/") ? decodedPath : null,
             // Last 3 parts: userId/eventId/filename (for backwards compatibility)
             decodedPath.split("/").slice(-3).join("/"),
             `evidence/${decodedPath.split("/").slice(-3).join("/")}`, // Ensure evidence prefix
