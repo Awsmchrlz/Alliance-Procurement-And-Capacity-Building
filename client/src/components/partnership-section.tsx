@@ -1,29 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Crown, Award, Medal, Star, Store, CheckCircle, ArrowRight } from 'lucide-react';
-import { SponsorshipDialog } from './sponsorship-dialog';
-import { ExhibitionDialog } from './exhibition-dialog';
+import { CheckCircle, Crown, Award, Medal, Star, Store, ArrowRight, Globe, MapPin } from 'lucide-react';
 import { Event } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
+import { SponsorshipDialog } from './sponsorship-dialog';
+import { ExhibitionDialog } from './exhibition-dialog';
+import { useGeolocation, getPreferredCurrency } from '@/hooks/use-geolocation';
 
 interface PartnershipSectionProps {
   event?: Event;
 }
 
+type CurrencyType = 'local' | 'international';
+
 const SPONSORSHIP_PACKAGES = [
   {
     id: 'platinum',
     name: 'Platinum Sponsor',
-    price: 15000,
-    currency: 'USD',
+    priceUSD: 15000,
+    priceZMW: 300000, // Approximate conversion
     icon: Crown,
     color: 'from-slate-300 via-slate-400 to-slate-500',
     textColor: 'text-slate-800',
     borderColor: 'border-slate-400',
     popular: false,
+    featured: true,
     benefits: [
       'Prime logo placement on all conference materials and media',
       'Speaking slot (15 minutes) at the Opening Ceremony',
@@ -40,13 +43,14 @@ const SPONSORSHIP_PACKAGES = [
   {
     id: 'gold',
     name: 'Gold Sponsor',
-    price: 13000,
-    currency: 'USD',
+    priceUSD: 13000,
+    priceZMW: 250000,
     icon: Award,
     color: 'from-yellow-400 via-yellow-500 to-yellow-600',
     textColor: 'text-yellow-900',
     borderColor: 'border-yellow-500',
     popular: false,
+    featured: false,
     benefits: [
       'Featured logo on banners, Facebook, and social media',
       '10-minute speaking slot in plenary session',
@@ -61,13 +65,14 @@ const SPONSORSHIP_PACKAGES = [
   {
     id: 'silver',
     name: 'Silver Sponsor',
-    price: 11000,
-    currency: 'USD',
+    priceUSD: 11000,
+    priceZMW: 200000,
     icon: Medal,
     color: 'from-gray-300 via-gray-400 to-gray-500',
     textColor: 'text-gray-800',
     borderColor: 'border-gray-400',
     popular: false,
+    featured: false,
     benefits: [
       'Logo placement on Facebook, and printed programs',
       'Exhibition booth',
@@ -80,13 +85,14 @@ const SPONSORSHIP_PACKAGES = [
   {
     id: 'bronze',
     name: 'Bronze Sponsor',
-    price: 9000,
-    currency: 'USD',
+    priceUSD: 9000,
+    priceZMW: 150000,
     icon: Star,
     color: 'from-amber-600 via-amber-700 to-amber-800',
     textColor: 'text-amber-100',
     borderColor: 'border-amber-600',
     popular: false,
+    featured: false,
     benefits: [
       'Logo on Facebook page and printed program',
       '2 complimentary passes',
@@ -98,8 +104,8 @@ const SPONSORSHIP_PACKAGES = [
 
 const EXHIBITION_PACKAGE = {
   name: 'Exhibition Package',
-  price: 7000,
-  currency: 'USD',
+  priceUSD: 7000,
+  priceZMW: 100000,
   icon: Store,
   color: 'from-red-600 via-red-700 to-red-800',
   textColor: 'text-red-100',
@@ -115,6 +121,26 @@ export function PartnershipSection({ event: propEvent }: PartnershipSectionProps
   const [sponsorshipDialogOpen, setSponsorshipDialogOpen] = useState(false);
   const [exhibitionDialogOpen, setExhibitionDialogOpen] = useState(false);
   const [expandedBenefits, setExpandedBenefits] = useState<{[key: string]: boolean}>({});
+  const [currencyType, setCurrencyType] = useState<CurrencyType>('international');
+  
+  // Get user's location for automatic currency detection
+  const locationData = useGeolocation();
+
+  // Automatically set currency based on location
+  useEffect(() => {
+    if (!locationData.isLoading && !locationData.error) {
+      const preferredCurrency = getPreferredCurrency(locationData.isZambia);
+      const newCurrencyType = preferredCurrency === 'ZMW' ? 'local' : 'international';
+      setCurrencyType(newCurrencyType);
+      
+      console.log('🌍 Auto-detected currency:', {
+        country: locationData.country,
+        isZambia: locationData.isZambia,
+        currency: preferredCurrency,
+        currencyType: newCurrencyType
+      });
+    }
+  }, [locationData.isLoading, locationData.error, locationData.isZambia]);
 
   // Fetch events if no event is provided
   const { data: events = [] } = useQuery({
@@ -129,6 +155,13 @@ export function PartnershipSection({ event: propEvent }: PartnershipSectionProps
   // Use provided event or first available event
   const event = propEvent || (Array.isArray(events) && events.length > 0 ? events[0] : null);
 
+  const formatPrice = (priceUSD: number, priceZMW: number) => {
+    if (currencyType === 'local') {
+      return `ZMW ${priceZMW.toLocaleString()}`;
+    }
+    return `USD ${priceUSD.toLocaleString()}`;
+  };
+
   return (
     <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50">
       <div className="container mx-auto px-4">
@@ -137,10 +170,75 @@ export function PartnershipSection({ event: propEvent }: PartnershipSectionProps
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Partnership Opportunities
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8">
             Join us as a sponsor or exhibitor and showcase your brand to industry leaders, 
             decision-makers, and professionals in procurement and capacity building.
           </p>
+          
+          {/* Currency Toggle with Location Detection */}
+          <div className="flex flex-col items-center justify-center mb-8">
+            {/* Location Detection Status */}
+            {locationData.isLoading ? (
+              <div className="mb-4 text-center">
+                <div className="inline-flex items-center gap-2 text-sm text-gray-600">
+                  <div className="w-4 h-4 border-2 border-primary-yellow border-t-transparent rounded-full animate-spin"></div>
+                  Detecting your location...
+                </div>
+              </div>
+            ) : (
+              <div className="mb-4 text-center">
+                <div className="inline-flex items-center gap-2 text-sm text-gray-600">
+                  <MapPin className="w-4 h-4 text-primary-yellow" />
+                  {locationData.error ? (
+                    <span>Location unknown - You can manually select currency</span>
+                  ) : (
+                    <span>
+                      Detected: <strong>{locationData.country}</strong> 
+                      {locationData.isZambia && <span className="text-primary-yellow ml-1">🇿🇲</span>}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Currency Toggle */}
+            <div className="bg-white rounded-full p-1 shadow-lg border border-gray-200">
+              <div className="flex items-center">
+                <button
+                  onClick={() => setCurrencyType('local')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all duration-300 ${
+                    currencyType === 'local'
+                      ? 'bg-primary-yellow text-white shadow-md'
+                      : 'text-gray-600 hover:text-primary-blue'
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  Local (ZMW)
+                  {locationData.isZambia && !locationData.isLoading && (
+                    <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full ml-2">
+                      Auto
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setCurrencyType('international')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all duration-300 ${
+                    currencyType === 'international'
+                      ? 'bg-primary-yellow text-white shadow-md'
+                      : 'text-gray-600 hover:text-primary-blue'
+                  }`}
+                >
+                  <Globe className="w-4 h-4" />
+                  International (USD)
+                  {!locationData.isZambia && !locationData.isLoading && !locationData.error && (
+                    <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full ml-2">
+                      Auto
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Sponsorship Packages */}
@@ -150,28 +248,70 @@ export function PartnershipSection({ event: propEvent }: PartnershipSectionProps
             <p className="text-gray-600">Choose the sponsorship level that aligns with your marketing objectives</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
             {SPONSORSHIP_PACKAGES.map((pkg) => {
               const IconComponent = pkg.icon;
               return (
                 <Card 
                   key={pkg.id} 
-                  className="relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                  className={`overflow-hidden bg-white shadow-lg hover:shadow-2xl transition-all duration-300 rounded-3xl border-0 h-full flex flex-col ${
+                    pkg.featured ? "ring-2 ring-primary-yellow ring-opacity-50" : ""
+                  }`}
                 >
-                  
-                  <CardHeader className={`text-center bg-gradient-to-r ${pkg.color} text-white`}>
-                    <div className="w-12 h-12 mx-auto mb-3 p-2 bg-white/20 backdrop-blur-sm rounded-xl">
-                      <IconComponent className="w-full h-full text-white" />
+                  {/* Header Section - Similar to Event Card */}
+                  <div className="p-6 flex flex-col h-full">
+                    {/* Badge and Title */}
+                    <div className="mb-4">
+                      <div className="flex items-center mb-3">
+                        <div
+                          className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            pkg.featured 
+                              ? "bg-primary-yellow text-white" 
+                              : "bg-primary-yellow/20 text-primary-blue"
+                          }`}
+                        >
+                          {pkg.featured ? "PREMIUM" : "SPONSOR"}
+                        </div>
+                        <div
+                          className={`ml-3 h-0.5 flex-1 ${
+                            pkg.featured ? "bg-primary-yellow" : "bg-primary-yellow/30"
+                          }`}
+                        ></div>
+                      </div>
+
+                      {/* Icon and Title */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`w-12 h-12 p-2 rounded-xl bg-gradient-to-r ${pkg.color}`}>
+                          <IconComponent className="w-full h-full text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-primary-blue text-xl leading-tight">
+                            {pkg.name}
+                          </h3>
+                          {pkg.featured && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Star className="w-3 h-3 text-primary-yellow fill-current" />
+                              <span className="text-xs text-primary-yellow font-semibold">
+                                Premium Package
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <CardTitle className="text-lg font-bold">{pkg.name}</CardTitle>
-                    <CardDescription className="text-white/90">
-                      <span className="text-2xl font-bold">${pkg.price.toLocaleString()}</span>
-                      <span className="text-sm ml-1">{pkg.currency}</span>
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="p-6">
-                    <div className="space-y-3 mb-6">
+
+                    {/* Price Display */}
+                    <div className="mb-4">
+                      <div className="text-2xl font-bold text-primary-blue">
+                        {formatPrice(pkg.priceUSD, pkg.priceZMW)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {currencyType === 'local' ? 'Zambian Kwacha' : 'US Dollars'}
+                      </div>
+                    </div>
+
+                    {/* Benefits */}
+                    <div className="space-y-2 flex-grow">
                       {(expandedBenefits[pkg.id] ? pkg.benefits : pkg.benefits.slice(0, 4)).map((benefit, index) => (
                         <div key={index} className="flex items-start text-sm">
                           <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
@@ -181,7 +321,7 @@ export function PartnershipSection({ event: propEvent }: PartnershipSectionProps
                       {pkg.benefits.length > 4 && (
                         <button
                           onClick={() => setExpandedBenefits(prev => ({ ...prev, [pkg.id]: !prev[pkg.id] }))}
-                          className="text-xs text-blue-600 font-medium hover:text-blue-800 transition-colors duration-200 flex items-center gap-1"
+                          className="text-xs text-primary-blue font-medium hover:text-primary-yellow transition-colors duration-200 flex items-center gap-1"
                         >
                           {expandedBenefits[pkg.id] ? (
                             <>
@@ -197,16 +337,44 @@ export function PartnershipSection({ event: propEvent }: PartnershipSectionProps
                         </button>
                       )}
                     </div>
-                    
-                    <Button 
-                      onClick={() => setSponsorshipDialogOpen(true)}
-                      className="w-full bg-gradient-to-r from-[#1C356B] to-[#2563eb] hover:from-[#2563eb] hover:to-[#1C356B] text-white"
-                      disabled={!event}
-                    >
-                      Apply Now
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </CardContent>
+
+                    {/* Apply Button - Consistent with Event Card */}
+                    <div className="pt-6 mt-auto">
+                      {pkg.featured ? (
+                        <div className="space-y-3">
+                          <div className="bg-primary-yellow/10 p-3 rounded-lg border border-primary-yellow/30">
+                            <div className="text-center">
+                              <h4 className="font-bold text-primary-blue mb-1 text-sm">
+                                Ready to Partner?
+                              </h4>
+                              <p className="text-primary-blue text-xs mb-2">
+                                Secure your premium sponsorship package
+                              </p>
+                              <Button
+                                onClick={() => setSponsorshipDialogOpen(true)}
+                                className="bg-primary-yellow hover:bg-primary-yellow/80 text-white font-bold py-2 px-6 rounded-lg text-sm transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider flex items-center gap-2 mx-auto"
+                                disabled={!event}
+                              >
+                                Apply Now
+                                <ArrowRight className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <Button
+                            onClick={() => setSponsorshipDialogOpen(true)}
+                            className="w-full bg-primary-yellow hover:bg-primary-yellow/80 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all duration-300 hover:shadow-lg"
+                            disabled={!event}
+                          >
+                            Apply Now
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </Card>
               );
             })}
@@ -221,20 +389,42 @@ export function PartnershipSection({ event: propEvent }: PartnershipSectionProps
           </div>
 
           <div className="max-w-md mx-auto">
-            <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-              <CardHeader className={`text-center bg-gradient-to-r ${EXHIBITION_PACKAGE.color} text-white`}>
-                <div className="w-12 h-12 mx-auto mb-3 p-2 bg-white/20 backdrop-blur-sm rounded-xl">
-                  <Store className="w-full h-full text-white" />
+            <Card className="overflow-hidden bg-white shadow-lg hover:shadow-2xl transition-all duration-300 rounded-3xl border-0">
+              <div className="p-6">
+                {/* Badge and Title */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-3">
+                    <div className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500 text-white">
+                      EXHIBITION
+                    </div>
+                    <div className="ml-3 h-0.5 flex-1 bg-red-500/30"></div>
+                  </div>
+
+                  {/* Icon and Title */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-12 h-12 p-2 rounded-xl bg-gradient-to-r ${EXHIBITION_PACKAGE.color}`}>
+                      <Store className="w-full h-full text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-primary-blue text-xl leading-tight">
+                        {EXHIBITION_PACKAGE.name}
+                      </h3>
+                    </div>
+                  </div>
                 </div>
-                <CardTitle className="text-lg font-bold">{EXHIBITION_PACKAGE.name}</CardTitle>
-                <CardDescription className="text-white/90">
-                  <span className="text-2xl font-bold">${EXHIBITION_PACKAGE.price.toLocaleString()}</span>
-                  <span className="text-sm ml-1">{EXHIBITION_PACKAGE.currency}</span>
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="p-6">
-                <div className="space-y-3 mb-6">
+
+                {/* Price Display */}
+                <div className="mb-4">
+                  <div className="text-2xl font-bold text-primary-blue">
+                    {formatPrice(EXHIBITION_PACKAGE.priceUSD, EXHIBITION_PACKAGE.priceZMW)}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {currencyType === 'local' ? 'Zambian Kwacha' : 'US Dollars'}
+                  </div>
+                </div>
+
+                {/* Benefits */}
+                <div className="space-y-2 mb-6">
                   {EXHIBITION_PACKAGE.benefits.map((benefit, index) => (
                     <div key={index} className="flex items-start text-sm">
                       <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
@@ -242,16 +432,21 @@ export function PartnershipSection({ event: propEvent }: PartnershipSectionProps
                     </div>
                   ))}
                 </div>
-                
-                <Button 
-                  onClick={() => setExhibitionDialogOpen(true)}
-                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white"
-                  disabled={!event}
-                >
-                  Apply Now
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
+
+                {/* Apply Button */}
+                <div className="pt-3">
+                  <div className="text-center">
+                    <Button
+                      onClick={() => setExhibitionDialogOpen(true)}
+                      className="w-full bg-primary-yellow hover:bg-primary-yellow/80 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all duration-300 hover:shadow-lg"
+                      disabled={!event}
+                    >
+                      Apply Now
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </Card>
           </div>
         </div>

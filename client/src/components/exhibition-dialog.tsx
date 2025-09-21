@@ -111,6 +111,11 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
         return;
       }
       setEvidenceFile(file);
+      toast({
+        title: "File selected",
+        description: `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
+        variant: "default",
+      });
     }
   };
 
@@ -177,10 +182,12 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
 
     try {
       let evidenceUrl = null;
+      
       if (evidenceFile && (formData.paymentMethod === 'mobile' || formData.paymentMethod === 'bank')) {
         try {
           const fileName = `exhibition_evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
           const filePath = `exhibitions/${event.id}/${fileName}`;
+          
           const { data, error } = await supabase.storage
             .from('payment-evidence')
             .upload(filePath, evidenceFile, {
@@ -189,14 +196,22 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
               contentType: evidenceFile.type || 'application/octet-stream',
             });
           
-          if (error) throw error;
+          if (error) {
+            throw error;
+          }
+          
           evidenceUrl = filePath;
+          toast({
+            title: "Evidence uploaded",
+            description: "Payment evidence uploaded successfully!",
+            variant: "default",
+          });
         } catch (error) {
           console.error('File upload error:', error);
           toast({
             title: "File upload failed",
             description: "Registration will continue. You can upload payment evidence later.",
-            variant: "default",
+            variant: "destructive",
           });
         }
       }
@@ -564,31 +579,34 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
             {/* USD Account */}
             <div className="bg-white p-4 rounded-lg border border-red-200 shadow-sm">
               <div className="text-center mb-3">
-                <div className="text-sm text-gray-500 mb-1">USD Account</div>
+                <div className="text-sm text-gray-500 mb-1">Call (Global) Account Dollar (USD)</div>
                 <div className="flex items-center justify-center bg-red-100 p-2 rounded">
-                  <span className="text-sm font-mono font-bold text-red-800">0020130005578</span>
+                  <span className="text-sm font-mono font-bold text-red-800">63136717006</span>
                 </div>
               </div>
               <div className="space-y-2 text-xs">
-                <div><span className="font-medium">Bank:</span> Stanbic Bank</div>
-                <div><span className="font-medium">Branch:</span> Lusaka Main</div>
-                <div><span className="font-medium">Swift:</span> SBICZMLX</div>
-                <div><span className="font-medium">Name:</span> Global Training Alliance</div>
+                <div><span className="font-medium">Bank:</span> FNB</div>
+                <div><span className="font-medium">Branch:</span> Makeni Junction</div>
+                <div><span className="font-medium">Swift:</span> FIRNZMLX</div>
+                <div><span className="font-medium">Sort Code:</span> 260016</div>
+                <div><span className="font-medium">Name:</span> Alliance Procurement and Capacity Building Foundation</div>
               </div>
             </div>
 
             {/* ZMW Account */}
             <div className="bg-white p-4 rounded-lg border border-red-200 shadow-sm">
               <div className="text-center mb-3">
-                <div className="text-sm text-gray-500 mb-1">ZMW Account</div>
+                <div className="text-sm text-gray-500 mb-1">SME Account Kwacha (ZMW)</div>
                 <div className="flex items-center justify-center bg-red-100 p-2 rounded">
-                  <span className="text-sm font-mono font-bold text-red-800">0010130005578</span>
+                  <span className="text-sm font-mono font-bold text-red-800">63136716785</span>
                 </div>
               </div>
               <div className="space-y-2 text-xs">
-                <div><span className="font-medium">Bank:</span> Stanbic Bank</div>
-                <div><span className="font-medium">Branch:</span> Lusaka Main</div>
-                <div><span className="font-medium">Name:</span> Global Training Alliance</div>
+                <div><span className="font-medium">Bank:</span> FNB</div>
+                <div><span className="font-medium">Branch:</span> Makeni Junction</div>
+                <div><span className="font-medium">Swift:</span> FIRNZMLX</div>
+                <div><span className="font-medium">Sort Code:</span> 260016</div>
+                <div><span className="font-medium">Name:</span> Alliance Procurement and Capacity Building Foundation</div>
               </div>
             </div>
           </div>
@@ -612,12 +630,12 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
           <div className="border-2 border-dashed border-red-300 rounded-lg p-4 text-center hover:border-red-400 transition-colors">
             <input
               type="file"
-              id="evidenceUpload"
+              id="exhibitionEvidenceUpload"
               accept="image/*,.pdf"
               onChange={handleFileChange}
               className="hidden"
             />
-            <label htmlFor="evidenceUpload" className="cursor-pointer">
+            <label htmlFor="exhibitionEvidenceUpload" className="cursor-pointer">
               <div className="flex flex-col items-center space-y-2">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
                   <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

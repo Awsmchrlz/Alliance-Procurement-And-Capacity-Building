@@ -8,6 +8,8 @@ interface Sponsor {
   website?: string;
   sponsorshipLevel: 'platinum' | 'gold' | 'silver' | 'bronze';
   status: 'approved';
+  companyLogo?: string;
+  contactPerson?: string;
 }
 
 const SPONSORSHIP_ICONS = {
@@ -68,7 +70,7 @@ export function SponsorsShowcase() {
   const levelOrder = ['platinum', 'gold', 'silver', 'bronze'];
 
   return (
-    <section className="py-16 bg-gradient-to-br from-slate-50 to-blue-50">
+    <section className="py-16 bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -77,6 +79,64 @@ export function SponsorsShowcase() {
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             We're proud to partner with industry leaders who share our commitment to excellence in procurement and capacity building.
           </p>
+        </div>
+
+        {/* Continuous Scrolling Sponsors */}
+        <div className="mb-16">
+          <div className="relative overflow-hidden">
+            <div className="flex animate-scroll space-x-8">
+              {/* Duplicate sponsors for seamless loop */}
+              {[...sponsorsArray, ...sponsorsArray].map((sponsor: Sponsor, index) => {
+                const Icon = SPONSORSHIP_ICONS[sponsor.sponsorshipLevel as keyof typeof SPONSORSHIP_ICONS];
+                const colorClass = SPONSORSHIP_COLORS[sponsor.sponsorshipLevel as keyof typeof SPONSORSHIP_COLORS];
+                
+                return (
+                  <div
+                    key={`${sponsor.id}-${index}`}
+                    className="flex-shrink-0 w-64 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 overflow-hidden group cursor-pointer"
+                    onClick={() => handleSponsorClick(sponsor.website)}
+                  >
+                    <div className={`h-2 bg-gradient-to-r ${colorClass}`}></div>
+                    <div className="p-6 text-center">
+                      {sponsor.companyLogo ? (
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                          <img 
+                            src={sponsor.companyLogo} 
+                            alt={`${sponsor.companyName} logo`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              // Fallback to icon if logo fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `<div class="w-16 h-16 p-3 rounded-full bg-gradient-to-r ${colorClass} text-white flex items-center justify-center shadow-lg"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 9.739 9 11 5.16-1.261 9-5.45 9-11V7l-10-5z"/></svg></div>`;
+                              }
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className={`w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r ${colorClass} text-white flex items-center justify-center shadow-lg`}>
+                          <Icon className="w-8 h-8" />
+                        </div>
+                      )}
+                      
+                      <h3 className="font-bold text-lg text-gray-900 mb-2 group-hover:text-[#1C356B] transition-colors">
+                        {sponsor.companyName}
+                      </h3>
+                      
+                      <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                        <span className="capitalize">{sponsor.sponsorshipLevel} Sponsor</span>
+                        {sponsor.website && (
+                          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-12">

@@ -328,6 +328,11 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
     return { isValid: true };
   };
 
+  const canProceedToNextStep = () => {
+    const { isValid } = validateStep(currentStep);
+    return isValid;
+  };
+
   const nextStep = () => {
     const { isValid, message } = validateStep(currentStep);
     if (isValid) {
@@ -507,11 +512,11 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden bg-white border-0 shadow-2xl rounded-lg sm:rounded-xl flex flex-col p-0">
+      <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] sm:max-h-[95vh] overflow-hidden bg-white border-0 shadow-2xl rounded-lg sm:rounded-xl flex flex-col p-0">
         {!success ? (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full max-h-[90vh] sm:max-h-[95vh]">
             <DialogHeader className="relative overflow-hidden shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#1C356B] to-[#2563eb]" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#4A90E2] to-[#87CEEB]" />
               <div className="relative px-4 sm:px-6 py-4 sm:py-6 text-center text-white">
                 <div className="w-12 h-12 mx-auto mb-3 p-2 bg-white/20 backdrop-blur-sm rounded-xl">
                   <div className="w-full h-full bg-white/20 rounded-lg flex items-center justify-center">
@@ -526,7 +531,7 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
               </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 min-h-0 bg-gray-50/50">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 min-h-0 bg-gray-50/50 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
               {/* Step 1: Personal Information */}
               {currentStep === 1 && (
                 <div className="space-y-4">
@@ -1017,33 +1022,35 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
               )}
             </div>
 
-            <div className="border-t p-3">
+            <div className="border-t bg-white p-3 shrink-0">
               <div className="flex justify-between">
                 <Button
                   variant="ghost"
                   onClick={prevStep}
                   disabled={currentStep === 1}
-                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200"
+                  className="text-gray-600 hover:text-gray-900"
                 >
-                  Back
+                  Previous
                 </Button>
+                
                 {currentStep < 3 ? (
-                  <Button 
+                  <Button
                     onClick={nextStep}
-                    className="bg-[#87CEEB] hover:bg-[#1C356B] text-white border-2 border-[#87CEEB] hover:border-[#1C356B] shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
+                    disabled={!canProceedToNextStep()}
+                    className="bg-[#1C356B] hover:bg-[#2563eb] text-white"
                   >
                     Next Step
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     onClick={handleRegister}
-                    disabled={isSubmitting}
-                    className="bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600 text-white font-semibold border border-sky-300 hover:border-blue-400 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5 disabled:opacity-50"
+                    disabled={isSubmitting || !canProceedToNextStep()}
+                    className="bg-[#87CEEB] hover:bg-[#1C356B] text-black hover:text-white font-bold border-2 border-[#87CEEB] hover:border-[#1C356B] shadow-lg hover:shadow-xl transition-all duration-200"
                   >
                     {isSubmitting ? (
                       <span className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                        Submitting...
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        Registering...
                       </span>
                     ) : (
                       'Complete Registration'

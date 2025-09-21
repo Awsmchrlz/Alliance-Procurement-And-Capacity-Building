@@ -5,6 +5,7 @@ import { UpcomingEventsSection } from "@/components/upcoming-events";
 import { PartnershipSection } from "@/components/partnership-section";
 import { PartnersShowcase } from "@/components/partners-showcase";
 import { SponsorsShowcase } from "@/components/sponsors-showcase";
+import { ExhibitionsShowcase } from "@/components/exhibitions-showcase";
 import { AboutSection } from "@/components/about-section";
 import { ServicesSection } from "@/components/services-section";
 import { NewsletterSection } from "@/components/newsletter-section";
@@ -23,6 +24,7 @@ export default function Home() {
       <AboutSection />
       <ServicesSection />
       <SponsorsShowcase />
+      <ExhibitionsShowcase />
       <TestimonialsSection />
       <NewsletterSection />
       <Footer />
