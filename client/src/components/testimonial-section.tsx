@@ -20,10 +20,18 @@ export function TestimonialsSection() {
       company: "kafue general Hospital",
       image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757652647/WhatsApp_Image_2025-09-11_at_21.08.35_ryxo5z.jpg",
       rating: 5,
-      text: "The Ministry of Education’s for Luapula Province workshop on Electronic Government Procurement held at Samfya Secondary School in Samfya District from 25th to 26th October, 2024, was very enlightening. The sessions provided practical knowledge on e-GP and emphasized the importance of prudent supply chain and operations management in driving sustainable development. I am now better equipped to apply these skills to enhance transparency, accountability, and efficiency in my daily work"
+      text: "Attending the MoH Stores Officers Workshop held from 27th to 29th August 2025 was an eye-opening and enriching experience. The sessions on procurement compliance, records management, and risk mitigation gave me practical insights that I can immediately apply in my daily work. I especially appreciated the discussions on the new amendments to the Public Procurement Act and how they affect stores operations. The interactive panel discussions allowed us to exchange ideas and challenges openly, and I left the workshop feeling more confident, knowledgeable, and empowered to handle my responsibilities effectively."
     },
     {
       id: 3,
+      name: "Jackson Sakala",
+      position: "Senior Registry Officer",
+      company: "Mansa Provincial Administration ",
+      rating: 5,
+      text: "The Ministry of Education’s for Luapula Province workshop on Electronic Government Procurement held at Samfya Secondary School in Samfya District from 25th to 26th October, 2024, was very enlightening. The sessions provided practical knowledge on e-GP and emphasized the importance of prudent supply chain and operations management in driving sustainable development. I am now better equipped to apply these skills to enhance transparency, accountability, and efficiency in my daily work"
+    },
+    {
+      id: 4,
       name: "Cynthia Maanga",
       position: "Stores Officer",
       company: "Zambia Law Development Commission",
@@ -32,7 +40,7 @@ export function TestimonialsSection() {
       text: "The workshop organized by Alliance Procurement and Capacity Building in collaboration with Zambia Public Procurement Authority for the Ministry of Community Development and Social Services at Mika Hotel in Chongwe District from 22nd to 24th April, 2025, under the theme ‘Driving Accountability in Public Procurement and Financial Management’ was truly insightful. The training provided practical knowledge and tools that will greatly improve transparency, accountability, and efficiency in my work. I am leaving empowered to contribute more effectively to strengthening financial and procurement systems in my institution"
     },
     {
-      id: 4,
+      id: 5,
       name: " Rita Zimba",
       position: "Stores Officer",
       company: "The Judiciary of Zambia",
@@ -41,7 +49,7 @@ export function TestimonialsSection() {
       text: "The Stores Officers Training held at Chalimabana Local Government Training Institute in Chongwe District from 27th to 29th August, 2025, was highly beneficial. The sessions on accountability and effective stores management were practical and eye-opening, equipping me with new skills to strengthen controls and improve efficiency in my work. This training has truly enhanced my capacity to deliver with integrity and professionalism."
     },
     {
-      id: 5,
+      id: 6,
       name: "SYDNEY KAPUI",
       position: "ACTING PROCUREMENT AND SUPPLIES ASSISTANT",
       company: "CHELSTONE ZONAL HOSPITAL",
@@ -50,7 +58,7 @@ export function TestimonialsSection() {
       text:"The workshop held at Mika Hotel in Chongwe District from 26th to 28th March, 2025, under the theme ‘Driving Accountability in Public Procurement and Financial Management’ was extremely impactful. The training deepened my understanding of accountability and transparency, while providing practical tools to strengthen procurement and financial management processes. I left the workshop better equipped to uphold integrity and efficiency in my role."
     },
     {
-      id: 6,
+      id: 7,
       name: "Racheal Ngoma",
       position: "Secretary",
       company: "Ministry of Health",
@@ -59,13 +67,13 @@ export function TestimonialsSection() {
       text:"The workshop at Livingstone Lodge in Livingstone District from 23rd to 26th June, 2025 was eye-opening and impactful. The sessions were practical, engaging, and equipped us with modern skills in financial, secretarial, and records management. I left more confident, motivated, and ready to drive innovation in my organization."
     } ,
     {
-      id: 7,
+      id: 8,
       name: "Lorraine mainza",
       position: "Issuing Officer",
       company: "Nitrogen chemicals of Zambi",
       image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757652647/WhatsApp_Image_2025-09-11_at_21.14.25_fodut4.jpg",
       rating: 5,
-      text:"The workshop for Executive, Administrative, Human Resource & Planning Officers held at Zambia Air force Banquet Hall in Livingstone District from 18th to 21st June, 2025, was truly empowering. The sessions were practical, insightful, and addressed real challenges we face in public service. I gained valuable knowledge and skills that will enhance my effectiveness and contribute to improved service delivery. It was a transformative experience that every officer should attend."
+      text:"The MoH Stores Officers Workshop, which took place from 27th to 29th August 2025, was very impactful and exceeded my expectations. The training covered critical areas such as stock management, audit preparation, and offenses in public procurement, which are highly relevant to my role as a stores officer. The facilitators were clear, engaging, and brought real-world examples that made the topics easy to understand. I particularly valued the emphasis on teamwork, inclusion, and ethical practices in procurement, which reminded me of the importance of professionalism and integrity in our work. I am grateful for the opportunity to participate, and I believe the knowledge gained will contribute positively to my department and the Ministry at large."
     }
   ];
 
