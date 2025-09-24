@@ -238,6 +238,87 @@ export default function AdminDashboard() {
   const [showCreateSponsorshipDialog, setShowCreateSponsorshipDialog] = useState(false);
   const [showCreateExhibitionDialog, setShowCreateExhibitionDialog] = useState(false);
 
+  // Logo upload functionality
+  const [logoUploadDialog, setLogoUploadDialog] = useState<{
+    open: boolean;
+    type: 'sponsorship' | 'exhibition';
+    id: string;
+    companyName: string;
+    currentLogo?: string;
+  }>({
+    open: false,
+    type: 'sponsorship',
+    id: '',
+    companyName: '',
+  });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+
+  // Logo upload functionality
+  const handleLogoUpload = async () => {
+    if (!logoFile || !logoUploadDialog.id) return;
+
+    try {
+      setLogoUploading(true);
+
+      // Get current session for auth token
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', logoFile);
+      formData.append('type', logoUploadDialog.type);
+      formData.append('id', logoUploadDialog.id);
+
+      // Upload file through our API endpoint
+      const uploadResponse = await fetch('/api/admin/upload-logo', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.message || 'Upload failed');
+      }
+
+      const { filePath } = await uploadResponse.json();
+
+      // Update the record with the logo path
+      const endpoint = logoUploadDialog.type === 'sponsorship' 
+        ? `/api/admin/sponsorships/${logoUploadDialog.id}/logo`
+        : `/api/admin/exhibitions/${logoUploadDialog.id}/logo`;
+        
+      await apiRequest('PATCH', endpoint, { logoPath: filePath });
+
+      // Refresh data and close dialog
+      await refreshData();
+      setLogoUploadDialog(prev => ({ ...prev, open: false }));
+      setLogoFile(null);
+      
+      toast({
+        title: "Logo uploaded successfully!",
+        description: `Company logo has been updated for ${logoUploadDialog.companyName}.`,
+      });
+    } catch (error: any) {
+      console.error('Logo upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload logo. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   // Email campaign helper functions
   const getEmailRecipients = () => {
     let recipients = [];
@@ -3171,6 +3252,7 @@ export default function AdminDashboard() {
                           <TableHead>Level</TableHead>
                           <TableHead>Amount</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Logo</TableHead>
                           <TableHead>Payment Evidence</TableHead>
                           <TableHead>Event</TableHead>
                           <TableHead>Submitted</TableHead>
@@ -3216,6 +3298,50 @@ export default function AdminDashboard() {
                               >
                                 {sponsorship.status.charAt(0).toUpperCase() + sponsorship.status.slice(1)}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                {sponsorship.companyLogo ? (
+                                  <div className="flex items-center space-x-2">
+                                    <img 
+                                      src={sponsorship.companyLogo} 
+                                      alt={`${sponsorship.companyName} logo`}
+                                      className="w-8 h-8 object-contain rounded border"
+                                    />
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setLogoUploadDialog({
+                                        open: true,
+                                        type: 'sponsorship',
+                                        id: sponsorship.id,
+                                        companyName: sponsorship.companyName,
+                                        currentLogo: sponsorship.companyLogo
+                                      })}
+                                      className="text-xs"
+                                    >
+                                      <Upload className="w-3 h-3 mr-1" />
+                                      Update
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  {/* <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setLogoUploadDialog({
+                                      open: true,
+                                      type: 'sponsorship',
+                                      id: sponsorship.id,
+                                      companyName: sponsorship.companyName,
+                                      currentLogo: sponsorship.companyLogo
+                                    })}
+                                    className="text-xs"
+                                  >
+                                    <Upload className="w-3 h-3 mr-1" />
+                                    Add Logo
+                                  </Button> */}
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {sponsorship.paymentEvidence ? (
@@ -3354,6 +3480,7 @@ export default function AdminDashboard() {
                           <TableHead>Contact</TableHead>
                           <TableHead>Amount</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Logo</TableHead>
                           <TableHead>Payment Evidence</TableHead>
                           <TableHead>Event</TableHead>
                           <TableHead>Submitted</TableHead>
@@ -3389,6 +3516,50 @@ export default function AdminDashboard() {
                               >
                                 {exhibition.status.charAt(0).toUpperCase() + exhibition.status.slice(1)}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                {exhibition.companyLogo ? (
+                                  <div className="flex items-center space-x-2">
+                                    <img 
+                                      src={exhibition.companyLogo} 
+                                      alt={`${exhibition.companyName} logo`}
+                                      className="w-8 h-8 object-contain rounded border"
+                                    />
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setLogoUploadDialog({
+                                        open: true,
+                                        type: 'exhibition',
+                                        id: exhibition.id,
+                                        companyName: exhibition.companyName,
+                                        currentLogo: exhibition.companyLogo
+                                      })}
+                                      className="text-xs"
+                                    >
+                                      <Upload className="w-3 h-3 mr-1" />
+                                      Update
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  {/* <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setLogoUploadDialog({
+                                      open: true,
+                                      type: 'exhibition',
+                                      id: exhibition.id,
+                                      companyName: exhibition.companyName,
+                                      currentLogo: exhibition.companyLogo
+                                    })}
+                                    className="text-xs"
+                                  >
+                                    <Upload className="w-3 h-3 mr-1" />
+                                    Add Logo
+                                  </Button> */}
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {exhibition.paymentEvidence ? (
@@ -4383,6 +4554,107 @@ export default function AdminDashboard() {
             />
           </>
         )}
+
+        {/* Logo Upload Dialog */}
+        <Dialog open={logoUploadDialog.open} onOpenChange={(open) => {
+          setLogoUploadDialog(prev => ({ ...prev, open }));
+          if (!open) {
+            setLogoFile(null);
+          }
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {logoUploadDialog.currentLogo ? 'Update' : 'Upload'} Company Logo
+              </DialogTitle>
+              <DialogDescription>
+                Upload a logo for {logoUploadDialog.companyName}. Recommended size: 200x200px or larger.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {logoUploadDialog.currentLogo && (
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-2">Current Logo:</p>
+                  <img 
+                    src={logoUploadDialog.currentLogo} 
+                    alt="Current logo"
+                    className="w-20 h-20 object-contain mx-auto border rounded"
+                  />
+                </div>
+              )}
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  id="logoUpload"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 2 * 1024 * 1024) {
+                        toast({
+                          title: "File too large",
+                          description: "Please select an image smaller than 2MB.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      setLogoFile(file);
+                    }
+                  }}
+                  className="hidden"
+                />
+                <label htmlFor="logoUpload" className="cursor-pointer">
+                  <div className="flex flex-col items-center space-y-2">
+                    <Upload className="w-8 h-8 text-gray-400" />
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
+                    </div>
+                    <div className="text-xs text-gray-500">PNG, JPG, SVG (max 2MB)</div>
+                  </div>
+                </label>
+              </div>
+
+              {logoFile && (
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-2">Selected file:</p>
+                  <p className="text-sm font-medium">{logoFile.name}</p>
+                  <p className="text-xs text-gray-500">({(logoFile.size / 1024 / 1024).toFixed(2)} MB)</p>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setLogoUploadDialog(prev => ({ ...prev, open: false }));
+                  setLogoFile(null);
+                }}
+                disabled={logoUploading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleLogoUpload}
+                disabled={!logoFile || logoUploading}
+              >
+                {logoUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Logo
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

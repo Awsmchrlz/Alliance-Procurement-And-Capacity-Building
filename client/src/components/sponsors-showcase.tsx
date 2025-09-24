@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 import { Crown, Award, Medal, Star, ExternalLink } from "lucide-react";
 
 interface Sponsor {
@@ -31,6 +32,12 @@ const SPONSORSHIP_LABELS = {
   gold: 'Gold Partner',
   silver: 'Silver Partner',
   bronze: 'Bronze Partner',
+};
+
+const getPublicUrl = (path: string | undefined) => {
+  if (!path) return null;
+  const { data } = supabase.storage.from('logos').getPublicUrl(path);
+  return data?.publicUrl;
 };
 
 export function SponsorsShowcase() {
@@ -83,8 +90,8 @@ export function SponsorsShowcase() {
 
         {/* Continuous Scrolling Sponsors */}
         <div className="mb-16">
-          <div className="relative overflow-hidden">
-            <div className="flex animate-scroll space-x-8">
+          <div className="relative overflow-hidden group">
+            <div className="flex animate-scroll group-hover:[animation-play-state:paused] space-x-8">
               {/* Duplicate sponsors for seamless loop */}
               {[...sponsorsArray, ...sponsorsArray].map((sponsor: Sponsor, index) => {
                 const Icon = SPONSORSHIP_ICONS[sponsor.sponsorshipLevel as keyof typeof SPONSORSHIP_ICONS];
@@ -93,42 +100,32 @@ export function SponsorsShowcase() {
                 return (
                   <div
                     key={`${sponsor.id}-${index}`}
-                    className="flex-shrink-0 w-64 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 overflow-hidden group cursor-pointer"
+                    className="flex-shrink-0 w-72 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border overflow-hidden transform hover:-translate-y-1"
                     onClick={() => handleSponsorClick(sponsor.website)}
                   >
-                    <div className={`h-2 bg-gradient-to-r ${colorClass}`}></div>
-                    <div className="p-6 text-center">
-                      {sponsor.companyLogo ? (
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                          <img 
-                            src={sponsor.companyLogo} 
-                            alt={`${sponsor.companyName} logo`}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              // Fallback to icon if logo fails to load
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `<div class="w-16 h-16 p-3 rounded-full bg-gradient-to-r ${colorClass} text-white flex items-center justify-center shadow-lg"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 9.739 9 11 5.16-1.261 9-5.45 9-11V7l-10-5z"/></svg></div>`;
-                              }
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className={`w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r ${colorClass} text-white flex items-center justify-center shadow-lg`}>
-                          <Icon className="w-8 h-8" />
-                        </div>
-                      )}
-                      
-                      <h3 className="font-bold text-lg text-gray-900 mb-2 group-hover:text-[#1C356B] transition-colors">
+                    <div className="h-24 bg-gray-50 flex items-center justify-center p-4">
+                      <img 
+                        src={getPublicUrl(sponsor.companyLogo) || ''} 
+                        alt={`${sponsor.companyName} logo`}
+                        className="max-h-full max-w-full object-contain"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `<div class="w-16 h-16 p-3 rounded-full bg-gradient-to-r ${colorClass} text-white flex items-center justify-center shadow-lg"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 9.739 9 11 5.16-1.261 9-5.45 9-11V7l-10-5z"/></svg></div>`;
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className={`p-5 border-t-4 bg-gradient-to-r ${colorClass}`}>
+                      <h3 className="font-bold text-lg text-white truncate">
                         {sponsor.companyName}
                       </h3>
-                      
-                      <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-                        <span className="capitalize">{sponsor.sponsorshipLevel} Sponsor</span>
+                      <div className="flex items-center justify-between text-white/80">
+                        <span className="capitalize text-sm">{sponsor.sponsorshipLevel} Sponsor</span>
                         {sponsor.website && (
-                          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ExternalLink className="w-4 h-4" />
                         )}
                       </div>
                     </div>
@@ -175,20 +172,29 @@ export function SponsorsShowcase() {
                       }`}
                       onClick={() => handleSponsorClick(sponsor.website)}
                     >
-                      <div className={`h-2 bg-gradient-to-r ${colorClass}`}></div>
-                      <div className="p-6 text-center">
-                        <div className={`w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r ${colorClass} text-white flex items-center justify-center shadow-lg`}>
-                          <Icon className="w-8 h-8" />
-                        </div>
-                        
-                        <h3 className="font-bold text-lg text-gray-900 mb-2 group-hover:text-[#1C356B] transition-colors">
+                      <div className="h-32 bg-gray-100 flex items-center justify-center p-4">
+                        <img 
+                          src={getPublicUrl(sponsor.companyLogo) || ''} 
+                          alt={`${sponsor.companyName} logo`}
+                          className="max-h-full max-w-full object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `<div class="w-16 h-16 p-3 rounded-full bg-gradient-to-r ${colorClass} text-white flex items-center justify-center shadow-lg"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 9.739 9 11 5.16-1.261 9-5.45 9-11V7l-10-5z"/></svg></div>`;
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className={`p-5 border-t-4 bg-gradient-to-r ${colorClass}`}>
+                        <h3 className="font-bold text-lg text-white truncate">
                           {sponsor.companyName}
                         </h3>
-                        
-                        <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-                          <span className="capitalize">{level} Sponsor</span>
+                        <div className="flex items-center justify-between text-white/80">
+                          <span className="capitalize text-sm">{level} Sponsor</span>
                           {sponsor.website && (
-                            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ExternalLink className="w-4 h-4" />
                           )}
                         </div>
                       </div>

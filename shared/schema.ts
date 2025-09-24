@@ -100,6 +100,7 @@ export const sponsorships = pgTable("sponsorships", {
   website: text("website"),
   companyAddress: text("company_address"),
   sponsorshipLevel: text("sponsorship_level").notNull(), // platinum, gold, silver, bronze
+  logo_url: text("logo_url"),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   currency: text("currency").default("USD"),
   status: text("status").default("pending"), // pending, approved, rejected, paid
@@ -137,6 +138,7 @@ export const exhibitions = pgTable("exhibitions", {
   electricalRequirements: boolean("electrical_requirements").default(false),
   internetRequirements: boolean("internet_requirements").default(false),
   notes: text("notes"),
+  logo_url: text("logo_url"),
   submittedAt: timestamp("submitted_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -12,7 +12,7 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<any> {
   const session = await supabase.auth.getSession();
   const accessToken = session.data.session?.access_token;
 
@@ -27,6 +27,14 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return await res.json();
+  }
+  if (contentType.includes("text/")) {
+    return await res.text();
+  }
+  // Fallback: return raw Response for non-JSON/text (e.g., blobs)
   return res;
 }
 

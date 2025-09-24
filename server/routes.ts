@@ -749,36 +749,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all sponsorships (admin only)
-  app.get(
-    "/api/admin/sponsorships",
+  app.get("/api/admin/sponsorships", 
     authenticateSupabase,
-    requireRoles([Roles.SuperAdmin, Roles.Finance]),
-    async (req: any, res) => {
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req, res) => {
       try {
         const sponsorships = await storage.getAllSponsorships();
         res.json({ sponsorships });
       } catch (error: any) {
         console.error("Error fetching sponsorships:", error);
-        res.status(500).json({ message: "Failed to fetch sponsorships", details: error.message });
+        res.status(500).json({
+          message: "Failed to fetch sponsorships",
+          details: error.message,
+        });
       }
     }
   );
 
   // Get all exhibitions (admin only)
-  app.get(
-    "/api/admin/exhibitions",
+  app.get("/api/admin/exhibitions", 
     authenticateSupabase,
-    requireRoles([Roles.SuperAdmin, Roles.Finance]),
-    async (req: any, res) => {
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req, res) => {
       try {
         const exhibitions = await storage.getAllExhibitions();
         res.json({ exhibitions });
       } catch (error: any) {
         console.error("Error fetching exhibitions:", error);
-        res.status(500).json({ message: "Failed to fetch exhibitions", details: error.message });
+        res.status(500).json({
+          message: "Failed to fetch exhibitions",
+          details: error.message,
+        });
       }
     }
   );
+
+  // Public showcase endpoints for approved exhibitions and sponsorships only
+  app.get("/api/showcase/sponsorships", async (req, res) => {
+    try {
+      const sponsorships = await storage.getAllSponsorships();
+      // Filter only approved sponsorships
+      const approvedSponsorships = sponsorships.filter(
+        (s: any) => s.status === 'approved' || s.status === 'Approved'
+      );
+      res.json(approvedSponsorships);
+    } catch (error: any) {
+      console.error("Error fetching approved sponsorships:", error);
+      res.status(500).json({
+        message: "Failed to fetch approved sponsorships",
+        details: error.message,
+      });
+    }
+  });
+
+  app.get("/api/showcase/exhibitions", async (req, res) => {
+    try {
+      const exhibitions = await storage.getAllExhibitions();
+      // Filter only approved exhibitions
+      const approvedExhibitions = exhibitions.filter(
+        (e: any) => e.status === 'approved' || e.status === 'Approved'
+      );
+      res.json(approvedExhibitions);
+    } catch (error: any) {
+      console.error("Error fetching approved exhibitions:", error);
+      res.status(500).json({
+        message: "Failed to fetch approved exhibitions",
+        details: error.message,
+      });
+    }
+  });
 
   // Update sponsorship status (admin only)
   app.patch(
@@ -826,24 +865,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Public endpoints for approved sponsors and exhibitors (for showcase)
-  app.get("/api/sponsorships/approved", async (req, res) => {
+  // Update sponsorship logo (admin only)
+  app.patch(
+    "/api/admin/sponsorships/:id/logo",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+        const { logoPath } = req.body;
+
+        if (!logoPath) {
+          return res.status(400).json({ message: "Logo path is required" });
+        }
+
+        await storage.updateSponsorshipLogo(id, logoPath);
+        res.json({ message: "Sponsorship logo updated successfully" });
+      } catch (error: any) {
+        console.error("Error updating sponsorship logo:", error);
+        res.status(500).json({ message: "Failed to update sponsorship logo", details: error.message });
+      }
+    }
+  );
+
+  // Update exhibition logo (admin only)
+  app.patch(
+    "/api/admin/exhibitions/:id/logo",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+        const { logoPath } = req.body;
+
+        if (!logoPath) {
+          return res.status(400).json({ message: "Logo path is required" });
+        }
+
+        // await storage.updateExhibitionLogo(id, logoPath);
+        res.json({ message: "Exhibition logo updated successfully" });
+      } catch (error: any) {
+        console.error("Error updating exhibition logo:", error);
+        res.status(500).json({ message: "Failed to update exhibition logo", details: error.message });
+      }
+    }
+  );
+
+  // Logo upload endpoint (admin only)
+  app.post(
+    "/api/admin/upload-logo",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
+    async (req: any, res) => {
+      try {
+        const files = req.files;
+        const { type, id } = req.body;
+        
+        if (!files || !files.file || !type || !id) {
+          return res.status(400).json({ message: "File, type, and ID are required" });
+        }
+
+        const file = Array.isArray(files.file) ? files.file[0] : files.file;
+
+        // Generate unique filename
+        const timestamp = Date.now();
+        const fileName = `${type}_logo_${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        const filePath = `${type}s/${id}/logos/${fileName}`;
+
+        // Create Supabase client
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          return res.status(500).json({ message: "Supabase server credentials not configured" });
+        }
+
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+        // Upload to Supabase storage
+        const { data, error } = await supabaseAdmin.storage
+          .from('payment-evidence')
+          .upload(filePath, file.data, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.mimetype,
+          });
+
+        if (error) {
+          console.error("Storage upload error:", error);
+          return res.status(500).json({ message: "Failed to upload file", details: error.message });
+        }
+
+        res.json({ filePath, message: "File uploaded successfully" });
+      } catch (error: any) {
+        console.error("Error uploading logo:", error);
+        res.status(500).json({ message: "Failed to upload logo", details: error.message });
+      }
+    }
+  );
+
+  // Public endpoints for showcase (get all data for filtering on frontend)
+  app.get("/api/showcase/sponsorships", async (req, res) => {
     try {
-      const sponsors = await storage.getApprovedSponsorships();
-      res.json(sponsors);
+      const sponsorships = await storage.getAllSponsorships();
+      console.log("🔍 Showcase API returning sponsorships:", sponsorships.length, "items");
+      res.json(sponsorships);
     } catch (error: any) {
-      console.error("Error fetching approved sponsors:", error);
-      res.status(500).json({ message: "Failed to fetch sponsors" });
+      console.error("Error fetching sponsorships for showcase:", error);
+      res.status(500).json({ message: "Failed to fetch sponsorships" });
     }
   });
 
-  app.get("/api/exhibitions/approved", async (req, res) => {
+  app.get("/api/showcase/exhibitions", async (req, res) => {
     try {
-      const exhibitors = await storage.getApprovedExhibitions();
-      res.json(exhibitors);
+      const exhibitions = await storage.getAllExhibitions();
+      console.log("🔍 Showcase API returning exhibitions:", exhibitions.length, "items");
+      res.json(exhibitions);
     } catch (error: any) {
-      console.error("Error fetching approved exhibitors:", error);
-      res.status(500).json({ message: "Failed to fetch exhibitors" });
+      console.error("Error fetching exhibitions for showcase:", error);
+      res.status(500).json({ message: "Failed to fetch exhibitions" });
     }
   });
 

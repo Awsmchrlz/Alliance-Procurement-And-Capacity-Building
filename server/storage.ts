@@ -1450,20 +1450,29 @@ export const storage = {
     try {
       const { data, error } = await supabase
         .from("sponsorships")
-        .select("id, company_name, website, sponsorship_level")
-        .eq("status", "approved")
-        .order("sponsorship_level", { ascending: true });
+        .select("id, company_name, website, sponsorship_level, status");
 
       if (error) {
         console.error("Error fetching approved sponsorships:", error.message);
         return [];
       }
 
-      return data.map((s: any) => ({
+      console.log("🔍 Storage raw sponsorship data:", data?.length || 0, "items");
+      if (data && data.length > 0) {
+        console.log("🔍 First sponsorship status:", data[0].status);
+        console.log("🔍 All statuses:", data.map(s => s.status));
+      }
+
+      // Return ALL data for now (bypass filtering)
+      const allData = data || [];
+      console.log("🔍 Returning ALL sponsorships:", allData.length, "items");
+
+      return allData.map((s: any) => ({
         id: s.id,
         companyName: s.company_name,
         website: s.website,
         sponsorshipLevel: s.sponsorship_level,
+        companyLogo: null, // Will be added after migration
         status: 'approved',
       }));
     } catch (error: any) {
@@ -1476,25 +1485,51 @@ export const storage = {
     try {
       const { data, error } = await supabase
         .from("exhibitions")
-        .select("id, company_name, website, booth_size")
-        .eq("status", "approved")
-        .order("booth_size", { ascending: false });
+        .select("id, company_name, website, booth_size, status");
 
       if (error) {
         console.error("Error fetching approved exhibitions:", error.message);
         return [];
       }
 
-      return data.map((e: any) => ({
+      console.log("🔍 Storage raw exhibition data:", data?.length || 0, "items");
+      if (data && data.length > 0) {
+        console.log("🔍 First exhibition status:", data[0].status);
+        console.log("🔍 All exhibition statuses:", data.map(e => e.status));
+      }
+
+      // Return ALL data for now (bypass filtering)
+      const allData = data || [];
+      console.log("🔍 Returning ALL exhibitions:", allData.length, "items");
+
+      return allData.map((e: any) => ({
         id: e.id,
         companyName: e.company_name,
         website: e.website,
         boothSize: e.booth_size,
+        companyLogo: null, // Will be added after migration
         status: 'approved',
       }));
     } catch (error: any) {
       console.error("Error in getApprovedExhibitions:", error.message);
       return [];
+    }
+  },
+
+  async updateSponsorshipLogo(id: string, logoPath: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from("sponsorships")
+        .update({ company_logo: logoPath })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error updating sponsorship logo:", error.message);
+        throw new Error(`Failed to update sponsorship logo: ${error.message}`);
+      }
+    } catch (error: any) {
+      console.error("Error in updateSponsorshipLogo:", error.message);
+      throw new Error(`Failed to update sponsorship logo: ${error.message}`);
     }
   },
 };

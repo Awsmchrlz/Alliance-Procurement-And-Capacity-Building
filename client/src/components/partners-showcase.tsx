@@ -29,19 +29,23 @@ const SPONSORSHIP_COLORS = {
 export function PartnersShowcase() {
   // Fetch approved sponsors
   const { data: sponsors = [] } = useQuery({
-    queryKey: ["/api/sponsorships/approved"],
+    queryKey: ["/api/showcase/sponsorships"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/sponsorships/approved");
-      return response;
+      const response = await apiRequest("GET", "/api/showcase/sponsorships");
+      return Array.isArray(response)
+        ? response.filter((s: any) => s.status === 'approved' || s.status === 'Approved')
+        : [];
     },
   });
 
   // Fetch approved exhibitors
   const { data: exhibitors = [] } = useQuery({
-    queryKey: ["/api/exhibitions/approved"],
+    queryKey: ["/api/showcase/exhibitions"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/exhibitions/approved");
-      return response;
+      const response = await apiRequest("GET", "/api/showcase/exhibitions");
+      return Array.isArray(response)
+        ? response.filter((e: any) => e.status === 'approved' || e.status === 'Approved')
+        : [];
     },
   });
 

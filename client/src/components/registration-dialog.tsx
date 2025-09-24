@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Upload, FileText, Copy, X, CheckCircle, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Event } from '@shared/schema';
+import { useGeolocation } from "@/hooks/use-geolocation";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useQueryClient } from '@tanstack/react-query';
@@ -71,9 +72,10 @@ const pricingTiers: PricingTier[] = [
 ];
 
 export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: RegistrationDialogProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const locationData = useGeolocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [success, setSuccess] = useState(false);
   const [registrationData, setRegistrationData] = useState<any>(null);
@@ -157,37 +159,36 @@ export function RegistrationDialog({ event, open, onOpenChange, onSuccess }: Reg
     }
   };
 
+  // Automatically set delegate type based on location
   useEffect(() => {
-    if (open) {
-      setCurrentStep(1);
-      setSuccess(false);
-      setEvidenceFile(null);
-      setFormData({
-        firstName: user?.firstName || '',
-        lastName: user?.lastName || '',
-        email: user?.email || '',
-        phoneNumber: user?.phoneNumber || '',
-        country: '',
-        organization: '',
-        position: '',
-        delegateType: 'private',
-        paymentMethod: '',
-        bankCurrency: 'ZMW',
-        // Group payment defaults
-        groupSize: 1,
-        groupPaymentAmount: 0,
-        groupPaymentCurrency: 'ZMW',
-        organizationReference: '',
-      });
+    if (!locationData.isLoading && !locationData.error) {
+      const autoDetectedType = locationData.isZambia ? 'private' : 'international';
+      setFormData(prev => ({
+        ...prev,
+        delegateType: autoDetectedType,
+        country: locationData.country || prev.country,
+      }));
       
-      // Auto-populate country from timezone
-      const detectedCountry = getCountryFromTimezone();
-      setFormData(prev => ({ ...prev, country: detectedCountry }));
+      console.log('🌍 Auto-detected delegate type:', {
+        country: locationData.country,
+        isZambia: locationData.isZambia,
+        delegateType: autoDetectedType
+      });
+    }
+  }, [locationData.isLoading, locationData.error, locationData.isZambia, locationData.country]);
+
+  // Auto-populate user data when dialog opens
+  useEffect(() => {
+    if (open && user) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
+      }));
     }
   }, [open, user]);
-
-  // Remove the conflicting useEffect that sets default country
-  // This was overriding the IP geolocation result
 
   const selectedPricing = pricingTiers.find(
     (tier) => tier.type === formData.delegateType

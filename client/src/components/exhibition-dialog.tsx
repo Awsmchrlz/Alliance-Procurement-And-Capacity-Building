@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
-import { CheckCircle, Store, Zap, Wifi } from 'lucide-react';
+import { CheckCircle, Store, Zap, Wifi, Upload } from 'lucide-react';
 import { Event } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -28,12 +28,8 @@ interface FormDataType {
   email: string;
   phoneNumber: string;
   website: string;
-  companyAddress: string;
   productsServices: string;
-  boothRequirements: string;
-  electricalRequirements: boolean;
-  internetRequirements: boolean;
-  notes: string;
+  additionalInfo: string;
   paymentMethod: 'mobile' | 'bank' | 'cash' | '';
 }
 
@@ -61,12 +57,8 @@ const INITIAL_FORM_DATA: FormDataType = {
   email: '',
   phoneNumber: '',
   website: '',
-  companyAddress: '',
   productsServices: '',
-  boothRequirements: '',
-  electricalRequirements: false,
-  internetRequirements: false,
-  notes: '',
+  additionalInfo: '',
   paymentMethod: '',
 };
 
@@ -82,6 +74,7 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormDataType>(INITIAL_FORM_DATA);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // ============================================================================
   // UTILITY FUNCTIONS
@@ -96,6 +89,14 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
 
   const updateField = (field: keyof FormDataType, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'paymentMethod') {
+      // Allow UI to expand first, then scroll
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+        }
+      }, 50);
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,6 +120,7 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
     }
   };
 
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -133,6 +135,7 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
       if (!formData.contactPerson.trim()) return { isValid: false, message: 'Contact person is required' };
       if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) return { isValid: false, message: 'Valid email is required' };
       if (!formData.phoneNumber.trim()) return { isValid: false, message: 'Phone number is required' };
+      if (!formData.productsServices.trim()) return { isValid: false, message: 'Products/Services description is required' };
     }
 
     if (step === 3) {
@@ -223,17 +226,13 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
         email: formData.email.trim(),
         phoneNumber: formData.phoneNumber.trim(),
         website: formData.website.trim() || null,
-        companyAddress: formData.companyAddress.trim() || null,
         boothSize: 'standard',
         amount: EXHIBITION_PACKAGE.price,
         currency: 'USD',
         paymentMethod: formData.paymentMethod,
         paymentEvidence: evidenceUrl,
         productsServices: formData.productsServices.trim() || null,
-        boothRequirements: formData.boothRequirements.trim() || null,
-        electricalRequirements: formData.electricalRequirements,
-        internetRequirements: formData.internetRequirements,
-        notes: formData.notes.trim() || null,
+        notes: formData.additionalInfo.trim() || null,
       };
 
       await apiRequest("POST", "/api/exhibitions/register", exhibitionData);
@@ -440,15 +439,31 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="companyAddress" className="text-sm font-medium text-gray-700">Company Address</Label>
+        <Label htmlFor="productsServices" className="text-sm font-medium text-gray-700">Products/Services *</Label>
         <Textarea
-          id="companyAddress"
-          value={formData.companyAddress}
-          onChange={(e) => updateField('companyAddress', e.target.value)}
+          id="productsServices"
+          value={formData.productsServices}
+          onChange={(e) => updateField('productsServices', e.target.value)}
           className="w-full px-4 py-3 text-base sm:text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all"
-          placeholder="Full company address"
+          placeholder="Describe the products or services you'll be showcasing"
           rows={3}
+          required
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="additionalInfo" className="text-sm font-medium text-gray-700">Additional Information</Label>
+        <Textarea
+          id="additionalInfo"
+          value={formData.additionalInfo}
+          onChange={(e) => updateField('additionalInfo', e.target.value)}
+          className="w-full px-4 py-3 text-base sm:text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all"
+          placeholder="Any special booth requirements, electrical needs, internet requirements, or other notes..."
+          rows={4}
+        />
+        <p className="text-xs text-gray-500">
+          Include any booth requirements, electrical needs, internet requirements, or other special requests
+        </p>
       </div>
     </div>
   );
@@ -691,13 +706,13 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
           <div className="flex flex-col h-full">
             {renderHeader()}
 
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 pb-24 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
               {currentStep === 1 && renderStep1()}
               {currentStep === 2 && renderStep2()}
               {currentStep === 3 && renderStep3()}
             </div>
 
-            <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50">
+            <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 sticky bottom-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-gray-50/80">
               <div className="flex items-center justify-between">
                 {renderStepIndicator()}
                 {renderNavigationButtons()}
