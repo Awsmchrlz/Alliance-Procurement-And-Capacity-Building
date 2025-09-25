@@ -1,7 +1,8 @@
 // Configuration
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5005";
-const TEST_EMAIL = "test@example.com";
+const TEST_EMAIL = `test${Date.now()}@example.com`;
 const TEST_PASSWORD = "testpassword123";
+const TEST_PHONE = `+12345${Date.now().toString().slice(-5)}`;
 
 class RegistrationDiagnostic {
   constructor() {
@@ -66,9 +67,8 @@ class RegistrationDiagnostic {
           firstName: "Test",
           lastName: "User",
           email: TEST_EMAIL,
-          phoneNumber: "+1234567890",
+          phoneNumber: TEST_PHONE,
           password: TEST_PASSWORD,
-          gender: "other",
         },
       );
 

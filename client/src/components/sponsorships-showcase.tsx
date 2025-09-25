@@ -157,150 +157,149 @@ export function SponsorshipsShowcase() {
   return (
     <>
       <section className="py-16 bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-white/70 text-blue-700 border border-blue-200 mb-4">
-            Trusted Partners
+        <div className="container mx-auto px-4">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-white/70 text-blue-700 border border-blue-200 mb-4">
+              Trusted Partners
+            </div>
+            <div className="flex items-center justify-center mb-2">
+              <Building2 className="w-8 h-8 text-blue-600 mr-3" />
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
+                Our Valued Partners
+              </h2>
+            </div>
+            <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
+              We're proud to partner with industry leaders who share our vision
+              for procurement excellence across Africa.
+            </p>
+            <div className="mt-4 flex items-center justify-center space-x-2">
+              <Users className="w-5 h-5 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {sponsorships.length} Partner
+                {sponsorships.length !== 1 ? "s" : ""} Supporting Our Mission
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-center mb-2">
-            <Building2 className="w-8 h-8 text-blue-600 mr-3" />
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
-              Our Valued Partners
-            </h2>
-          </div>
-          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
-            We're proud to partner with industry leaders who share our vision
-            for procurement excellence across Africa.
-          </p>
-          <div className="mt-4 flex items-center justify-center space-x-2">
-            <Users className="w-5 h-5 text-blue-600" />
-            <span className="text-sm font-medium text-gray-700">
-              {sponsorships.length} Partner
-              {sponsorships.length !== 1 ? "s" : ""} Supporting Our Mission
-            </span>
-          </div>
-        </div>
 
-        {/* Sponsorships Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {sortedSponsorships.map((sponsor) => {
-            const levelConfig =
-              SPONSORSHIP_LEVELS[sponsor.sponsorshipLevel] ||
-              SPONSORSHIP_LEVELS.bronze; // Fallback to bronze
-            const IconComponent = levelConfig.icon;
+          {/* Sponsorships Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {sortedSponsorships.map((sponsor) => {
+              const levelConfig =
+                SPONSORSHIP_LEVELS[sponsor.sponsorshipLevel] ||
+                SPONSORSHIP_LEVELS.bronze; // Fallback to bronze
+              const IconComponent = levelConfig.icon;
 
-            return (
-              <Card
-                key={sponsor.id}
-                className={`group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border ${levelConfig.borderColor} bg-white overflow-hidden rounded-2xl`}
-              >
-                <CardContent className="p-0">
-                  {/* Level Badge */}
-                  <div
-                    className={`bg-gradient-to-r ${levelConfig.gradient} px-4 py-3 flex items-center justify-between`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <IconComponent className="w-5 h-5 text-white" />
-                      <span className="text-sm font-bold text-white">
-                        {levelConfig.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Medal Section */}
-                  <div className="p-6 flex flex-col items-center">
+              return (
+                <Card
+                  key={sponsor.id}
+                  className={`group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border ${levelConfig.borderColor} bg-white overflow-hidden rounded-2xl`}
+                >
+                  <CardContent className="p-0">
+                    {/* Level Badge */}
                     <div
-                      className={`w-20 h-20 mb-4 rounded-full flex items-center justify-center relative overflow-hidden transform hover:scale-110 transition-all duration-300 shadow-lg`}
-                      style={{
-                        background: `linear-gradient(135deg, ${levelConfig.medalGradient})`,
-                        boxShadow: `0 8px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.3)`,
-                      }}
+                      className={`bg-gradient-to-r ${levelConfig.gradient} px-4 py-3 flex items-center justify-between`}
                     >
-                      {/* Metallic shine effect */}
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/40 via-transparent to-transparent"></div>
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-bl from-transparent via-transparent to-black/10"></div>
-
-                      {/* Medal content */}
-                      <div className="relative z-10 w-16 h-16 rounded-full flex flex-col items-center justify-center">
-                        <IconComponent className="w-6 h-6 text-white mb-1 relative z-10 drop-shadow-lg" />
-                        <div className="text-xs font-bold text-white relative z-10 drop-shadow-lg">
-                          {sponsor.companyName
-                            .split(" ")
-                            .map((word) => word.charAt(0))
-                            .join("")
-                            .substring(0, 2)
-                            .toUpperCase()}
-                        </div>
+                      <div className="flex items-center space-x-2">
+                        <IconComponent className="w-5 h-5 text-white" />
+                        <span className="text-sm font-bold text-white">
+                          {levelConfig.label}
+                        </span>
                       </div>
-
-                      {/* Medal ribbon effect */}
-                      <div
-                        className="absolute -bottom-1 w-6 h-3 rounded-b-full opacity-60"
-                        style={{
-                          background: `linear-gradient(to right, ${levelConfig.medalGradient.split(", ")[0]}, ${levelConfig.medalGradient.split(", ")[2]})`,
-                        }}
-                      ></div>
                     </div>
 
-                    {/* Company Name */}
-                    <h3 className="text-xl font-bold text-gray-900 text-center mb-3 group-hover:text-blue-600 transition-colors">
-                      {sponsor.companyName}
-                    </h3>
-
-                    {/* Custom Styled Badge */}
-                    <div className="mb-4">
-                      <Badge
-                        className="text-white font-semibold px-4 py-2 shadow-lg text-sm"
+                    {/* Medal Section */}
+                    <div className="p-6 flex flex-col items-center">
+                      <div
+                        className={`w-20 h-20 mb-4 rounded-full flex items-center justify-center relative overflow-hidden transform hover:scale-110 transition-all duration-300 shadow-lg`}
                         style={{
                           background: `linear-gradient(135deg, ${levelConfig.medalGradient})`,
+                          boxShadow: `0 8px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.3)`,
                         }}
                       >
-                        {levelConfig.label}
-                      </Badge>
+                        {/* Metallic shine effect */}
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/40 via-transparent to-transparent"></div>
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-bl from-transparent via-transparent to-black/10"></div>
+
+                        {/* Medal content */}
+                        <div className="relative z-10 w-16 h-16 rounded-full flex flex-col items-center justify-center">
+                          <IconComponent className="w-6 h-6 text-white mb-1 relative z-10 drop-shadow-lg" />
+                          <div className="text-xs font-bold text-white relative z-10 drop-shadow-lg">
+                            {sponsor.companyName
+                              .split(" ")
+                              .map((word) => word.charAt(0))
+                              .join("")
+                              .substring(0, 2)
+                              .toUpperCase()}
+                          </div>
+                        </div>
+
+                        {/* Medal ribbon effect */}
+                        <div
+                          className="absolute -bottom-1 w-6 h-3 rounded-b-full opacity-60"
+                          style={{
+                            background: `linear-gradient(to right, ${levelConfig.medalGradient.split(", ")[0]}, ${levelConfig.medalGradient.split(", ")[2]})`,
+                          }}
+                        ></div>
+                      </div>
+
+                      {/* Company Name */}
+                      <h3 className="text-xl font-bold text-gray-900 text-center mb-3 group-hover:text-blue-600 transition-colors">
+                        {sponsor.companyName}
+                      </h3>
+
+                      {/* Custom Styled Badge */}
+                      <div className="mb-4">
+                        <Badge
+                          className="text-white font-semibold px-4 py-2 shadow-lg text-sm"
+                          style={{
+                            background: `linear-gradient(135deg, ${levelConfig.medalGradient})`,
+                          }}
+                        >
+                          {levelConfig.label}
+                        </Badge>
+                      </div>
+
+                      {/* Website Button */}
+                      {sponsor.website && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleVisitWebsite(sponsor.website!)}
+                          className="w-full flex items-center justify-center space-x-2 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                        >
+                          <Globe className="w-4 h-4" />
+                          <span>Visit Website</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Button>
+                      )}
                     </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
 
-                    {/* Website Button */}
-                    {sponsor.website && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleVisitWebsite(sponsor.website!)}
-                        className="w-full flex items-center justify-center space-x-2 hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                      >
-                        <Globe className="w-4 h-4" />
-                        <span>Visit Website</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Call to Action */}
-        <div className="mt-12 text-center">
-          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-2xl mx-auto border border-gray-200">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
-              Become a Partner
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Join our growing network of partners and help shape the future of
-              procurement and capacity building in Africa.
-            </p>
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <Building2 className="w-5 h-5 mr-2" />
-              Partner With Us
-            </Button>
+          {/* Call to Action */}
+          <div className="mt-12 text-center">
+            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-2xl mx-auto border border-gray-200">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                Become a Partner
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Join our growing network of partners and help shape the future
+                of procurement and capacity building in Africa.
+              </p>
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Building2 className="w-5 h-5 mr-2" />
+                Partner With Us
+              </Button>
+            </div>
           </div>
         </div>
-      )}
-      </div>
       </section>
 
       {/* CSS Styles for Medal Effects */}
