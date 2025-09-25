@@ -57,14 +57,17 @@ const EventsPage = () => {
     isLoading: isLoadingRegistrations,
     refetch: refetchRegistrations,
   } = useQuery({
-    queryKey: ["/api/users/registrations"],
+    queryKey: ["/api/users", user?.id, "registrations"],
     queryFn: async () => {
       if (!user?.id) {
         console.log("❌ No user ID available for registration fetch");
         return [];
       }
       console.log("🔍 Fetching registrations for user:", user.id);
-      const data = await apiRequest("GET", "/api/users/registrations");
+      const data = await apiRequest(
+        "GET",
+        `/api/users/${user?.id}/registrations`,
+      );
       console.log(
         "📋 User registrations fetched:",
         data?.length || 0,
@@ -321,21 +324,42 @@ const EventsPage = () => {
                         {status === "upcoming" && !isRegistered ? (
                           <Button
                             onClick={() => handleRegisterClick(event)}
-                            className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white font-semibold py-3 rounded-xl transition-all duration-300 group"
+                            className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 group text-sm sm:text-base min-h-[48px]"
                           >
-                            <span>Register for Event</span>
-                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                            <span className="hidden sm:inline">
+                              Register for Event
+                            </span>
+                            <span className="sm:hidden">Register</span>
+                            <ArrowRight className="w-4 h-4 ml-1 sm:ml-2 group-hover:translate-x-1 transition-transform flex-shrink-0" />
                           </Button>
                         ) : isRegistered ? (
-                          <Button variant="outline" className="w-full" disabled>
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Already Registered
+                          <Button
+                            variant="outline"
+                            className="w-full text-sm sm:text-base min-h-[48px] px-4"
+                            disabled
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
+                            <span className="hidden sm:inline">
+                              Already Registered
+                            </span>
+                            <span className="sm:hidden">Registered</span>
                           </Button>
                         ) : (
-                          <Button variant="outline" className="w-full" disabled>
-                            {status === "ongoing"
-                              ? "Event in Progress"
-                              : "Event Completed"}
+                          <Button
+                            variant="outline"
+                            className="w-full text-sm sm:text-base min-h-[48px] px-4"
+                            disabled
+                          >
+                            <span className="hidden sm:inline">
+                              {status === "ongoing"
+                                ? "Event in Progress"
+                                : "Event Completed"}
+                            </span>
+                            <span className="sm:hidden">
+                              {status === "ongoing"
+                                ? "In Progress"
+                                : "Completed"}
+                            </span>
                           </Button>
                         )}
                       </div>

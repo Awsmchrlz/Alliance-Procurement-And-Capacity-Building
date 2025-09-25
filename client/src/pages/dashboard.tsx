@@ -86,11 +86,11 @@ export default function Dashboard() {
   } = useQuery<RegistrationWithEvent[]>({
     queryKey: ["/api/users", user?.id, "registrations"],
     queryFn: async () => {
-      const response = await apiRequest(
+      const data = await apiRequest(
         "GET",
         `/api/users/${user?.id}/registrations`,
       );
-      return response.json();
+      return Array.isArray(data) ? data : [];
     },
     enabled: !!user,
     staleTime: 0,

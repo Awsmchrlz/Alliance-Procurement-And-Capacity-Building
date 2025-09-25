@@ -31,7 +31,7 @@ export function EventCard({
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  
+
   const handleRegister = () => {
     if (user) {
       setOpen(true);
@@ -45,13 +45,17 @@ export function EventCard({
   };
 
   // Create location data for the event
-  const eventLocationData = event.location ? {
-    name: event.title,
-    address: event.location,
-    description: `Join us for this exciting event at ${event.location}. This training session will provide valuable insights and networking opportunities in procurement and capacity building.`,
-    mapUrl: "https://maps.app.goo.gl/qPRVWi3AbsFMHTR8A", // Using the event location URL you provided
-    imageUrl: event.imageUrl || "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&h=400&fit=crop&crop=center"
-  } : undefined;
+  const eventLocationData = event.location
+    ? {
+        name: event.title,
+        address: event.location,
+        description: `Join us for this exciting event at ${event.location}. This training session will provide valuable insights and networking opportunities in procurement and capacity building.`,
+        mapUrl: "https://maps.app.goo.gl/qPRVWi3AbsFMHTR8A", // Using the event location URL you provided
+        imageUrl:
+          event.imageUrl ||
+          "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&h=400&fit=crop&crop=center",
+      }
+    : undefined;
 
   return (
     <Card
@@ -136,17 +140,21 @@ export function EventCard({
 
               {event.location && (
                 <div
-                  className="flex items-center text-gray-600 text-xs group"
+                  className="flex items-start text-gray-600 text-xs group w-full"
                   data-testid={`event-location-${event.id}`}
                 >
-                  <div className="flex items-center bg-primary-yellow/10 hover:bg-primary-yellow/20 rounded-full px-2 py-1 transition-all duration-200 group-hover:shadow-sm">
-                    <MapPin className="w-3 h-3 mr-1 text-primary-yellow animate-pulse" />
-                    <button 
+                  <div className="flex items-start bg-primary-yellow/10 hover:bg-primary-yellow/20 rounded-lg px-2 py-1.5 transition-all duration-200 group-hover:shadow-sm min-w-0 flex-1">
+                    <MapPin className="w-3 h-3 mr-1 mt-0.5 text-primary-yellow animate-pulse flex-shrink-0" />
+                    <button
                       onClick={handleLocationClick}
-                      className="font-medium text-primary-blue hover:text-primary-yellow transition-colors cursor-pointer text-left flex items-center"
+                      className="font-medium text-primary-blue hover:text-primary-yellow transition-colors cursor-pointer text-left flex flex-col min-w-0 flex-1"
                     >
-                      {event.location}
-                      <span className="ml-1 text-[10px] opacity-70 group-hover:opacity-100 transition-opacity">📍 View</span>
+                      <span className="break-words leading-tight">
+                        {event.location}
+                      </span>
+                      <span className="text-[9px] opacity-70 group-hover:opacity-100 transition-opacity mt-0.5">
+                        📍 View Location
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -184,7 +192,9 @@ export function EventCard({
               <div className="bg-gradient-to-r from-primary-blue/5 to-primary-yellow/5 border border-primary-yellow/30 rounded-lg p-3 mb-4">
                 <div className="flex items-center mb-2">
                   <Crown className="w-4 h-4 mr-2 text-primary-yellow" />
-                  <h4 className="text-xs font-bold text-primary-blue uppercase tracking-wider">Guest of Honor</h4>
+                  <h4 className="text-xs font-bold text-primary-blue uppercase tracking-wider">
+                    Guest of Honor
+                  </h4>
                 </div>
                 <div className="text-center">
                   <p className="text-primary-blue font-bold text-xs leading-tight">
@@ -238,7 +248,7 @@ export function EventCard({
                         </>
                       ) : (
                         <>
-                          Learn More
+                          Register For Event
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
@@ -357,17 +367,21 @@ export function EventCard({
 
               {event.location && (
                 <div
-                  className="flex items-center text-gray-600 text-sm group"
+                  className="flex items-start text-gray-600 text-sm group w-full"
                   data-testid={`event-location-${event.id}`}
                 >
-                  <div className="flex items-center bg-primary-yellow/10 hover:bg-primary-yellow/20 rounded-full px-3 py-1.5 transition-all duration-200 group-hover:shadow-md">
-                    <MapPin className="w-4 h-4 mr-2 text-primary-yellow animate-pulse" />
-                    <button 
+                  <div className="flex items-start bg-primary-yellow/10 hover:bg-primary-yellow/20 rounded-lg px-3 py-2 transition-all duration-200 group-hover:shadow-md min-w-0 flex-1">
+                    <MapPin className="w-4 h-4 mr-2 mt-0.5 text-primary-yellow animate-pulse flex-shrink-0" />
+                    <button
                       onClick={handleLocationClick}
-                      className="font-medium text-primary-blue hover:text-primary-yellow transition-colors cursor-pointer text-left flex items-center"
+                      className="font-medium text-primary-blue hover:text-primary-yellow transition-colors cursor-pointer text-left flex flex-col min-w-0 flex-1"
                     >
-                      {event.location}
-                      <span className="ml-2 text-xs opacity-70 group-hover:opacity-100 transition-opacity">📍 View Location</span>
+                      <span className="break-words leading-snug">
+                        {event.location}
+                      </span>
+                      <span className="text-xs opacity-70 group-hover:opacity-100 transition-opacity mt-1">
+                        📍 View Location Details
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -407,7 +421,9 @@ export function EventCard({
               <div className="bg-gradient-to-r from-primary-blue/5 to-primary-yellow/5 border border-primary-yellow/30 rounded-lg p-4 mb-6">
                 <div className="flex items-center mb-3">
                   <Crown className="w-5 h-5 mr-2 text-primary-yellow" />
-                  <h4 className="text-sm font-bold text-primary-blue uppercase tracking-wider">Guest of Honor</h4>
+                  <h4 className="text-sm font-bold text-primary-blue uppercase tracking-wider">
+                    Guest of Honor
+                  </h4>
                 </div>
                 <div className="text-center">
                   <p className="text-primary-blue font-bold text-sm leading-tight">
@@ -501,8 +517,8 @@ export function EventCard({
       {user && featured && (
         <RegistrationDialog open={open} onOpenChange={setOpen} event={event} />
       )}
-      
-      <LocationModal 
+
+      <LocationModal
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
         locationData={eventLocationData}

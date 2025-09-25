@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { format } from "date-fns";
 import { supabase } from "@/lib/supabase";
 import {
   Card,
@@ -2576,6 +2577,9 @@ export default function AdminDashboard() {
                           <TableHead className="font-semibold text-xs px-2 py-2">
                             Evidence
                           </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2 min-w-[100px]">
+                            Reg. Date
+                          </TableHead>
                           <TableHead className="font-semibold text-xs px-2 py-2 text-center">
                             Actions
                           </TableHead>
@@ -2740,6 +2744,28 @@ export default function AdminDashboard() {
                                 </span>
                               )}
                             </TableCell>
+                            <TableCell className="px-2 py-2">
+                              <div className="text-xs text-gray-600">
+                                {registration.registeredAt ? (
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {format(
+                                        new Date(registration.registeredAt),
+                                        "MMM d, yyyy",
+                                      )}
+                                    </span>
+                                    <span className="text-gray-400">
+                                      {format(
+                                        new Date(registration.registeredAt),
+                                        "h:mm a",
+                                      )}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  "N/A"
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell className="text-center">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -2883,6 +2909,19 @@ export default function AdminDashboard() {
                               </div>
                               <div className="text-gray-900">
                                 {registration.country || "N/A"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">
+                                Registered Date
+                              </div>
+                              <div className="text-gray-900">
+                                {registration.registeredAt
+                                  ? format(
+                                      new Date(registration.registeredAt),
+                                      "MMM d, yyyy",
+                                    )
+                                  : "N/A"}
                               </div>
                             </div>
                             <div>

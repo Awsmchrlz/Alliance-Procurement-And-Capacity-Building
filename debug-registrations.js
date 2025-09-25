@@ -90,9 +90,15 @@ class RegistrationDiagnostic {
         return false;
       }
 
-      this.session = retryLogin.data;
+      this.session = {
+        user: retryLogin.data.user,
+        access_token: retryLogin.data.token,
+      };
     } else {
-      this.session = loginResult.data;
+      this.session = {
+        user: loginResult.data.user,
+        access_token: loginResult.data.token,
+      };
     }
 
     this.testUserId = this.session?.user?.id;
@@ -177,7 +183,7 @@ class RegistrationDiagnostic {
 
     const fetchResult = await this.makeRequest(
       "GET",
-      "/api/users/registrations",
+      `/api/users/${this.testUserId}/registrations`,
       null,
       {
         Authorization: `Bearer ${this.session.access_token}`,
