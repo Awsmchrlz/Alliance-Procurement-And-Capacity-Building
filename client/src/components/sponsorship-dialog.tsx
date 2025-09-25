@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,13 +40,10 @@ interface FormDataType {
   email: string;
   phoneNumber: string;
   website: string;
-  companyAddress: string;
   sponsorshipLevel: 'platinum' | 'gold' | 'silver' | 'bronze' | '';
   paymentMethod: 'mobile' | 'bank' | 'cash' | '';
   paymentCurrency: 'USD' | 'ZMW';
-  specialRequirements: string;
-  marketingMaterials: string;
-  notes: string;
+  additionalInfo: string;
 }
 
 // ============================================================================
@@ -130,13 +127,10 @@ const INITIAL_FORM_DATA: FormDataType = {
   email: '',
   phoneNumber: '',
   website: '',
-  companyAddress: '',
   sponsorshipLevel: '',
   paymentMethod: '',
   paymentCurrency: 'USD',
-  specialRequirements: '',
-  marketingMaterials: '',
-  notes: '',
+  additionalInfo: '',
 };
 
 // ============================================================================
@@ -152,6 +146,7 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
   const [formData, setFormData] = useState<FormDataType>(INITIAL_FORM_DATA);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [expandedBenefits, setExpandedBenefits] = useState<{ [key: string]: boolean }>({});
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Get user's location for automatic currency detection
   const locationData = useGeolocation();
@@ -187,6 +182,13 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
 
   const updateField = (field: keyof FormDataType, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'paymentMethod') {
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+        }
+      }, 50);
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,6 +206,7 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
       setEvidenceFile(file);
     }
   };
+
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -279,6 +282,8 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
 
     try {
       let evidenceUrl = null;
+
+      // Upload payment evidence if provided
       if (evidenceFile && (formData.paymentMethod === 'mobile' || formData.paymentMethod === 'bank')) {
         try {
           const fileName = `sponsorship_evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
@@ -310,15 +315,12 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
         email: formData.email.trim(),
         phoneNumber: formData.phoneNumber.trim(),
         website: formData.website.trim() || null,
-        companyAddress: formData.companyAddress.trim() || null,
         sponsorshipLevel: formData.sponsorshipLevel,
         amount: formData.paymentCurrency === 'ZMW' ? (selectedLevel?.priceZMW || 0) : (selectedLevel?.priceUSD || 0),
         currency: formData.paymentCurrency,
         paymentMethod: formData.paymentMethod,
         paymentEvidence: evidenceUrl,
-        specialRequirements: formData.specialRequirements.trim() || null,
-        marketingMaterials: formData.marketingMaterials.trim() || null,
-        notes: formData.notes.trim() || null,
+        notes: formData.additionalInfo.trim() || null,
       };
 
       await apiRequest("POST", "/api/sponsorships/register", sponsorshipData);
@@ -514,9 +516,10 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="website" className="text-sm font-medium text-gray-700">Website</Label>
+        <Label htmlFor="website" className="text-sm font-medium text-gray-700">Company Website (Optional)</Label>
         <Input
           id="website"
+          type="url"
           value={formData.website}
           onChange={(e) => updateField('website', e.target.value)}
           className="w-full h-12 sm:h-11 px-4 text-base sm:text-sm border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200 hover:border-[#87CEEB]/50"
@@ -524,17 +527,6 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="companyAddress" className="text-sm font-medium text-gray-700">Company Address</Label>
-        <Textarea
-          id="companyAddress"
-          value={formData.companyAddress}
-          onChange={(e) => updateField('companyAddress', e.target.value)}
-          className="w-full px-4 py-3 text-base sm:text-sm border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200 hover:border-[#87CEEB]/50"
-          placeholder="Full company address"
-          rows={3}
-        />
-      </div>
     </div>
   );
 
@@ -840,34 +832,18 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
       )}
 
       {/* Additional Requirements Section */}
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="specialRequirements" className="text-sm font-medium text-gray-700">
-            Special Requirements <span className="text-gray-400">(Optional)</span>
-          </Label>
-          <Textarea
-            id="specialRequirements"
-            value={formData.specialRequirements}
-            onChange={(e) => updateField('specialRequirements', e.target.value)}
-            className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200"
-            placeholder="Any special booth requirements, branding needs, or other requests..."
-            rows={3}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="marketingMaterials" className="text-sm font-medium text-gray-700">
-            Marketing Materials <span className="text-gray-400">(Optional)</span>
-          </Label>
-          <Textarea
-            id="marketingMaterials"
-            value={formData.marketingMaterials}
-            onChange={(e) => updateField('marketingMaterials', e.target.value)}
-            className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200"
-            placeholder="Describe any marketing materials you'd like to provide or display..."
-            rows={3}
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="additionalInfo" className="text-sm font-medium text-gray-700">
+          Additional Information <span className="text-gray-400">(Optional)</span>
+        </Label>
+        <Textarea
+          id="additionalInfo"
+          value={formData.additionalInfo}
+          onChange={(e) => updateField('additionalInfo', e.target.value)}
+          className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200"
+          placeholder="Any special requirements, marketing materials, booth needs, or other requests..."
+          rows={4}
+        />
       </div>
 
       {/* Payment Evidence Upload */}
@@ -951,20 +927,6 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
         </div>
       )}
 
-      {/* Additional Notes */}
-      <div className="space-y-2">
-        <Label htmlFor="notes" className="text-sm font-medium text-gray-700">
-          Additional Notes <span className="text-gray-400">(Optional)</span>
-        </Label>
-        <Textarea
-          id="notes"
-          value={formData.notes}
-          onChange={(e) => updateField('notes', e.target.value)}
-          className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200"
-          placeholder="Any additional information or questions you'd like to share..."
-          rows={3}
-        />
-      </div>
     </div>
   );
 
@@ -983,13 +945,13 @@ export function SponsorshipDialog({ event, open, onOpenChange, onSuccess }: Spon
           <div className="flex flex-col h-full">
             {renderHeader()}
 
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 pb-24 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
               {currentStep === 1 && renderStep1()}
               {currentStep === 2 && renderStep2()}
               {currentStep === 3 && renderStep3()}
             </div>
 
-            <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50">
+            <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 sticky bottom-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-gray-50/80">
               <div className="flex items-center justify-between">
                 {renderStepIndicator()}
                 {renderNavigationButtons()}

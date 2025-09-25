@@ -16,7 +16,9 @@ import Services from "@/pages/services";
 import About from "@/pages/about";
 import Events from "@/pages/events";
 import AdminDashboard from "@/pages/admin-dashboard";
+
 import NotFound from "@/pages/not-found";
+import { WhatsAppFloat } from "@/components/whatsapp-float";
 
 function Router() {
   const { isAdmin } = useAuth();
@@ -44,20 +46,18 @@ function Router() {
       <Route path="/services" component={Services} />
       <Route path="/about" component={About} />
       <Route path="/events" component={Events} />
-      
+
       {/* Protected routes */}
       <Route path="/dashboard">
-        <AuthGuard>
-          {isAdmin ? <AdminDashboard /> : <Dashboard />}
-        </AuthGuard>
+        <AuthGuard>{isAdmin ? <AdminDashboard /> : <Dashboard />}</AuthGuard>
       </Route>
-      
+
       <Route path="/admin-dashboard">
         <AuthGuard requireAuth={isAdmin} redirectTo="/dashboard">
           <AdminDashboard />
         </AuthGuard>
       </Route>
-      
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -70,6 +70,11 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <WhatsAppFloat
+            phoneNumber="+260964024532"
+            message="Hello! I'd like to know more about Alliance Procurement and Capacity Building services."
+            showTooltip={true}
+          />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

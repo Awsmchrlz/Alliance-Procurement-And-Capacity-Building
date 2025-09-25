@@ -4,7 +4,7 @@ import { HeroSection } from "@/components/hero-section";
 import { UpcomingEventsSection } from "@/components/upcoming-events";
 import { PartnershipSection } from "@/components/partnership-section";
 import { PartnersShowcase } from "@/components/partners-showcase";
-import { SponsorsShowcase } from "@/components/sponsors-showcase";
+import { SponsorshipsShowcase } from "@/components/sponsorships-showcase";
 import { ExhibitionsShowcase } from "@/components/exhibitions-showcase";
 import { AboutSection } from "@/components/about-section";
 import { ServicesSection } from "@/components/services-section";
@@ -20,11 +20,9 @@ export default function Home() {
       <HeroSection />
       <UpcomingEventsSection />
       <PartnershipSection />
-      <PartnersShowcase />
       <AboutSection />
       <ServicesSection />
-      <SponsorsShowcase />
-      <ExhibitionsShowcase />
+      <PartnersShowcase />
       <TestimonialsSection />
       <NewsletterSection />
       <Footer />

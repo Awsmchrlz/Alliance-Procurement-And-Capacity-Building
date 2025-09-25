@@ -1,140 +1,279 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Exact colors from your design specification */
-  --primary-yellow: #87CEEB;
-  --primary-blue: #1C356B;
-  --light-blue: #EFF8FF;
-  --custom-white: #FEFFFE;
-  --dark-gray: #282827;
+    /* Exact colors from your design specification */
+    --primary-yellow: #87ceeb;
+    --primary-blue: #1c356b;
+    --light-blue: #eff8ff;
+    --custom-white: #fefffe;
+    --dark-gray: #282827;
 
-  /* Convert to HSL for shadcn compatibility */
-  --background: 0 0% 100%; /* FEFFFE */
-  --foreground: 218 60% 26%; /* 1C356B */
-  --card: 0 0% 100%; /* FEFFFE */
-  --card-foreground: 218 60% 26%; /* 1C356B */
-  --popover: 0 0% 100%; /* FEFFFE */
-  --popover-foreground: 218 60% 26%; /* 1C356B */
-  --primary: 218 60% 26%; /* 1C356B */
-  --primary-foreground: 0 0% 100%; /* FEFFFE */
-  --secondary: 46 98% 56%; /* FDC123 */
-  --secondary-foreground: 218 60% 26%; /* 1C356B */
-  --muted: 216 100% 97%; /* EFF8FF */
-  --muted-foreground: 0 1% 16%; /* 282827 */
-  --accent: 216 100% 97%; /* EFF8FF */
-  --accent-foreground: 218 60% 26%; /* 1C356B */
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 216 100% 95%;
-  --input: 216 100% 97%; /* EFF8FF */
-  --ring: 218 60% 26%; /* 1C356B */
-  --radius: 0.5rem;
-  --chart-1: 218 60% 26%; /* 1C356B */
-  --chart-2: 46 98% 56%; /* FDC123 */
-  --chart-3: 216 100% 97%; /* EFF8FF */
-  --chart-4: 0 1% 16%; /* 282827 */
-  --chart-5: 0 84% 60%;
+    /* Convert to HSL for shadcn compatibility */
+    --background: 0 0% 100%; /* FEFFFE */
+    --foreground: 218 60% 26%; /* 1C356B */
+    --card: 0 0% 100%; /* FEFFFE */
+    --card-foreground: 218 60% 26%; /* 1C356B */
+    --popover: 0 0% 100%; /* FEFFFE */
+    --popover-foreground: 218 60% 26%; /* 1C356B */
+    --primary: 218 60% 26%; /* 1C356B */
+    --primary-foreground: 0 0% 100%; /* FEFFFE */
+    --secondary: 46 98% 56%; /* FDC123 */
+    --secondary-foreground: 218 60% 26%; /* 1C356B */
+    --muted: 216 100% 97%; /* EFF8FF */
+    --muted-foreground: 0 1% 16%; /* 282827 */
+    --accent: 216 100% 97%; /* EFF8FF */
+    --accent-foreground: 218 60% 26%; /* 1C356B */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 216 100% 95%;
+    --input: 216 100% 97%; /* EFF8FF */
+    --ring: 218 60% 26%; /* 1C356B */
+    --radius: 0.5rem;
+    --chart-1: 218 60% 26%; /* 1C356B */
+    --chart-2: 46 98% 56%; /* FDC123 */
+    --chart-3: 216 100% 97%; /* EFF8FF */
+    --chart-4: 0 1% 16%; /* 282827 */
+    --chart-5: 0 84% 60%;
 }
 
 .dark {
-  --background: 0 1% 16%; /* 282827 */
-  --foreground: 0 0% 99%; /* FEFFFE */
-  --card: 0 1% 12%;
-  --card-foreground: 0 0% 99%; /* FEFFFE */
-  --popover: 0 1% 12%;
-  --popover-foreground: 0 0% 99%; /* FEFFFE */
-  --primary: 218 60% 26%; /* 1C356B */
-  --primary-foreground: 0 0% 100%; /* FEFFFE */
-  --secondary: 46 98% 56%; /* FDC123 */
-  --secondary-foreground: 218 60% 26%; /* 1C356B */
-  --muted: 0 1% 12%;
-  --muted-foreground: 0 0% 65%;
-  --accent: 0 1% 12%;
-  --accent-foreground: 46 98% 56%; /* FDC123 */
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 20%;
-  --input: 0 0% 18%;
-  --ring: 218 60% 26%; /* 1C356B */
+    --background: 0 1% 16%; /* 282827 */
+    --foreground: 0 0% 99%; /* FEFFFE */
+    --card: 0 1% 12%;
+    --card-foreground: 0 0% 99%; /* FEFFFE */
+    --popover: 0 1% 12%;
+    --popover-foreground: 0 0% 99%; /* FEFFFE */
+    --primary: 218 60% 26%; /* 1C356B */
+    --primary-foreground: 0 0% 100%; /* FEFFFE */
+    --secondary: 46 98% 56%; /* FDC123 */
+    --secondary-foreground: 218 60% 26%; /* 1C356B */
+    --muted: 0 1% 12%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 1% 12%;
+    --accent-foreground: 46 98% 56%; /* FDC123 */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    --input: 0 0% 18%;
+    --ring: 218 60% 26%; /* 1C356B */
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground font-inter antialiased;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold;
-  }
-
-  /* Accessible focus styles */
-  :focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
-  }
-
-  /* Reduce motion support */
-  @media (prefers-reduced-motion: reduce) {
     * {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
+        @apply border-border;
     }
-  }
+
+    body {
+        @apply bg-background text-foreground font-inter antialiased;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-semibold;
+    }
+
+    /* Accessible focus styles */
+    :focus-visible {
+        outline: 2px solid hsl(var(--ring));
+        outline-offset: 2px;
+    }
+
+    /* Custom Medal Effects */
+    .border-3 {
+        border-width: 3px;
+    }
+
+    .w-18 {
+        width: 4.5rem;
+    }
+
+    .h-18 {
+        height: 4.5rem;
+    }
+
+    /* Medal shine animation */
+    @keyframes medal-shine {
+        0% {
+            background-position: -100% 0;
+        }
+        100% {
+            background-position: 100% 0;
+        }
+    }
+
+    .medal-shine {
+        background: linear-gradient(
+            90deg,
+            transparent 20%,
+            rgba(255, 255, 255, 0.4) 50%,
+            transparent 80%
+        );
+        background-size: 200% 100%;
+        animation: medal-shine 3s infinite;
+    }
+
+    /* Medal hover effects */
+    .medal-container {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .medal-container:hover {
+        transform: scale(1.1) rotate(5deg);
+        filter: brightness(1.1);
+    }
+
+    /* Metallic gradients */
+    .platinum-medal {
+        background: linear-gradient(
+            135deg,
+            #e2e8f0 0%,
+            #cbd5e1 25%,
+            #94a3b8 50%,
+            #cbd5e1 75%,
+            #e2e8f0 100%
+        );
+        box-shadow:
+            0 8px 32px rgba(148, 163, 184, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .gold-medal {
+        background: linear-gradient(
+            135deg,
+            #fef3c7 0%,
+            #fbbf24 25%,
+            #f59e0b 50%,
+            #fbbf24 75%,
+            #fef3c7 100%
+        );
+        box-shadow:
+            0 8px 32px rgba(245, 158, 11, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .silver-medal {
+        background: linear-gradient(
+            135deg,
+            #f1f5f9 0%,
+            #cbd5e1 25%,
+            #94a3b8 50%,
+            #cbd5e1 75%,
+            #f1f5f9 100%
+        );
+        box-shadow:
+            0 8px 32px rgba(148, 163, 184, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .bronze-medal {
+        background: linear-gradient(
+            135deg,
+            #fef3c7 0%,
+            #d97706 25%,
+            #92400e 50%,
+            #d97706 75%,
+            #fef3c7 100%
+        );
+        box-shadow:
+            0 8px 32px rgba(217, 119, 6, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .red-medal {
+        background: linear-gradient(
+            135deg,
+            #fecaca 0%,
+            #ef4444 25%,
+            #dc2626 50%,
+            #ef4444 75%,
+            #fecaca 100%
+        );
+        box-shadow:
+            0 8px 32px rgba(220, 38, 38, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    /* Medal text glow effect */
+    .medal-text {
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Reduce motion support */
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
 }
 
 @layer utilities {
-  .text-primary-yellow {
-    color: var(--primary-yellow);
-  }
-  
-  .bg-primary-yellow {
-    background-color: var(--primary-yellow);
-  }
-  
-  .text-primary-blue {
-    color: var(--primary-blue);
-  }
-  
-  .bg-primary-blue {
-    background-color: var(--primary-blue);
-  }
-  
-  .bg-light-blue {
-    background-color: var(--light-blue);
-  }
-  
-  .bg-custom-white {
-    background-color: var(--custom-white);
-  }
-  
-  .bg-dark-gray {
-    background-color: var(--dark-gray);
-  }
-
-  /* Continuous scrolling animation */
-  @keyframes scroll {
-    0% {
-      transform: translateX(0);
+    .text-primary-yellow {
+        color: var(--primary-yellow);
     }
-    100% {
-      transform: translateX(-50%);
+
+    .bg-primary-yellow {
+        background-color: var(--primary-yellow);
     }
-  }
 
-  .animate-scroll {
-    animation: scroll 30s linear infinite;
-  }
+    .text-primary-blue {
+        color: var(--primary-blue);
+    }
 
-  .animate-scroll:hover {
-    animation-play-state: paused;
-  }
+    .bg-primary-blue {
+        background-color: var(--primary-blue);
+    }
+
+    .bg-light-blue {
+        background-color: var(--light-blue);
+    }
+
+    .bg-custom-white {
+        background-color: var(--custom-white);
+    }
+
+    .bg-dark-gray {
+        background-color: var(--dark-gray);
+    }
+
+    /* Continuous scrolling animation */
+    @keyframes scroll {
+        0% {
+            transform: translateX(0);
+        }
+        100% {
+            transform: translateX(-100%);
+        }
+    }
+
+    @keyframes scroll-reverse {
+        0% {
+            transform: translateX(-100%);
+        }
+        100% {
+            transform: translateX(0);
+        }
+    }
+
+    .animate-scroll {
+        animation: scroll 40s linear infinite;
+    }
+
+    .animate-scroll-reverse {
+        animation: scroll-reverse 40s linear infinite;
+    }
+
+    .animate-scroll:hover,
+    .animate-scroll-reverse:hover {
+        animation-play-state: paused;
+    }
 }

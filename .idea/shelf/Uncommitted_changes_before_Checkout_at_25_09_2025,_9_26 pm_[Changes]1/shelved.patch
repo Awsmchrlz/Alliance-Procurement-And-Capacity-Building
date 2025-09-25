@@ -1,0 +1,364 @@
+Index: client/src/pages/events.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import { useState, useEffect } from \"react\";\nimport { useLocation } from \"wouter\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { apiRequest } from \"@/lib/queryClient\";\nimport { useAuth } from \"@/hooks/use-auth\";\nimport { useToast } from \"@/hooks/use-toast\";\nimport { Navigation } from \"@/components/navigation\";\nimport { Footer } from \"@/components/footer\";\nimport { RegistrationDialog } from \"@/components/registration-dialog\";\nimport { SponsorshipDialog } from \"@/components/sponsorship-dialog\";\nimport { ExhibitionDialog } from \"@/components/exhibition-dialog\";\nimport { Button } from \"@/components/ui/button\";\nimport { Badge } from \"@/components/ui/badge\";\nimport { Card, CardContent, CardDescription, CardHeader, CardTitle } from \"@/components/ui/card\";\nimport {\n  Calendar,\n  MapPin,\n  Clock,\n  Users,\n  DollarSign,\n  ArrowRight,\n  Sparkles,\n  CheckCircle,\n  AlertCircle,\n  Crown,\n  Store,\n} from \"lucide-react\";\nimport { format } from \"date-fns\";\nimport { Event } from \"@shared/schema\";\n\nconst EventsPage = () => {\n  const [, navigate] = useLocation();\n  const { user, isAuthenticated } = useAuth();\n  const { toast } = useToast();\n  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);\n  const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);\n  const [showSponsorshipDialog, setShowSponsorshipDialog] = useState(false);\n  const [showExhibitionDialog, setShowExhibitionDialog] = useState(false);\n  const [autoOpenDialog, setAutoOpenDialog] = useState(false);\n\n  // Fetch events\n  const { data: events = [], isLoading } = useQuery({\n    queryKey: [\"/api/events\"],\n    queryFn: async () => {\n      const response = await apiRequest(\"GET\", \"/api/events\");\n      return await response.json();\n    },\n  });\n\n  // Fetch user registrations\n  const { data: userRegistrations = [] } = useQuery({\n    queryKey: [\"/api/users\", user?.id, \"registrations\"],\n    queryFn: async () => {\n      const response = await apiRequest(\"GET\", `/api/users/${user?.id}/registrations`);\n      return await response.json();\n    },\n    enabled: !!user?.id,\n  });\n\n  // Type guard to ensure events is an array\n  const eventsArray = Array.isArray(events) ? events : [];\n  const registrationsArray = Array.isArray(userRegistrations) ? userRegistrations : [];\n\n  // Auto-open registration dialog when component mounts\n  useEffect(() => {\n    setAutoOpenDialog(true);\n    window.history.replaceState({}, '', '/events');\n    \n    return () => setAutoOpenDialog(false);\n  }, []);\n\n  // Handle auto-open when events and authentication state are loaded\n  useEffect(() => {\n    if (autoOpenDialog && eventsArray.length > 0 && isAuthenticated) {\n      // Find the main event (first upcoming event or most recent)\n      const upcomingEvents = eventsArray.filter((event: Event) => \n        new Date(event.startDate) >= new Date()\n      );\n      const mainEvent = upcomingEvents.length > 0 ? upcomingEvents[0] : eventsArray[0];\n      \n      if (mainEvent) {\n        // Check if user is already registered for this event\n        const isAlreadyRegistered = registrationsArray.some((reg: any) => reg.eventId === mainEvent.id);\n        \n        // Small delay to ensure everything is loaded\n        const timer = setTimeout(() => {\n          if (isAlreadyRegistered) {\n            // Show already registered message instead of opening modal\n            toast({\n              title: \"Already Registered! ✅\",\n              description: `You're already registered for \"${mainEvent.title}\". Check your dashboard for details.`,\n            });\n          } else {\n            // Open registration modal for unregistered users\n            setSelectedEvent(mainEvent);\n            setShowRegistrationDialog(true);\n            \n            toast({\n              title: \"Welcome! \uD83C\uDF89\",\n              description: \"Ready to register for our upcoming event?\",\n            });\n          }\n          setAutoOpenDialog(false);\n        }, 1000); // Increased delay to ensure everything is loaded\n        \n        return () => clearTimeout(timer);\n      }\n    }\n  }, [autoOpenDialog, eventsArray, registrationsArray, isAuthenticated, toast]);\n\n\n  const handleRegisterClick = (event: Event) => {\n    if (!isAuthenticated) {\n      // Redirect to registration page with a return URL\n      navigate(`/register?returnTo=/events/${event.id}`);\n      return;\n    }\n\n    setSelectedEvent(event);\n    setShowRegistrationDialog(true);\n  };\n\n  const handleSponsorClick = (event: Event) => {\n    setSelectedEvent(event);\n    setShowSponsorshipDialog(true);\n  };\n\n  const handleExhibitorClick = (event: Event) => {\n    setSelectedEvent(event);\n    setShowExhibitionDialog(true);\n  };\n\n  const isUserRegistered = (eventId: string) => {\n    return registrationsArray.some((reg: any) => reg.eventId === eventId);\n  };\n\n  const getEventStatus = (event: Event) => {\n    const now = new Date();\n    const startDate = new Date(event.startDate);\n    const endDate = new Date(event.endDate);\n\n    if (now < startDate) return \"upcoming\";\n    if (now >= startDate && now <= endDate) return \"ongoing\";\n    return \"past\";\n  };\n\n  const getStatusBadge = (status: string) => {\n    switch (status) {\n      case \"upcoming\":\n        return <Badge className=\"bg-green-100 text-green-800\">Upcoming</Badge>;\n      case \"ongoing\":\n        return <Badge className=\"bg-blue-100 text-blue-800\">Ongoing</Badge>;\n      case \"past\":\n        return <Badge className=\"bg-gray-100 text-gray-800\">Past</Badge>;\n      default:\n        return null;\n    }\n  };\n\n  if (isLoading) {\n    return (\n      <div className=\"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50\">\n        <Navigation />\n        <div className=\"container mx-auto px-4 py-16\">\n          <div className=\"flex items-center justify-center min-h-[400px]\">\n            <div className=\"animate-spin rounded-full h-32 w-32 border-b-2 border-[#1C356B]\"></div>\n          </div>\n        </div>\n        <Footer />\n      </div>\n    );\n  }\n\n  return (\n    <div className=\"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50\">\n      <Navigation />\n      \n      {/* Hero Section */}\n      <section className=\"relative py-4 overflow-hidden\">\n        <div className=\"absolute inset-0 bg-gradient-to-r from-[#1C356B] via-[#1C356B] to-[#2d4a7a]\" />\n        <div className=\"absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22m36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-10\" />\n        \n        <div className=\"relative container mx-auto px-4 text-center\">\n          <h1 className=\"text-3xl md:text-6xl font-bold text-white mb-6\">\n            Upcoming <span className=\"text-[#87CEEB]\">Event</span>\n          </h1>\n          {isAuthenticated && (\n            <div className=\"flex items-center justify-center gap-3 mb-3\">\n              {registrationsArray.length > 0 ? (\n                <>\n                  <CheckCircle className=\"w-5 h-5 text-green-400\" />\n                  <span className=\"text-green-400 font-medium\">\n                    Welcome back, {user?.firstName}! You're already registered for {registrationsArray.length} event{registrationsArray.length > 1 ? 's' : ''}\n                  </span>\n                </>\n              ) : (\n                <>\n                  <CheckCircle className=\"w-5 h-5 text-[#87CEEB]\" />\n                  <span className=\"text-[#87CEEB] font-medium\">\n                    Welcome back, {user?.firstName}! Ready to register?\n                  </span>\n                </>\n              )}\n            </div>\n          )}\n        </div>\n      </section>\n\n      {/* Partnership Opportunities Section */}\n      <section className=\"py-8 bg-white\">\n        <div className=\"container mx-auto px-4\">\n          <div className=\"text-center mb-8\">\n            <h2 className=\"text-3xl font-bold text-gray-900 mb-4\">Partnership Opportunities</h2>\n            <p className=\"text-lg text-gray-600 max-w-3xl mx-auto\">\n              Join us as a sponsor or exhibitor and showcase your brand to industry professionals from across the region.\n            </p>\n          </div>\n\n          <div className=\"grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto\">\n            {/* Sponsorship Card */}\n            <Card className=\"group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden\">\n              <div className=\"relative\">\n                <div className=\"h-32 bg-gradient-to-br from-yellow-400 to-yellow-600 relative overflow-hidden\">\n                  <div className=\"absolute inset-0 bg-gradient-to-t from-black/20 to-transparent\" />\n                  <div className=\"absolute inset-0 flex items-center justify-center\">\n                    <Crown className=\"w-12 h-12 text-white\" />\n                  </div>\n                </div>\n              </div>\n\n              <CardHeader className=\"pb-4\">\n                <CardTitle className=\"text-xl font-bold text-gray-900 group-hover:text-yellow-600 transition-colors\">\n                  Become a Sponsor\n                </CardTitle>\n                <CardDescription className=\"text-gray-600\">\n                  Gain premium visibility and connect with key decision-makers in procurement and supply chain management.\n                </CardDescription>\n              </CardHeader>\n\n              <CardContent className=\"space-y-4\">\n                <div className=\"space-y-2\">\n                  <div className=\"flex items-center text-sm text-gray-600\">\n                    <CheckCircle className=\"w-4 h-4 text-yellow-500 mr-2\" />\n                    <span>Premium branding opportunities</span>\n                  </div>\n                  <div className=\"flex items-center text-sm text-gray-600\">\n                    <CheckCircle className=\"w-4 h-4 text-yellow-500 mr-2\" />\n                    <span>Speaking opportunities</span>\n                  </div>\n                  <div className=\"flex items-center text-sm text-gray-600\">\n                    <CheckCircle className=\"w-4 h-4 text-yellow-500 mr-2\" />\n                    <span>Networking with industry leaders</span>\n                  </div>\n                  <div className=\"flex items-center text-sm text-gray-600\">\n                    <CheckCircle className=\"w-4 h-4 text-yellow-500 mr-2\" />\n                    <span>Packages from $9,000 - $15,000 USD</span>\n                  </div>\n                </div>\n\n                <div className=\"pt-4 border-t border-gray-100\">\n                  {eventsArray.length > 0 && (\n                    <Button\n                      onClick={() => handleSponsorClick(eventsArray[0])}\n                      className=\"w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 transition-all duration-300 group\"\n                    >\n                      <Crown className=\"w-4 h-4 mr-2\" />\n                      <span>Apply to Sponsor</span>\n                      <ArrowRight className=\"w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform\" />\n                    </Button>\n                  )}\n                </div>\n              </CardContent>\n            </Card>\n\n            {/* Exhibition Card */}\n            <Card className=\"group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden\">\n              <div className=\"relative\">\n                <div className=\"h-32 bg-gradient-to-br from-emerald-500 to-emerald-700 relative overflow-hidden\">\n                  <div className=\"absolute inset-0 bg-gradient-to-t from-black/20 to-transparent\" />\n                  <div className=\"absolute inset-0 flex items-center justify-center\">\n                    <Store className=\"w-12 h-12 text-white\" />\n                  </div>\n                </div>\n              </div>\n\n              <CardHeader className=\"pb-4\">\n                <CardTitle className=\"text-xl font-bold text-gray-900 group-hover:text-emerald-600 transition-colors\">\n                  Become an Exhibitor\n                </CardTitle>\n                <CardDescription className=\"text-gray-600\">\n                  Showcase your products and services directly to procurement professionals and potential clients.\n                </CardDescription>\n              </CardHeader>\n\n              <CardContent className=\"space-y-4\">\n                <div className=\"space-y-2\">\n                  <div className=\"flex items-center text-sm text-gray-600\">\n                    <CheckCircle className=\"w-4 h-4 text-emerald-500 mr-2\" />\n                    <span>Dedicated exhibition space</span>\n                  </div>\n                  <div className=\"flex items-center text-sm text-gray-600\">\n                    <CheckCircle className=\"w-4 h-4 text-emerald-500 mr-2\" />\n                    <span>Direct client interaction</span>\n                  </div>\n                  <div className=\"flex items-center text-sm text-gray-600\">\n                    <CheckCircle className=\"w-4 h-4 text-emerald-500 mr-2\" />\n                    <span>Product demonstration opportunities</span>\n                  </div>\n                  <div className=\"flex items-center text-sm text-gray-600\">\n                    <CheckCircle className=\"w-4 h-4 text-emerald-500 mr-2\" />\n                    <span>Packages from $7,000 - $15,000 USD</span>\n                  </div>\n                </div>\n\n                <div className=\"pt-4 border-t border-gray-100\">\n                  {eventsArray.length > 0 && (\n                    <Button\n                      onClick={() => handleExhibitorClick(eventsArray[0])}\n                      className=\"w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 transition-all duration-300 group\"\n                    >\n                      <Store className=\"w-4 h-4 mr-2\" />\n                      <span>Apply to Exhibit</span>\n                      <ArrowRight className=\"w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform\" />\n                    </Button>\n                  )}\n                </div>\n              </CardContent>\n            </Card>\n          </div>\n        </div>\n      </section>\n\n      {/* Events Grid */}\n      <section className=\"py-4 bg-gray-50\">\n        <div className=\"container mx-auto px-4\">\n          {eventsArray.length === 0 ? (\n            <div className=\"text-center py-16\">\n              <Calendar className=\"w-16 h-16 text-gray-400 mx-auto mb-4\" />\n              <h3 className=\"text-2xl font-bold text-gray-900 mb-2\">No Events Available</h3>\n              <p className=\"text-gray-600\">Check back soon for upcoming events!</p>\n            </div>\n          ) : (\n            <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8\">\n              {eventsArray.map((event: Event) => {\n                const status = getEventStatus(event);\n                const isRegistered = isUserRegistered(event.id);\n                \n                return (\n                  <Card key={event.id} className=\"group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden\">\n                    <div className=\"relative\">\n                      {event.imageUrl && (\n                        <div className=\"h-48 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] relative overflow-hidden\">\n                          <img\n                            src={event.imageUrl}\n                            alt={event.title}\n                            className=\"w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300\"\n                          />\n                          <div className=\"absolute inset-0 bg-gradient-to-t from-black/50 to-transparent\" />\n                        </div>\n                      )}\n                      \n                      <div className=\"absolute top-4 right-4\">\n                        {getStatusBadge(status)}\n                      </div>\n                      \n                      {isRegistered && (\n                        <div className=\"absolute top-4 left-4\">\n                          <Badge className=\"bg-[#87CEEB] text-white\">\n                            <CheckCircle className=\"w-3 h-3 mr-1\" />\n                            Registered\n                          </Badge>\n                        </div>\n                      )}\n                    </div>\n\n                    <CardHeader className=\"pb-4\">\n                      <CardTitle className=\"text-xl font-bold text-gray-900 group-hover:text-[#1C356B] transition-colors\">\n                        {event.title}\n                      </CardTitle>\n                      {event.description && (\n                        <CardDescription className=\"text-gray-600 line-clamp-2\">\n                          {event.description}\n                        </CardDescription>\n                      )}\n                    </CardHeader>\n\n                    <CardContent className=\"space-y-4\">\n                      <div className=\"space-y-3\">\n                        <div className=\"flex items-center gap-3 text-sm text-gray-600\">\n                          <Calendar className=\"w-4 h-4 text-[#1C356B]\" />\n                          <span>{format(new Date(event.startDate), \"MMM d, yyyy\")}</span>\n                        </div>\n                        \n                        <div className=\"flex items-center gap-3 text-sm text-gray-600\">\n                          <Clock className=\"w-4 h-4 text-[#1C356B]\" />\n                          <span>{format(new Date(event.startDate), \"h:mm a\")}</span>\n                        </div>\n                        \n                        {event.location && (\n                          <div className=\"flex items-center gap-3 text-sm text-gray-600\">\n                            <MapPin className=\"w-4 h-4 text-[#1C356B]\" />\n                            <span className=\"line-clamp-1\">{event.location}</span>\n                          </div>\n                        )}\n                        \n                        {event.maxAttendees && (\n                          <div className=\"flex items-center gap-3 text-sm text-gray-600\">\n                            <Users className=\"w-4 h-4 text-[#1C356B]\" />\n                            <span>Max {event.maxAttendees} participants</span>\n                          </div>\n                        )}\n                      </div>\n\n                      <div className=\"pt-4 border-t border-gray-100 space-y-3\">\n                        {status === \"upcoming\" && !isRegistered ? (\n                          <>\n                            <Button\n                              onClick={() => handleRegisterClick(event)}\n                              className=\"w-full bg-[#87CEEB] hover:bg-[#7bb8d4] text-white font-semibold py-3 transition-all duration-300 group\"\n                            >\n                              <span>Register as Delegate</span>\n                              <ArrowRight className=\"w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform\" />\n                            </Button>\n                            \n                            {/* Partnership Opportunities */}\n                            <div className=\"grid grid-cols-2 gap-2\">\n                              <Button\n                                onClick={() => handleSponsorClick(event)}\n                                variant=\"outline\"\n                                size=\"sm\"\n                                className=\"border-yellow-500 text-yellow-700 hover:bg-yellow-50 hover:border-yellow-600 transition-all duration-200\"\n                              >\n                                <Crown className=\"w-3 h-3 mr-1\" />\n                                <span className=\"text-xs\">Sponsor</span>\n                              </Button>\n                              \n                              <Button\n                                onClick={() => handleExhibitorClick(event)}\n                                variant=\"outline\"\n                                size=\"sm\"\n                                className=\"border-emerald-500 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-600 transition-all duration-200\"\n                              >\n                                <Store className=\"w-3 h-3 mr-1\" />\n                                <span className=\"text-xs\">Exhibit</span>\n                              </Button>\n                            </div>\n                          </>\n                        ) : isRegistered ? (\n                          <>\n                            <Button\n                              variant=\"outline\"\n                              className=\"w-full border-[#87CEEB] text-[#87CEEB] hover:bg-[#87CEEB] hover:text-white\"\n                              disabled\n                            >\n                              <CheckCircle className=\"w-4 h-4 mr-2\" />\n                              Already Registered\n                            </Button>\n                            \n                            {/* Partnership Opportunities for registered users */}\n                            <div className=\"grid grid-cols-2 gap-2\">\n                              <Button\n                                onClick={() => handleSponsorClick(event)}\n                                variant=\"outline\"\n                                size=\"sm\"\n                                className=\"border-yellow-500 text-yellow-700 hover:bg-yellow-50 hover:border-yellow-600 transition-all duration-200\"\n                              >\n                                <Crown className=\"w-3 h-3 mr-1\" />\n                                <span className=\"text-xs\">Sponsor</span>\n                              </Button>\n                              \n                              <Button\n                                onClick={() => handleExhibitorClick(event)}\n                                variant=\"outline\"\n                                size=\"sm\"\n                                className=\"border-emerald-500 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-600 transition-all duration-200\"\n                              >\n                                <Store className=\"w-3 h-3 mr-1\" />\n                                <span className=\"text-xs\">Exhibit</span>\n                              </Button>\n                            </div>\n                          </>\n                        ) : (\n                          <Button\n                            variant=\"outline\"\n                            className=\"w-full\"\n                            disabled\n                          >\n                            {status === \"ongoing\" ? \"Event in Progress\" : \"Event Completed\"}\n                          </Button>\n                        )}\n                      </div>\n                    </CardContent>\n                  </Card>\n                );\n              })}\n            </div>\n          )}\n        </div>\n      </section>\n\n      {/* Call to Action for Non-Authenticated Users */}\n      {!isAuthenticated && (\n        <section className=\"py-16 bg-gradient-to-r from-[#1C356B] to-[#2d4a7a]\">\n          <div className=\"container mx-auto px-4 text-center\">\n            <div className=\"inline-flex items-center justify-center w-16 h-16 bg-[#87CEEB]/20 backdrop-blur-sm rounded-2xl mb-6\">\n              <Sparkles className=\"w-8 h-8 text-[#87CEEB]\" />\n            </div>\n            \n            <h2 className=\"text-3xl md:text-4xl font-bold text-white mb-4\">\n              Ready to Get Started?\n            </h2>\n            \n            <p className=\"text-xl text-blue-100 mb-8 max-w-2xl mx-auto\">\n              Create your account or sign in to register for our upcoming events\n            </p>\n            \n            <div className=\"flex flex-col sm:flex-row gap-4 justify-center\">\n              <Button\n                onClick={() => navigate(\"/register\")}\n                size=\"lg\"\n                className=\"bg-[#87CEEB] hover:bg-[#7bb8d4] text-white font-semibold px-8 py-3\"\n              >\n                Create Account\n                <ArrowRight className=\"w-4 h-4 ml-2\" />\n              </Button>\n              \n              <Button\n                onClick={() => navigate(\"/login\")}\n                size=\"lg\"\n                variant=\"outline\"\n                className=\"border-white text-white hover:bg-white hover:text-[#1C356B] px-8 py-3\"\n              >\n                Sign In\n              </Button>\n            </div>\n          </div>\n        </section>\n      )}\n\n      <Footer />\n\n      {/* Registration Dialogs */}\n      {selectedEvent && (\n        <>\n          <RegistrationDialog\n            open={showRegistrationDialog}\n            onOpenChange={(open) => {\n              setShowRegistrationDialog(open);\n              // Clear auto-open flag when modal is closed\n              if (!open) {\n                localStorage.removeItem('autoOpenEventModal');\n              }\n            }}\n            event={selectedEvent}\n            onSuccess={() => {\n              setShowRegistrationDialog(false);\n              // Clear auto-open flag after successful registration\n              localStorage.removeItem('autoOpenEventModal');\n              toast({\n                title: \"Registration Successful! \uD83C\uDF89\",\n                description: \"You've been registered for the event. Check your email for confirmation.\",\n              });\n              // Route to dashboard after successful registration\n              setTimeout(() => {\n                navigate(\"/dashboard\");\n              }, 2000);\n            }}\n          />\n\n          <SponsorshipDialog\n            open={showSponsorshipDialog}\n            onOpenChange={setShowSponsorshipDialog}\n            event={selectedEvent}\n            onSuccess={() => {\n              setShowSponsorshipDialog(false);\n              toast({\n                title: \"Sponsorship Application Submitted! \uD83C\uDF89\",\n                description: \"We'll review your application and contact you within 2 business days.\",\n              });\n            }}\n          />\n\n          <ExhibitionDialog\n            open={showExhibitionDialog}\n            onOpenChange={setShowExhibitionDialog}\n            event={selectedEvent}\n            onSuccess={() => {\n              setShowExhibitionDialog(false);\n              toast({\n                title: \"Exhibition Application Submitted! \uD83C\uDF89\",\n                description: \"We'll review your application and contact you within 2 business days.\",\n              });\n            }}\n          />\n        </>\n      )}\n    </div>\n  );\n};\n\nexport default EventsPage;\n
+===================================================================
+diff --git a/client/src/pages/events.tsx b/client/src/pages/events.tsx
+--- a/client/src/pages/events.tsx	(revision e2568bcaf75a6b62f71727f3b24ba2b811841160)
++++ b/client/src/pages/events.tsx	(date 1758828383293)
+@@ -11,7 +11,13 @@
+ import { ExhibitionDialog } from "@/components/exhibition-dialog";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
++import {
++  Card,
++  CardContent,
++  CardDescription,
++  CardHeader,
++  CardTitle,
++} from "@/components/ui/card";
+ import {
+   Calendar,
+   MapPin,
+@@ -51,7 +57,10 @@
+   const { data: userRegistrations = [] } = useQuery({
+     queryKey: ["/api/users", user?.id, "registrations"],
+     queryFn: async () => {
+-      const response = await apiRequest("GET", `/api/users/${user?.id}/registrations`);
++      const response = await apiRequest(
++        "GET",
++        `/api/users/${user?.id}/registrations`,
++      );
+       return await response.json();
+     },
+     enabled: !!user?.id,
+@@ -59,13 +68,15 @@
+ 
+   // Type guard to ensure events is an array
+   const eventsArray = Array.isArray(events) ? events : [];
+-  const registrationsArray = Array.isArray(userRegistrations) ? userRegistrations : [];
++  const registrationsArray = Array.isArray(userRegistrations)
++    ? userRegistrations
++    : [];
+ 
+   // Auto-open registration dialog when component mounts
+   useEffect(() => {
+     setAutoOpenDialog(true);
+-    window.history.replaceState({}, '', '/events');
+-    
++    window.history.replaceState({}, "", "/events");
++
+     return () => setAutoOpenDialog(false);
+   }, []);
+ 
+@@ -73,15 +84,18 @@
+   useEffect(() => {
+     if (autoOpenDialog && eventsArray.length > 0 && isAuthenticated) {
+       // Find the main event (first upcoming event or most recent)
+-      const upcomingEvents = eventsArray.filter((event: Event) => 
+-        new Date(event.startDate) >= new Date()
++      const upcomingEvents = eventsArray.filter(
++        (event: Event) => new Date(event.startDate) >= new Date(),
+       );
+-      const mainEvent = upcomingEvents.length > 0 ? upcomingEvents[0] : eventsArray[0];
+-      
++      const mainEvent =
++        upcomingEvents.length > 0 ? upcomingEvents[0] : eventsArray[0];
++
+       if (mainEvent) {
+         // Check if user is already registered for this event
+-        const isAlreadyRegistered = registrationsArray.some((reg: any) => reg.eventId === mainEvent.id);
+-        
++        const isAlreadyRegistered = registrationsArray.some(
++          (reg: any) => reg.eventId === mainEvent.id,
++        );
++
+         // Small delay to ensure everything is loaded
+         const timer = setTimeout(() => {
+           if (isAlreadyRegistered) {
+@@ -94,7 +108,7 @@
+             // Open registration modal for unregistered users
+             setSelectedEvent(mainEvent);
+             setShowRegistrationDialog(true);
+-            
++
+             toast({
+               title: "Welcome! 🎉",
+               description: "Ready to register for our upcoming event?",
+@@ -102,13 +116,12 @@
+           }
+           setAutoOpenDialog(false);
+         }, 1000); // Increased delay to ensure everything is loaded
+-        
++
+         return () => clearTimeout(timer);
+       }
+     }
+   }, [autoOpenDialog, eventsArray, registrationsArray, isAuthenticated, toast]);
+ 
+-
+   const handleRegisterClick = (event: Event) => {
+     if (!isAuthenticated) {
+       // Redirect to registration page with a return URL
+@@ -174,12 +187,12 @@
+   return (
+     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+       <Navigation />
+-      
++
+       {/* Hero Section */}
+       <section className="relative py-4 overflow-hidden">
+         <div className="absolute inset-0 bg-gradient-to-r from-[#1C356B] via-[#1C356B] to-[#2d4a7a]" />
+         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22m36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-10" />
+-        
++
+         <div className="relative container mx-auto px-4 text-center">
+           <h1 className="text-3xl md:text-6xl font-bold text-white mb-6">
+             Upcoming <span className="text-[#87CEEB]">Event</span>
+@@ -190,7 +203,9 @@
+                 <>
+                   <CheckCircle className="w-5 h-5 text-green-400" />
+                   <span className="text-green-400 font-medium">
+-                    Welcome back, {user?.firstName}! You're already registered for {registrationsArray.length} event{registrationsArray.length > 1 ? 's' : ''}
++                    Welcome back, {user?.firstName}! You're already registered
++                    for {registrationsArray.length} event
++                    {registrationsArray.length > 1 ? "s" : ""}
+                   </span>
+                 </>
+               ) : (
+@@ -210,9 +225,12 @@
+       <section className="py-8 bg-white">
+         <div className="container mx-auto px-4">
+           <div className="text-center mb-8">
+-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Partnership Opportunities</h2>
++            <h2 className="text-3xl font-bold text-gray-900 mb-4">
++              Partnership Opportunities
++            </h2>
+             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+-              Join us as a sponsor or exhibitor and showcase your brand to industry professionals from across the region.
++              Join us as a sponsor or exhibitor and showcase your brand to
++              industry professionals from across the region.
+             </p>
+           </div>
+ 
+@@ -233,7 +251,8 @@
+                   Become a Sponsor
+                 </CardTitle>
+                 <CardDescription className="text-gray-600">
+-                  Gain premium visibility and connect with key decision-makers in procurement and supply chain management.
++                  Gain premium visibility and connect with key decision-makers
++                  in procurement and supply chain management.
+                 </CardDescription>
+               </CardHeader>
+ 
+@@ -288,7 +307,8 @@
+                   Become an Exhibitor
+                 </CardTitle>
+                 <CardDescription className="text-gray-600">
+-                  Showcase your products and services directly to procurement professionals and potential clients.
++                  Showcase your products and services directly to procurement
++                  professionals and potential clients.
+                 </CardDescription>
+               </CardHeader>
+ 
+@@ -336,17 +356,24 @@
+           {eventsArray.length === 0 ? (
+             <div className="text-center py-16">
+               <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+-              <h3 className="text-2xl font-bold text-gray-900 mb-2">No Events Available</h3>
+-              <p className="text-gray-600">Check back soon for upcoming events!</p>
++              <h3 className="text-2xl font-bold text-gray-900 mb-2">
++                No Events Available
++              </h3>
++              <p className="text-gray-600">
++                Check back soon for upcoming events!
++              </p>
+             </div>
+           ) : (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+               {eventsArray.map((event: Event) => {
+                 const status = getEventStatus(event);
+                 const isRegistered = isUserRegistered(event.id);
+-                
++
+                 return (
+-                  <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden">
++                  <Card
++                    key={event.id}
++                    className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden"
++                  >
+                     <div className="relative">
+                       {event.imageUrl && (
+                         <div className="h-48 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] relative overflow-hidden">
+@@ -358,11 +385,11 @@
+                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                         </div>
+                       )}
+-                      
++
+                       <div className="absolute top-4 right-4">
+                         {getStatusBadge(status)}
+                       </div>
+-                      
++
+                       {isRegistered && (
+                         <div className="absolute top-4 left-4">
+                           <Badge className="bg-[#87CEEB] text-white">
+@@ -388,21 +415,27 @@
+                       <div className="space-y-3">
+                         <div className="flex items-center gap-3 text-sm text-gray-600">
+                           <Calendar className="w-4 h-4 text-[#1C356B]" />
+-                          <span>{format(new Date(event.startDate), "MMM d, yyyy")}</span>
++                          <span>
++                            {format(new Date(event.startDate), "MMM d, yyyy")}
++                          </span>
+                         </div>
+-                        
++
+                         <div className="flex items-center gap-3 text-sm text-gray-600">
+                           <Clock className="w-4 h-4 text-[#1C356B]" />
+-                          <span>{format(new Date(event.startDate), "h:mm a")}</span>
++                          <span>
++                            {format(new Date(event.startDate), "h:mm a")}
++                          </span>
+                         </div>
+-                        
++
+                         {event.location && (
+                           <div className="flex items-center gap-3 text-sm text-gray-600">
+                             <MapPin className="w-4 h-4 text-[#1C356B]" />
+-                            <span className="line-clamp-1">{event.location}</span>
++                            <span className="line-clamp-1">
++                              {event.location}
++                            </span>
+                           </div>
+                         )}
+-                        
++
+                         {event.maxAttendees && (
+                           <div className="flex items-center gap-3 text-sm text-gray-600">
+                             <Users className="w-4 h-4 text-[#1C356B]" />
+@@ -421,7 +454,7 @@
+                               <span>Register as Delegate</span>
+                               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                             </Button>
+-                            
++
+                             {/* Partnership Opportunities */}
+                             <div className="grid grid-cols-2 gap-2">
+                               <Button
+@@ -433,7 +466,7 @@
+                                 <Crown className="w-3 h-3 mr-1" />
+                                 <span className="text-xs">Sponsor</span>
+                               </Button>
+-                              
++
+                               <Button
+                                 onClick={() => handleExhibitorClick(event)}
+                                 variant="outline"
+@@ -455,7 +488,7 @@
+                               <CheckCircle className="w-4 h-4 mr-2" />
+                               Already Registered
+                             </Button>
+-                            
++
+                             {/* Partnership Opportunities for registered users */}
+                             <div className="grid grid-cols-2 gap-2">
+                               <Button
+@@ -467,7 +500,7 @@
+                                 <Crown className="w-3 h-3 mr-1" />
+                                 <span className="text-xs">Sponsor</span>
+                               </Button>
+-                              
++
+                               <Button
+                                 onClick={() => handleExhibitorClick(event)}
+                                 variant="outline"
+@@ -480,12 +513,10 @@
+                             </div>
+                           </>
+                         ) : (
+-                          <Button
+-                            variant="outline"
+-                            className="w-full"
+-                            disabled
+-                          >
+-                            {status === "ongoing" ? "Event in Progress" : "Event Completed"}
++                          <Button variant="outline" className="w-full" disabled>
++                            {status === "ongoing"
++                              ? "Event in Progress"
++                              : "Event Completed"}
+                           </Button>
+                         )}
+                       </div>
+@@ -505,15 +536,15 @@
+             <div className="inline-flex items-center justify-center w-16 h-16 bg-[#87CEEB]/20 backdrop-blur-sm rounded-2xl mb-6">
+               <Sparkles className="w-8 h-8 text-[#87CEEB]" />
+             </div>
+-            
++
+             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+               Ready to Get Started?
+             </h2>
+-            
++
+             <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+               Create your account or sign in to register for our upcoming events
+             </p>
+-            
++
+             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+               <Button
+                 onClick={() => navigate("/register")}
+@@ -523,7 +554,7 @@
+                 Create Account
+                 <ArrowRight className="w-4 h-4 ml-2" />
+               </Button>
+-              
++
+               <Button
+                 onClick={() => navigate("/login")}
+                 size="lg"
+@@ -548,17 +579,18 @@
+               setShowRegistrationDialog(open);
+               // Clear auto-open flag when modal is closed
+               if (!open) {
+-                localStorage.removeItem('autoOpenEventModal');
++                localStorage.removeItem("autoOpenEventModal");
+               }
+             }}
+             event={selectedEvent}
+             onSuccess={() => {
+               setShowRegistrationDialog(false);
+               // Clear auto-open flag after successful registration
+-              localStorage.removeItem('autoOpenEventModal');
++              localStorage.removeItem("autoOpenEventModal");
+               toast({
+                 title: "Registration Successful! 🎉",
+-                description: "You've been registered for the event. Check your email for confirmation.",
++                description:
++                  "You've been registered for the event. Check your email for confirmation.",
+               });
+               // Route to dashboard after successful registration
+               setTimeout(() => {
+@@ -575,7 +607,8 @@
+               setShowSponsorshipDialog(false);
+               toast({
+                 title: "Sponsorship Application Submitted! 🎉",
+-                description: "We'll review your application and contact you within 2 business days.",
++                description:
++                  "We'll review your application and contact you within 2 business days.",
+               });
+             }}
+           />
+@@ -588,7 +621,8 @@
+               setShowExhibitionDialog(false);
+               toast({
+                 title: "Exhibition Application Submitted! 🎉",
+-                description: "We'll review your application and contact you within 2 business days.",
++                description:
++                  "We'll review your application and contact you within 2 business days.",
+               });
+             }}
+           />

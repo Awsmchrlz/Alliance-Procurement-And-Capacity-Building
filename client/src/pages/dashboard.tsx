@@ -86,50 +86,102 @@ export default function Dashboard() {
   } = useQuery<RegistrationWithEvent[]>({
     queryKey: ["/api/users", user?.id, "registrations"],
     queryFn: async () => {
-      const response = await apiRequest(
+      const data = await apiRequest(
         "GET",
         `/api/users/${user?.id}/registrations`,
+      );
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!user,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
+  // Fetch user exhibitions
+  const {
+    data: exhibitions,
+    isLoading: isLoadingExhibitions,
+    refetch: refetchExhibitions,
+  } = useQuery({
+    queryKey: ["/api/users", user?.id, "exhibitions"],
+    queryFn: async () => {
+      const response = await apiRequest(
+        "GET",
+        `/api/users/${user?.id}/exhibitions`,
       );
       return response.json();
     },
     enabled: !!user,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Check for new registrations and show modal
   useEffect(() => {
     if (registrations && registrations.length > 0) {
       // Check if there are recent registrations (within last 5 minutes)
-      const recentRegistrations = registrations.filter(reg => {
+      const recentRegistrations = registrations.filter((reg) => {
         if (!reg.registeredAt) return false;
         const registrationTime = new Date(reg.registeredAt);
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-        return registrationTime > fiveMinutesAgo && reg.paymentStatus === 'pending';
+        return (
+          registrationTime > fiveMinutesAgo && reg.paymentStatus === "pending"
+        );
       });
-      
+
       if (recentRegistrations.length > 0) {
         // Check if we haven't shown this modal for these registrations yet
-        const hasShownModal = sessionStorage.getItem('registrationModalShown');
-        const currentRegistrationIds = recentRegistrations.map(r => r.id).sort().join(',');
-        
+        const hasShownModal = sessionStorage.getItem("registrationModalShown");
+        const currentRegistrationIds = recentRegistrations
+          .map((r) => r.id)
+          .sort()
+          .join(",");
+
         if (hasShownModal !== currentRegistrationIds) {
-          setRegistrationModal({ open: true, registrations: recentRegistrations });
-          sessionStorage.setItem('registrationModalShown', currentRegistrationIds);
+          setRegistrationModal({
+            open: true,
+            registrations: recentRegistrations,
+          });
+          sessionStorage.setItem(
+            "registrationModalShown",
+            currentRegistrationIds,
+          );
         }
       }
     }
   }, [registrations]);
 
-  const { paidRegistrations, pendingRegistrations, cancelledRegistrations } =
-    useMemo(() => {
-      return {
-        paidRegistrations:
-          registrations?.filter((r) => r.paymentStatus === "paid") || [],
-        pendingRegistrations:
-          registrations?.filter((r) => r.paymentStatus === "pending") || [],
-        cancelledRegistrations:
-          registrations?.filter((r) => r.paymentStatus === "cancelled") || [],
-      };
-    }, [registrations]);
+  const {
+    paidRegistrations,
+    pendingRegistrations,
+    cancelledRegistrations,
+    allRegistrations,
+  } = useMemo(() => {
+    const eventRegistrations = registrations || [];
+    const exhibitionRegistrations = (exhibitions || []).map((ex) => ({
+      ...ex,
+      registrationNumber: `EXH-${ex.id.slice(-8)}`,
+      registrationType: "exhibition" as const,
+      registeredAt: ex.submittedAt,
+    }));
+
+    const combined = [...eventRegistrations, ...exhibitionRegistrations];
+
+    return {
+      paidRegistrations: combined.filter((r) => r.paymentStatus === "paid"),
+      pendingRegistrations: combined.filter(
+        (r) => r.paymentStatus === "pending",
+      ),
+      cancelledRegistrations: combined.filter(
+        (r) => r.paymentStatus === "cancelled",
+      ),
+      allRegistrations: combined,
+    };
+  }, [registrations, exhibitions]);
 
   const handleEvidenceUpload = async () => {
     if (!evidenceFile || !uploadDialog.registration) return;
@@ -279,6 +331,17 @@ export default function Dashboard() {
                           <h3 className="text-xl font-bold text-gray-900">
                             {registration.event.title}
                           </h3>
+                          <Badge
+                            className={
+                              registration.registrationType === "exhibition"
+                                ? "bg-purple-100 text-purple-800 border-purple-200"
+                                : "bg-blue-100 text-blue-800 border-blue-200"
+                            }
+                          >
+                            {registration.registrationType === "exhibition"
+                              ? "Exhibition"
+                              : "Event"}
+                          </Badge>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-600 mb-4">
                           <div className="flex items-center gap-2">
@@ -329,15 +392,48 @@ export default function Dashboard() {
                         {/* Additional Registration Details */}
                         <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {registration.position && (
-                              <div>
-                                <span className="font-medium text-gray-700">
-                                  Position:
-                                </span>
-                                <span className="ml-2 text-gray-600">
-                                  {registration.position}
-                                </span>
-                              </div>
+                            {/* Show different fields based on registration type */}
+                            {registration.registrationType === "exhibition" ? (
+                              <>
+                                {registration.boothSize && (
+                                  <div>
+                                    <span className="font-medium text-gray-700">
+                                      Booth Size:
+                                    </span>
+                                    <span className="ml-2 text-gray-600 capitalize">
+                                      {registration.boothSize}
+                                    </span>
+                                  </div>
+                                )}
+                                {registration.productsServices && (
+                                  <div className="col-span-2">
+                                    <span className="font-medium text-gray-700">
+                                      Products/Services:
+                                    </span>
+                                    <span className="ml-2 text-gray-600">
+                                      {registration.productsServices.substring(
+                                        0,
+                                        100,
+                                      )}
+                                      {registration.productsServices.length >
+                                        100 && "..."}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                {registration.position && (
+                                  <div>
+                                    <span className="font-medium text-gray-700">
+                                      Position:
+                                    </span>
+                                    <span className="ml-2 text-gray-600">
+                                      {registration.position}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
                             )}
 
                             {registration.paymentMethod && (
@@ -392,11 +488,22 @@ export default function Dashboard() {
                             variant="outline"
                             className="border-blue-200 text-blue-600 hover:bg-blue-50"
                             onClick={() => {
-                              console.log('🔍 Dashboard Debug - Opening evidence viewer:');
-                              console.log('  - registration.paymentEvidence:', registration.paymentEvidence);
-                              console.log('  - registration.id:', registration.id);
-                              console.log('  - registration object:', registration);
-                              
+                              console.log(
+                                "🔍 Dashboard Debug - Opening evidence viewer:",
+                              );
+                              console.log(
+                                "  - registration.paymentEvidence:",
+                                registration.paymentEvidence,
+                              );
+                              console.log(
+                                "  - registration.id:",
+                                registration.id,
+                              );
+                              console.log(
+                                "  - registration object:",
+                                registration,
+                              );
+
                               setEvidenceViewer({
                                 open: true,
                                 evidencePath: registration.paymentEvidence,
@@ -404,7 +511,7 @@ export default function Dashboard() {
                                   ?.split("/")
                                   .pop(),
                                 registrationId: registration.id,
-                              })
+                              });
                             }}
                           >
                             <Eye className="w-3 h-3 mr-1" />
@@ -693,7 +800,9 @@ export default function Dashboard() {
       {/* Registration Numbers Modal */}
       <Dialog
         open={registrationModal.open}
-        onOpenChange={(open) => setRegistrationModal({ ...registrationModal, open })}
+        onOpenChange={(open) =>
+          setRegistrationModal({ ...registrationModal, open })
+        }
       >
         <DialogContent className="sm:max-w-2xl bg-slate-50 border border-slate-200 shadow-2xl">
           <DialogHeader className="bg-[#1C356B] text-white rounded-t-lg -m-6 mb-6 p-6">
@@ -701,54 +810,76 @@ export default function Dashboard() {
               🎉 Registration Successful!
             </DialogTitle>
             <DialogDescription className="text-center text-slate-100">
-              Your registration{registrationModal.registrations.length > 1 ? 's have' : ' has'} been completed successfully.
+              Your registration
+              {registrationModal.registrations.length > 1
+                ? "s have"
+                : " has"}{" "}
+              been completed successfully.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             {registrationModal.registrations.map((registration) => (
-              <div key={registration.id} className="bg-white border border-slate-300 rounded-xl p-6 shadow-md">
+              <div
+                key={registration.id}
+                className="bg-white border border-slate-300 rounded-xl p-6 shadow-md"
+              >
                 <div className="text-center mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{registration.event.title}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
+                    {registration.event.title}
+                  </h3>
                   <div className="flex items-center justify-center gap-2 mb-3">
                     <span className="text-2xl">🎫</span>
-                    <h4 className="text-xl font-bold text-[#1C356B]">Your Registration Number</h4>
+                    <h4 className="text-xl font-bold text-[#1C356B]">
+                      Your Registration Number
+                    </h4>
                   </div>
-                  
+
                   <div className="bg-slate-100 rounded-lg border-2 border-slate-300 p-4 mb-4">
                     <div className="text-3xl font-mono font-black text-gray-900 tracking-wider">
                       {registration.registrationNumber}
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 justify-center mb-2">
                     <span className="text-xl">💡</span>
-                    <span className="font-bold text-blue-800 text-lg">Important - Keep This Safe!</span>
+                    <span className="font-bold text-blue-800 text-lg">
+                      Important - Keep This Safe!
+                    </span>
                   </div>
                   <div className="text-sm text-blue-700 space-y-1">
-                    <p>• <strong>Write down</strong> or <strong>screenshot</strong> this registration number</p>
-                    <p>• You'll need it for event check-in and payment verification</p>
+                    <p>
+                      • <strong>Write down</strong> or{" "}
+                      <strong>screenshot</strong> this registration number
+                    </p>
+                    <p>
+                      • You'll need it for event check-in and payment
+                      verification
+                    </p>
                     <p>• This number is also in your confirmation email</p>
                   </div>
                 </div>
               </div>
             ))}
-            
+
             <div className="bg-slate-100 border border-slate-300 rounded-lg p-4">
               <div className="flex items-center gap-2 justify-center">
                 <span className="text-slate-600">📋</span>
                 <span className="text-sm font-medium text-slate-700">
-                  You can always find your registration numbers in the "Active" tab below
+                  You can always find your registration numbers in the "Active"
+                  tab below
                 </span>
               </div>
             </div>
           </div>
-          
+
           <DialogFooter className="mt-6">
             <Button
-              onClick={() => setRegistrationModal({ open: false, registrations: [] })}
+              onClick={() =>
+                setRegistrationModal({ open: false, registrations: [] })
+              }
               className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white font-semibold py-3 shadow-lg"
             >
               Perfect! I've got my registration number

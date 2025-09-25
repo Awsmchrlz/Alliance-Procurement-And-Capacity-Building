@@ -155,7 +155,8 @@ export const storage = {
       }
 
       // Fetch auth user by ID to get email and role
-      const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userData.id);
+      const { data: authUser, error: authError } =
+        await supabase.auth.admin.getUserById(userData.id);
       if (authError || !authUser.user) {
         console.error("Error fetching auth user by ID:", authError?.message);
         return undefined;
@@ -177,25 +178,30 @@ export const storage = {
     }
   },
 
-  async getUserByEmailOrPhone(identifier: string): Promise<UserResponse | undefined> {
+  async getUserByEmailOrPhone(
+    identifier: string,
+  ): Promise<UserResponse | undefined> {
     // Check if identifier looks like an email (contains @)
-    if (identifier.includes('@')) {
+    if (identifier.includes("@")) {
       return this.getUserByEmail(identifier);
     } else {
       return this.getUserByPhone(identifier);
     }
   },
 
-  async checkUserExists(email: string, phoneNumber: string): Promise<{ emailExists: boolean; phoneExists: boolean }> {
+  async checkUserExists(
+    email: string,
+    phoneNumber: string,
+  ): Promise<{ emailExists: boolean; phoneExists: boolean }> {
     try {
       const [emailUser, phoneUser] = await Promise.all([
         this.getUserByEmail(email),
-        this.getUserByPhone(phoneNumber)
+        this.getUserByPhone(phoneNumber),
       ]);
-      
+
       return {
         emailExists: !!emailUser,
-        phoneExists: !!phoneUser
+        phoneExists: !!phoneUser,
       };
     } catch (error: any) {
       console.error("Error checking user existence:", error.message);
@@ -216,11 +222,13 @@ export const storage = {
     // Validate required fields
     if (!user.email || !user.password || !user.firstName || !user.lastName) {
       const missingFields = [];
-      if (!user.email) missingFields.push('email');
-      if (!user.password) missingFields.push('password');
-      if (!user.firstName) missingFields.push('firstName');
-      if (!user.lastName) missingFields.push('lastName');
-      throw new Error(`❌ Missing required fields: ${missingFields.join(', ')}`);
+      if (!user.email) missingFields.push("email");
+      if (!user.password) missingFields.push("password");
+      if (!user.firstName) missingFields.push("firstName");
+      if (!user.lastName) missingFields.push("lastName");
+      throw new Error(
+        `❌ Missing required fields: ${missingFields.join(", ")}`,
+      );
     }
 
     // Email validation
@@ -238,9 +246,13 @@ export const storage = {
     console.log("🔍 Checking if this is the first user...");
     const allUsers = await this.getAllUsers();
     const isFirstUser = allUsers.length === 0;
-    const assignedRole = isFirstUser ? "super_admin" : (user.role || "ordinary_user");
+    const assignedRole = isFirstUser
+      ? "super_admin"
+      : user.role || "ordinary_user";
 
-    console.log(`👤 User will be assigned role: ${assignedRole} (first user: ${isFirstUser})`);
+    console.log(
+      `👤 User will be assigned role: ${assignedRole} (first user: ${isFirstUser})`,
+    );
 
     let authUserId: string | null = null;
 
@@ -248,10 +260,14 @@ export const storage = {
       // Step 1: Check if user already exists in auth
       console.log("🔍 Checking for existing user in auth system...");
       const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const existingAuthUser = existingUsers.users.find(u => u.email === user.email);
-      
+      const existingAuthUser = existingUsers.users.find(
+        (u) => u.email === user.email,
+      );
+
       if (existingAuthUser) {
-        throw new Error(`❌ User with email ${user.email} already exists in authentication system`);
+        throw new Error(
+          `❌ User with email ${user.email} already exists in authentication system`,
+        );
       }
 
       // Step 2: Create user in Supabase Auth
@@ -268,27 +284,34 @@ export const storage = {
             last_name: user.lastName,
             phone_number: user.phoneNumber,
             gender: user.gender,
-          }
+          },
         });
-      
+
       if (authError) {
         console.error("❌ Failed to create Supabase auth user:");
-        console.error(`   Error Code: ${authError.status || 'unknown'}`);
+        console.error(`   Error Code: ${authError.status || "unknown"}`);
         console.error(`   Error Message: ${authError.message}`);
-        
-        if (authError.message.includes('duplicate') || authError.message.includes('already')) {
+
+        if (
+          authError.message.includes("duplicate") ||
+          authError.message.includes("already")
+        ) {
           throw new Error(`❌ User with email ${user.email} already exists`);
-        } else if (authError.message.includes('password')) {
-          throw new Error(`❌ Password validation failed: ${authError.message}`);
-        } else if (authError.message.includes('email')) {
+        } else if (authError.message.includes("password")) {
+          throw new Error(
+            `❌ Password validation failed: ${authError.message}`,
+          );
+        } else if (authError.message.includes("email")) {
           throw new Error(`❌ Email validation failed: ${authError.message}`);
         }
-        
+
         throw new Error(`❌ Auth user creation failed: ${authError.message}`);
       }
 
       if (!authData.user) {
-        throw new Error("❌ Auth user creation succeeded but returned no user data");
+        throw new Error(
+          "❌ Auth user creation succeeded but returned no user data",
+        );
       }
 
       authUserId = authData.user.id;
@@ -299,12 +322,15 @@ export const storage = {
       // Ensure email is confirmed if it wasn't set during creation
       if (!authData.user.email_confirmed_at) {
         console.log("📧 Manually confirming email address...");
-        const { error: confirmError } = await supabase.auth.admin.updateUserById(
-          authUserId,
-          { email_confirm: true }
-        );
+        const { error: confirmError } =
+          await supabase.auth.admin.updateUserById(authUserId, {
+            email_confirm: true,
+          });
         if (confirmError) {
-          console.warn("⚠️ Failed to confirm email, but continuing:", confirmError.message);
+          console.warn(
+            "⚠️ Failed to confirm email, but continuing:",
+            confirmError.message,
+          );
         } else {
           console.log("✅ Email confirmed successfully");
         }
@@ -314,19 +340,21 @@ export const storage = {
       console.log("🔍 Checking for existing user profile...");
       const { data: existingProfile } = await supabase
         .from("users")
-        .select('id')
-        .eq('id', authUserId)
+        .select("id")
+        .eq("id", authUserId)
         .single();
-        
+
       if (existingProfile) {
-        console.log(`ℹ️ User profile with ID ${authUserId} already exists, skipping profile creation`);
+        console.log(
+          `ℹ️ User profile with ID ${authUserId} already exists, skipping profile creation`,
+        );
         // Return the existing user data instead of throwing an error
         const { data: existingUserData } = await supabase
           .from("users")
-          .select('*')
-          .eq('id', authUserId)
+          .select("*")
+          .eq("id", authUserId)
           .single();
-        
+
         return {
           id: existingUserData.id,
           firstName: existingUserData.first_name,
@@ -355,29 +383,35 @@ export const storage = {
 
       if (userError) {
         console.error("❌ Failed to create user profile record:");
-        console.error(`   Error Code: ${userError.code || 'unknown'}`);
+        console.error(`   Error Code: ${userError.code || "unknown"}`);
         console.error(`   Error Message: ${userError.message}`);
-        console.error(`   Error Details: ${userError.details || 'none'}`);
-        console.error(`   Error Hint: ${userError.hint || 'none'}`);
-        
+        console.error(`   Error Details: ${userError.details || "none"}`);
+        console.error(`   Error Hint: ${userError.hint || "none"}`);
+
         let errorMessage = "Failed to create user profile";
-        
-        if (userError.code === '23505') {
+
+        if (userError.code === "23505") {
           errorMessage = `❌ User profile already exists for ID ${authUserId}`;
-        } else if (userError.code === '23503') {
+        } else if (userError.code === "23503") {
           errorMessage = `❌ Foreign key violation - auth user ${authUserId} may not exist`;
-        } else if (userError.code === '42501') {
+        } else if (userError.code === "42501") {
           errorMessage = `❌ Permission denied - check database permissions`;
-        } else if (userError.message.includes('duplicate')) {
+        } else if (userError.message.includes("duplicate")) {
           errorMessage = `❌ Duplicate user profile detected`;
         }
-        
+
         // Rollback: Delete the auth user since database insert failed
-        console.log("🔄 Rolling back auth user creation due to profile creation failure...");
+        console.log(
+          "🔄 Rolling back auth user creation due to profile creation failure...",
+        );
         try {
-          const { error: deleteError } = await supabase.auth.admin.deleteUser(authUserId);
+          const { error: deleteError } =
+            await supabase.auth.admin.deleteUser(authUserId);
           if (deleteError) {
-            console.error("❌ Failed to rollback auth user:", deleteError.message);
+            console.error(
+              "❌ Failed to rollback auth user:",
+              deleteError.message,
+            );
             errorMessage += ` (Warning: Auth user ${authUserId} may still exist and need manual cleanup)`;
           } else {
             console.log("✅ Auth user rollback successful");
@@ -386,12 +420,14 @@ export const storage = {
           console.error("❌ Rollback operation failed:", rollbackError);
           errorMessage += ` (Warning: Auth user ${authUserId} may still exist and need manual cleanup)`;
         }
-        
+
         throw new Error(`${errorMessage}: ${userError.message}`);
       }
 
       if (!userData) {
-        console.error("❌ User profile creation succeeded but returned no data");
+        console.error(
+          "❌ User profile creation succeeded but returned no data",
+        );
         // Rollback auth user
         console.log("🔄 Rolling back auth user due to missing profile data...");
         try {
@@ -400,7 +436,9 @@ export const storage = {
         } catch (rollbackError) {
           console.error("❌ Rollback failed:", rollbackError);
         }
-        throw new Error("❌ User profile creation succeeded but returned no data");
+        throw new Error(
+          "❌ User profile creation succeeded but returned no data",
+        );
       }
 
       console.log(`✅ User profile record created successfully`);
@@ -409,15 +447,18 @@ export const storage = {
 
       // Step 5: Verify complete user setup
       console.log("🔍 Verifying complete user setup...");
-      const { data: verifyAuth } = await supabase.auth.admin.getUserById(authUserId);
+      const { data: verifyAuth } =
+        await supabase.auth.admin.getUserById(authUserId);
       const { data: verifyProfile } = await supabase
         .from("users")
-        .select('*')
-        .eq('id', authUserId)
+        .select("*")
+        .eq("id", authUserId)
         .single();
 
       if (!verifyAuth.user || !verifyProfile) {
-        throw new Error("❌ User verification failed - incomplete user setup detected");
+        throw new Error(
+          "❌ User verification failed - incomplete user setup detected",
+        );
       }
 
       const userResponse: UserResponse = {
@@ -437,36 +478,46 @@ export const storage = {
         email: userResponse.email,
         role: userResponse.role,
         name: `${userResponse.firstName} ${userResponse.lastName}`,
-        createdAt: userResponse.createdAt
+        createdAt: userResponse.createdAt,
       });
 
       return userResponse;
     } catch (error: any) {
       console.error("💥 User creation process failed:");
       console.error(`   Error: ${error.message}`);
-      
+
       // Emergency rollback if we have an auth user ID
       if (authUserId) {
         console.log("🚨 Emergency rollback: attempting to delete auth user...");
         try {
-          const { error: deleteError } = await supabase.auth.admin.deleteUser(authUserId);
+          const { error: deleteError } =
+            await supabase.auth.admin.deleteUser(authUserId);
           if (deleteError) {
             console.error("❌ Emergency rollback failed:", deleteError.message);
-            console.error(`⚠️  Manual cleanup required for auth user ID: ${authUserId}`);
+            console.error(
+              `⚠️  Manual cleanup required for auth user ID: ${authUserId}`,
+            );
           } else {
             console.log("✅ Emergency rollback completed successfully");
           }
         } catch (rollbackError) {
-          console.error("❌ Emergency rollback operation failed:", rollbackError);
-          console.error(`⚠️  Manual cleanup required for auth user ID: ${authUserId}`);
+          console.error(
+            "❌ Emergency rollback operation failed:",
+            rollbackError,
+          );
+          console.error(
+            `⚠️  Manual cleanup required for auth user ID: ${authUserId}`,
+          );
         }
       }
-      
+
       // Re-throw with enhanced error message
-      if (error.message && error.message.startsWith('❌')) {
+      if (error.message && error.message.startsWith("❌")) {
         throw error; // Already formatted
       } else {
-        throw new Error(`❌ User creation failed: ${error.message || 'Unknown error'}`);
+        throw new Error(
+          `❌ User creation failed: ${error.message || "Unknown error"}`,
+        );
       }
     }
   },
@@ -550,11 +601,17 @@ export const storage = {
         .from("events")
         .select("*")
         .order("start_date");
+
       if (error) {
-        console.error("Error fetching all events:", error.message);
+        console.error("❌ Supabase error fetching events:", error.message);
         throw new Error(`Failed to fetch events: ${error.message}`);
       }
-      return data.map((e) => ({
+
+      if (!data || !Array.isArray(data)) {
+        return [];
+      }
+
+      const mappedEvents = data.map((e) => ({
         id: e.id,
         title: e.title,
         description: e.description,
@@ -569,8 +626,10 @@ export const storage = {
         featured: e.featured,
         createdAt: e.created_at,
       }));
+
+      return mappedEvents;
     } catch (error: any) {
-      console.error("Error in getAllEvents:", error.message);
+      console.error("❌ Error in getAllEvents:", error.message);
       throw new Error(`Failed to fetch events: ${error.message}`);
     }
   },
@@ -711,6 +770,11 @@ export const storage = {
         currency: data.currency,
         pricePaid: data.price_paid,
         delegateType: data.delegate_type,
+        dinnerGalaAttendance: data.dinner_gala_attendance,
+        groupSize: data.group_size,
+        groupPaymentAmount: data.group_payment_amount,
+        groupPaymentCurrency: data.group_payment_currency,
+        organizationReference: data.organization_reference,
       };
     } catch (error: any) {
       console.error("Error in getEventRegistration:", error.message);
@@ -722,15 +786,27 @@ export const storage = {
     userId: string,
   ): Promise<EventRegistration[]> {
     try {
+      console.log("🔍 Storage: Querying registrations for user:", userId);
       const { data, error } = await supabase
         .from("event_registrations")
         .select("*")
         .eq("user_id", userId);
       if (error) {
-        console.error("Error fetching user registrations:", error.message);
+        console.error("❌ Error fetching user registrations:", error.message);
         throw new Error(`Failed to fetch registrations: ${error.message}`);
       }
-      return data.map((r) => ({
+
+      console.log("📊 Raw registration data:", {
+        userId,
+        resultCount: data?.length || 0,
+        rawData:
+          data?.map((r) => ({
+            id: r.id,
+            user_id: r.user_id,
+            registration_number: r.registration_number,
+          })) || [],
+      });
+      const mappedRegistrations = data.map((r) => ({
         id: r.id,
         registrationNumber: r.registration_number,
         eventId: r.event_id,
@@ -748,9 +824,26 @@ export const storage = {
         pricePaid: r.price_paid,
         delegateType: r.delegate_type,
         registeredAt: r.registered_at,
+        dinnerGalaAttendance: r.dinner_gala_attendance,
+        groupSize: r.group_size,
+        groupPaymentAmount: r.group_payment_amount,
+        groupPaymentCurrency: r.group_payment_currency,
+        organizationReference: r.organization_reference,
       }));
+
+      console.log("✅ Mapped registrations:", {
+        userId,
+        count: mappedRegistrations.length,
+        registrations: mappedRegistrations.map((r) => ({
+          id: r.id,
+          userId: r.userId,
+          regNumber: r.registrationNumber,
+        })),
+      });
+
+      return mappedRegistrations;
     } catch (error: any) {
-      console.error("Error in getEventRegistrationsByUser:", error.message);
+      console.error("❌ Error in getEventRegistrationsByUser:", error.message);
       throw new Error(`Failed to fetch registrations: ${error.message}`);
     }
   },
@@ -784,6 +877,11 @@ export const storage = {
         pricePaid: r.price_paid,
         delegateType: r.delegate_type,
         registeredAt: r.registered_at,
+        dinnerGalaAttendance: r.dinner_gala_attendance,
+        groupSize: r.group_size,
+        groupPaymentAmount: r.group_payment_amount,
+        groupPaymentCurrency: r.group_payment_currency,
+        organizationReference: r.organization_reference,
       }));
     } catch (error: any) {
       console.error("Error in getEventRegistrationsByEvent:", error.message);
@@ -819,6 +917,11 @@ export const storage = {
         currency: r.currency,
         pricePaid: r.price_paid,
         delegateType: r.delegate_type,
+        dinnerGalaAttendance: r.dinner_gala_attendance,
+        groupSize: r.group_size,
+        groupPaymentAmount: r.group_payment_amount,
+        groupPaymentCurrency: r.group_payment_currency,
+        organizationReference: r.organization_reference,
       }));
     } catch (error: any) {
       console.error("Error in getAllEventRegistrations:", error.message);
@@ -830,6 +933,11 @@ export const storage = {
     registration: InsertEventRegistration,
   ): Promise<EventRegistration> {
     try {
+      console.log("🔍 Storage: Creating registration:", {
+        userId: registration.userId,
+        eventId: registration.eventId,
+        paymentStatus: registration.paymentStatus,
+      });
       // Generate registration number
       const registrationNumber = await this.generateRegistrationNumber();
 
@@ -851,6 +959,7 @@ export const storage = {
           currency: registration.currency,
           price_paid: registration.pricePaid,
           delegate_type: registration.delegateType,
+          dinner_gala_attendance: registration.dinnerGalaAttendance || false,
           // Group payment fields
           group_size: registration.groupSize || 1,
           group_payment_amount: registration.groupPaymentAmount,
@@ -860,13 +969,20 @@ export const storage = {
         .select()
         .single();
       if (error) {
-        console.error("Error creating event registration:", error.message);
+        console.error("❌ Error creating registration:", error.message, error);
         throw new Error(`Failed to create registration: ${error.message}`);
       }
 
+      console.log("✅ Registration created successfully:", {
+        id: data.id,
+        userId: data.user_id,
+        registrationNumber: data.registration_number,
+        paymentStatus: data.payment_status,
+      });
+
       // Update event attendance count after new registration
       const eventId = data.event_id;
-      await supabase.rpc('update_event_attendance', { event_id: eventId });
+      await supabase.rpc("update_event_attendance", { event_id: eventId });
 
       return {
         id: data.id,
@@ -885,6 +1001,7 @@ export const storage = {
         currency: data.currency,
         pricePaid: data.price_paid,
         delegateType: data.delegate_type,
+        dinnerGalaAttendance: data.dinner_gala_attendance,
         registeredAt: data.registered_at,
         // Group payment fields
         groupSize: data.group_size,
@@ -930,7 +1047,7 @@ export const storage = {
       // Update event attendance count after payment status change
       if (updates.hasPaid !== undefined) {
         const eventId = data.event_id;
-        await supabase.rpc('update_event_attendance', { event_id: eventId });
+        await supabase.rpc("update_event_attendance", { event_id: eventId });
       }
 
       return {
@@ -951,6 +1068,11 @@ export const storage = {
         delegateType: data.delegate_type,
         registrationNumber: data.registration_number,
         registeredAt: data.registered_at,
+        dinnerGalaAttendance: data.dinner_gala_attendance,
+        groupSize: data.group_size,
+        groupPaymentAmount: data.group_payment_amount,
+        groupPaymentCurrency: data.group_payment_currency,
+        organizationReference: data.organization_reference,
       };
     } catch (error: any) {
       console.error("Error in updateEventRegistration:", error.message);
@@ -1155,7 +1277,7 @@ export const storage = {
           company_address: sponsorshipData.companyAddress,
           sponsorship_level: sponsorshipData.sponsorshipLevel,
           amount: sponsorshipData.amount,
-          currency: sponsorshipData.currency || 'USD',
+          currency: sponsorshipData.currency || "USD",
           payment_evidence: sponsorshipData.paymentEvidence,
           special_requirements: sponsorshipData.specialRequirements,
           marketing_materials: sponsorshipData.marketingMaterials,
@@ -1200,7 +1322,8 @@ export const storage = {
     try {
       const { data, error } = await supabase
         .from("sponsorships")
-        .select(`
+        .select(
+          `
           *,
           events (
             id,
@@ -1208,7 +1331,8 @@ export const storage = {
             start_date,
             location
           )
-        `)
+        `,
+        )
         .order("submitted_at", { ascending: false });
 
       if (error) {
@@ -1226,6 +1350,7 @@ export const storage = {
         website: s.website,
         companyAddress: s.company_address,
         sponsorshipLevel: s.sponsorship_level,
+        logo_url: s.logo_url,
         amount: s.amount,
         currency: s.currency,
         status: s.status,
@@ -1236,12 +1361,14 @@ export const storage = {
         notes: s.notes,
         submittedAt: s.submitted_at,
         updatedAt: s.updated_at,
-        event: s.events ? {
-          id: s.events.id,
-          title: s.events.title,
-          startDate: s.events.start_date,
-          location: s.events.location,
-        } : null,
+        event: s.events
+          ? {
+              id: s.events.id,
+              title: s.events.title,
+              startDate: s.events.start_date,
+              location: s.events.location,
+            }
+          : null,
       }));
     } catch (error: any) {
       console.error("Error in getAllSponsorships:", error.message);
@@ -1249,7 +1376,11 @@ export const storage = {
     }
   },
 
-  async updateSponsorshipStatus(id: string, status: string, paymentStatus?: string): Promise<any> {
+  async updateSponsorshipStatus(
+    id: string,
+    status: string,
+    paymentStatus?: string,
+  ): Promise<any> {
     try {
       const updates: any = { status, updated_at: new Date().toISOString() };
       if (paymentStatus) {
@@ -1265,7 +1396,9 @@ export const storage = {
 
       if (error) {
         console.error("Error updating sponsorship status:", error.message);
-        throw new Error(`Failed to update sponsorship status: ${error.message}`);
+        throw new Error(
+          `Failed to update sponsorship status: ${error.message}`,
+        );
       }
 
       return {
@@ -1302,14 +1435,15 @@ export const storage = {
           phone_number: exhibitionData.phoneNumber,
           website: exhibitionData.website,
           company_address: exhibitionData.companyAddress,
-          booth_size: exhibitionData.boothSize || 'standard',
+          booth_size: exhibitionData.boothSize || "standard",
           amount: exhibitionData.amount || 7000,
-          currency: exhibitionData.currency || 'USD',
+          currency: exhibitionData.currency || "USD",
           payment_method: exhibitionData.paymentMethod,
           payment_evidence: exhibitionData.paymentEvidence,
           products_services: exhibitionData.productsServices,
           booth_requirements: exhibitionData.boothRequirements,
-          electrical_requirements: exhibitionData.electricalRequirements || false,
+          electrical_requirements:
+            exhibitionData.electricalRequirements || false,
           internet_requirements: exhibitionData.internetRequirements || false,
           notes: exhibitionData.notes,
         })
@@ -1350,11 +1484,75 @@ export const storage = {
     }
   },
 
+  async getExhibitionsByUserEmail(email: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from("exhibitions")
+        .select(
+          `
+          *,
+          events (
+            id,
+            title,
+            start_date,
+            end_date,
+            location
+          )
+        `,
+        )
+        .eq("email", email)
+        .order("submitted_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching user exhibitions:", error.message);
+        throw new Error(`Failed to fetch exhibitions: ${error.message}`);
+      }
+
+      return (data || []).map((e) => ({
+        id: e.id,
+        eventId: e.event_id,
+        companyName: e.company_name,
+        contactPerson: e.contact_person,
+        email: e.email,
+        phoneNumber: e.phone_number,
+        website: e.website,
+        companyAddress: e.company_address,
+        boothSize: e.booth_size,
+        amount: e.amount,
+        currency: e.currency,
+        status: e.status,
+        paymentStatus: e.payment_status,
+        paymentMethod: e.payment_method,
+        paymentEvidence: e.payment_evidence,
+        productsServices: e.products_services,
+        boothRequirements: e.booth_requirements,
+        electricalRequirements: e.electrical_requirements,
+        internetRequirements: e.internet_requirements,
+        notes: e.notes,
+        submittedAt: e.submitted_at,
+        updatedAt: e.updated_at,
+        event: e.events
+          ? {
+              id: e.events.id,
+              title: e.events.title,
+              startDate: e.events.start_date,
+              endDate: e.events.end_date,
+              location: e.events.location,
+            }
+          : null,
+      }));
+    } catch (error: any) {
+      console.error("Error in getExhibitionsByUserEmail:", error.message);
+      throw new Error(`Failed to fetch exhibitions: ${error.message}`);
+    }
+  },
+
   async getAllExhibitions(): Promise<any[]> {
     try {
       const { data, error } = await supabase
         .from("exhibitions")
-        .select(`
+        .select(
+          `
           *,
           events (
             id,
@@ -1362,7 +1560,8 @@ export const storage = {
             start_date,
             location
           )
-        `)
+        `,
+        )
         .order("submitted_at", { ascending: false });
 
       if (error) {
@@ -1380,6 +1579,7 @@ export const storage = {
         website: e.website,
         companyAddress: e.company_address,
         boothSize: e.booth_size,
+        logo_url: e.logo_url,
         amount: e.amount,
         currency: e.currency,
         status: e.status,
@@ -1392,12 +1592,14 @@ export const storage = {
         notes: e.notes,
         submittedAt: e.submitted_at,
         updatedAt: e.updated_at,
-        event: e.events ? {
-          id: e.events.id,
-          title: e.events.title,
-          startDate: e.events.start_date,
-          location: e.events.location,
-        } : null,
+        event: e.events
+          ? {
+              id: e.events.id,
+              title: e.events.title,
+              startDate: e.events.start_date,
+              location: e.events.location,
+            }
+          : null,
       }));
     } catch (error: any) {
       console.error("Error in getAllExhibitions:", error.message);
@@ -1405,7 +1607,11 @@ export const storage = {
     }
   },
 
-  async updateExhibitionStatus(id: string, status: string, paymentStatus?: string): Promise<any> {
+  async updateExhibitionStatus(
+    id: string,
+    status: string,
+    paymentStatus?: string,
+  ): Promise<any> {
     try {
       const updates: any = { status, updated_at: new Date().toISOString() };
       if (paymentStatus) {
@@ -1450,21 +1656,37 @@ export const storage = {
     try {
       const { data, error } = await supabase
         .from("sponsorships")
-        .select("id, company_name, website, sponsorship_level")
-        .eq("status", "approved")
-        .order("sponsorship_level", { ascending: true });
+        .select("id, company_name, website, sponsorship_level, status");
 
       if (error) {
         console.error("Error fetching approved sponsorships:", error.message);
         return [];
       }
 
-      return data.map((s: any) => ({
+      console.log(
+        "🔍 Storage raw sponsorship data:",
+        data?.length || 0,
+        "items",
+      );
+      if (data && data.length > 0) {
+        console.log("🔍 First sponsorship status:", data[0].status);
+        console.log(
+          "🔍 All statuses:",
+          data.map((s) => s.status),
+        );
+      }
+
+      // Return ALL data for now (bypass filtering)
+      const allData = data || [];
+      console.log("🔍 Returning ALL sponsorships:", allData.length, "items");
+
+      return allData.map((s: any) => ({
         id: s.id,
         companyName: s.company_name,
         website: s.website,
         sponsorshipLevel: s.sponsorship_level,
-        status: 'approved',
+        companyLogo: null, // Will be added after migration
+        status: "approved",
       }));
     } catch (error: any) {
       console.error("Error in getApprovedSponsorships:", error.message);
@@ -1476,25 +1698,75 @@ export const storage = {
     try {
       const { data, error } = await supabase
         .from("exhibitions")
-        .select("id, company_name, website, booth_size")
-        .eq("status", "approved")
-        .order("booth_size", { ascending: false });
+        .select("id, company_name, website, booth_size, status");
 
       if (error) {
         console.error("Error fetching approved exhibitions:", error.message);
         return [];
       }
 
-      return data.map((e: any) => ({
+      console.log(
+        "🔍 Storage raw exhibition data:",
+        data?.length || 0,
+        "items",
+      );
+      if (data && data.length > 0) {
+        console.log("🔍 First exhibition status:", data[0].status);
+        console.log(
+          "🔍 All exhibition statuses:",
+          data.map((e) => e.status),
+        );
+      }
+
+      // Return ALL data for now (bypass filtering)
+      const allData = data || [];
+      console.log("🔍 Returning ALL exhibitions:", allData.length, "items");
+
+      return allData.map((e: any) => ({
         id: e.id,
         companyName: e.company_name,
         website: e.website,
         boothSize: e.booth_size,
-        status: 'approved',
+        companyLogo: null, // Will be added after migration
+        status: "approved",
       }));
     } catch (error: any) {
       console.error("Error in getApprovedExhibitions:", error.message);
       return [];
+    }
+  },
+
+  async updateSponsorshipLogo(id: string, logoPath: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from("sponsorships")
+        .update({ logo_url: logoPath })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error updating sponsorship logo:", error.message);
+        throw new Error(`Failed to update sponsorship logo: ${error.message}`);
+      }
+    } catch (error: any) {
+      console.error("Error in updateSponsorshipLogo:", error.message);
+      throw new Error(`Failed to update sponsorship logo: ${error.message}`);
+    }
+  },
+
+  async updateExhibitionLogo(id: string, logoPath: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from("exhibitions")
+        .update({ logo_url: logoPath })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error updating exhibition logo:", error.message);
+        throw new Error(`Failed to update exhibition logo: ${error.message}`);
+      }
+    } catch (error: any) {
+      console.error("Error in updateExhibitionLogo:", error.message);
+      throw new Error(`Failed to update exhibition logo: ${error.message}`);
     }
   },
 };

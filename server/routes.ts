@@ -6,11 +6,16 @@ import { format } from "date-fns";
 import { EvidenceResolver } from "./evidence-resolver";
 import { storage } from "./storage";
 import { emailService } from "./email-service";
-import { insertUserSchema, insertEventRegistrationSchema, insertNewsletterSubscriptionSchema, type RoleValue } from "../shared/schema";
+import {
+  insertUserSchema,
+  insertEventRegistrationSchema,
+  insertNewsletterSubscriptionSchema,
+  type RoleValue,
+} from "../shared/schema";
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 const Roles: Record<string, RoleValue> = {
@@ -21,7 +26,10 @@ const Roles: Record<string, RoleValue> = {
 };
 
 // Helper function to check if user has any of the required roles
-const hasAnyRole = (userRole: RoleValue | undefined, allowedRoles: RoleValue[]): boolean => {
+const hasAnyRole = (
+  userRole: RoleValue | undefined,
+  allowedRoles: RoleValue[],
+): boolean => {
   return userRole ? allowedRoles.includes(userRole) : false;
 };
 
@@ -87,38 +95,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     console.log("🚀 Starting user registration process...");
     console.log("Request body:", JSON.stringify(req.body, null, 2));
-    
+
     try {
       // Validate request body against schema
       const userData = insertUserSchema.parse(req.body);
       console.log("✅ Request data validated successfully");
 
       // Check if user already exists by phone number (unique identifier)
-      console.log(`🔍 Checking if user with phone ${userData.phoneNumber} already exists...`);
-      const { emailExists, phoneExists } = await storage.checkUserExists(userData.email, userData.phoneNumber);
-      
+      console.log(
+        `🔍 Checking if user with phone ${userData.phoneNumber} already exists...`,
+      );
+      const { emailExists, phoneExists } = await storage.checkUserExists(
+        userData.email,
+        userData.phoneNumber,
+      );
+
       if (phoneExists) {
-        console.log(`❌ User with phone ${userData.phoneNumber} already exists`);
-        return res.status(400).json({ 
+        console.log(
+          `❌ User with phone ${userData.phoneNumber} already exists`,
+        );
+        return res.status(400).json({
           message: "Phone number already registered",
-          details: "A user with this phone number is already registered. Phone numbers must be unique."
+          details:
+            "A user with this phone number is already registered. Phone numbers must be unique.",
         });
       }
-      
+
       // Note: Multiple users can share the same email (company emails)
       if (emailExists) {
-        console.log(`ℹ️ Email ${userData.email} is already in use (shared company email allowed)`);
+        console.log(
+          `ℹ️ Email ${userData.email} is already in use (shared company email allowed)`,
+        );
       } else {
         console.log(`✅ Email ${userData.email} is available`);
       }
-      console.log(`✅ Phone number ${userData.phoneNumber} is available for registration`);
+      console.log(
+        `✅ Phone number ${userData.phoneNumber} is available for registration`,
+      );
 
       // Check if this is the first user (make them super_admin)
       console.log("🔍 Checking if this is the first user...");
       const allUsers = await storage.getAllUsers();
       const isFirstUser = allUsers.length === 0;
-      const finalRole = isFirstUser ? "super_admin" : userData.role || "ordinary_user";
-      console.log(`📝 User will be assigned role: ${finalRole} (first user: ${isFirstUser})`);
+      const finalRole = isFirstUser
+        ? "super_admin"
+        : userData.role || "ordinary_user";
+      console.log(
+        `📝 User will be assigned role: ${finalRole} (first user: ${isFirstUser})`,
+      );
 
       // Create user in Supabase with role in user_metadata
       console.log("🔨 Creating user account...");
@@ -171,17 +195,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log("✅ Admin notifications sent successfully");
             })
             .catch((error) => {
-              console.error("❌ Failed to notify admins of new user:", error.message);
+              console.error(
+                "❌ Failed to notify admins of new user:",
+                error.message,
+              );
             });
         } else {
           console.log("ℹ️ No super admins to notify");
         }
       } else {
-        console.log("ℹ️ First user registration - no admin notifications needed");
+        console.log(
+          "ℹ️ First user registration - no admin notifications needed",
+        );
       }
 
-      console.log(`🎉 User ${user.email} registered successfully with ID: ${user.id}`);
-      res.status(201).json({ 
+      console.log(
+        `🎉 User ${user.email} registered successfully with ID: ${user.id}`,
+      );
+      res.status(201).json({
         user: {
           id: user.id,
           email: user.email,
@@ -190,18 +221,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phoneNumber: user.phoneNumber,
           gender: user.gender,
           role: user.role,
-          createdAt: user.createdAt
+          createdAt: user.createdAt,
         },
-        message: "Registration successful"
+        message: "Registration successful",
       });
     } catch (error: any) {
       console.error("❌ Registration error:", error);
       console.error("Error stack:", error.stack);
-      
+
       // Determine error type for better user feedback
       let errorMessage = "Registration failed";
       let errorDetails = error.message || "Invalid user data";
-      
+
       if (error.message?.includes("duplicate key")) {
         errorMessage = "User already exists";
         errorDetails = "A user with this email address is already registered";
@@ -210,16 +241,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errorDetails = "Please check all required fields are filled correctly";
       } else if (error.message?.includes("auth")) {
         errorMessage = "Authentication setup failed";
-        errorDetails = "There was an issue setting up your account authentication";
-      } else if (error.message?.includes("database") || error.message?.includes("insert")) {
+        errorDetails =
+          "There was an issue setting up your account authentication";
+      } else if (
+        error.message?.includes("database") ||
+        error.message?.includes("insert")
+      ) {
         errorMessage = "Database error";
         errorDetails = "There was an issue saving your account information";
       }
-      
-      res.status(400).json({ 
-        message: errorMessage, 
+
+      res.status(400).json({
+        message: errorMessage,
         details: errorDetails,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   });
@@ -235,7 +270,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { role } = req.body;
 
         // Validate role
-        const validRoles = ["super_admin", "finance_person", "event_manager", "ordinary_user"];
+        const validRoles = [
+          "super_admin",
+          "finance_person",
+          "event_manager",
+          "ordinary_user",
+        ];
         if (!validRoles.includes(role)) {
           return res.status(400).json({ message: "Invalid role specified" });
         }
@@ -243,29 +283,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🔄 Promoting user ${userId} to role: ${role}`);
 
         // Update user metadata in Supabase Auth
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-          user_metadata: { role }
-        });
+        const { data: authData, error: authError } =
+          await supabaseAdmin.auth.admin.updateUserById(userId, {
+            user_metadata: { role },
+          });
 
         if (authError) {
           console.error("Error updating user role:", authError.message);
-          return res.status(400).json({ message: "Failed to update user role", details: authError.message });
+          return res.status(400).json({
+            message: "Failed to update user role",
+            details: authError.message,
+          });
         }
 
         console.log(`✅ User ${userId} promoted to ${role} successfully`);
-        res.json({ 
-          message: "User role updated successfully", 
+        res.json({
+          message: "User role updated successfully",
           user: {
             id: authData.user.id,
             email: authData.user.email,
-            role: authData.user.user_metadata.role
-          }
+            role: authData.user.user_metadata.role,
+          },
         });
       } catch (error: any) {
         console.error("Error promoting user:", error);
-        res.status(500).json({ message: "Internal server error", details: error.message });
+        res
+          .status(500)
+          .json({ message: "Internal server error", details: error.message });
       }
-    }
+    },
   );
 
   // Get all users with roles (super admin, finance users, and event managers)
@@ -279,9 +325,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ users });
       } catch (error: any) {
         console.error("Error fetching users:", error);
-        res.status(500).json({ message: "Failed to fetch users", details: error.message });
+        res
+          .status(500)
+          .json({ message: "Failed to fetch users", details: error.message });
       }
-    }
+    },
   );
 
   // Admin user registration endpoint (super admin only)
@@ -365,7 +413,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { identifier, password } = req.body;
       if (!identifier || !password) {
-        return res.status(400).json({ message: "Email/phone and password required" });
+        return res
+          .status(400)
+          .json({ message: "Email/phone and password required" });
       }
 
       console.log(`🔐 Login attempt with identifier: ${identifier}`);
@@ -410,9 +460,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/events", async (_req, res) => {
     try {
       const events = await storage.getAllEvents();
+      console.log(`✅ Events API: Returned ${events?.length || 0} events`);
       res.json(events);
     } catch (error) {
-      console.error("Error fetching events:", error);
+      console.error("❌ Error fetching events:", error);
       res.status(500).json({ message: "Failed to fetch events" });
     }
   });
@@ -422,10 +473,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     authenticateSupabase,
     async (req: any, res) => {
       try {
+        console.log("🔍 Registration Request Debug:", {
+          headers: {
+            authorization: req.headers.authorization ? "Present" : "Missing",
+            contentType: req.headers["content-type"],
+          },
+          body: req.body,
+          authUser: {
+            id: req.supabaseUser?.id,
+            email: req.supabaseUser?.email,
+            role: req.supabaseRole,
+          },
+        });
+
         const registrationData = insertEventRegistrationSchema.parse(req.body);
+
+        console.log("🔍 Registration Data Parsed:", {
+          bodyUserId: registrationData.userId,
+          authUserId: req.supabaseUser.id,
+          userEmail: req.supabaseUser.email,
+          eventId: registrationData.eventId,
+          match: registrationData.userId === req.supabaseUser.id,
+        });
 
         // Ensure the user is registering themselves
         if (registrationData.userId !== req.supabaseUser.id) {
+          console.log("❌ User ID mismatch:", {
+            provided: registrationData.userId,
+            authenticated: req.supabaseUser.id,
+          });
           return res
             .status(403)
             .json({ message: "Can only register for yourself" });
@@ -458,6 +534,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           notes: "", // Always use empty string for notes
           paymentStatus: "pending",
           hasPaid: false,
+        });
+
+        console.log("✅ Registration created:", {
+          id: registration.id,
+          userId: registration.userId,
+          registrationNumber: registration.registrationNumber,
+          eventId: registration.eventId,
         });
 
         // Get user and event details for email notifications
@@ -568,21 +651,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existingRegistration = existingRegistrations.find(
           (reg) => reg.eventId === eventId && reg.paymentStatus !== "cancelled",
         );
-        
-        console.log(`🔍 Checking registration for user ${userId} and event ${eventId}`);
-        console.log(`📊 Found ${existingRegistrations.length} total registrations for user`);
-        console.log(`🎯 Existing registration for this event:`, existingRegistration);
-        
+
+        console.log(
+          `🔍 Checking registration for user ${userId} and event ${eventId}`,
+        );
+        console.log(
+          `📊 Found ${existingRegistrations.length} total registrations for user`,
+        );
+        console.log(
+          `🎯 Existing registration for this event:`,
+          existingRegistration,
+        );
+
         if (existingRegistration) {
-          console.log(`❌ User already registered with status: ${existingRegistration.paymentStatus}`);
-          return res.status(400).json({ 
+          console.log(
+            `❌ User already registered with status: ${existingRegistration.paymentStatus}`,
+          );
+          return res.status(400).json({
             message: "User is already registered for this event",
             existingRegistration: {
               id: existingRegistration.id,
               registrationNumber: existingRegistration.registrationNumber,
               paymentStatus: existingRegistration.paymentStatus,
-              registeredAt: existingRegistration.registeredAt
-            }
+              registeredAt: existingRegistration.registeredAt,
+            },
           });
         }
 
@@ -591,19 +683,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If hasPaid is false, paymentStatus must be 'pending' or 'cancelled'
         const finalHasPaid = hasPaid || false;
         let finalPaymentStatus = paymentStatus || "pending";
-        
+
         // Enforce constraint: if hasPaid is true, status must be 'paid'
         if (finalHasPaid && finalPaymentStatus !== "paid") {
           finalPaymentStatus = "paid";
-          console.log(`⚠️ Adjusted paymentStatus to 'paid' because hasPaid is true`);
+          console.log(
+            `⚠️ Adjusted paymentStatus to 'paid' because hasPaid is true`,
+          );
         }
         // Enforce constraint: if hasPaid is false, status must be 'pending' or 'cancelled'
         else if (!finalHasPaid && finalPaymentStatus === "paid") {
           finalPaymentStatus = "pending";
-          console.log(`⚠️ Adjusted paymentStatus to 'pending' because hasPaid is false`);
+          console.log(
+            `⚠️ Adjusted paymentStatus to 'pending' because hasPaid is false`,
+          );
         }
 
-        console.log(`💰 Payment details: hasPaid=${finalHasPaid}, paymentStatus=${finalPaymentStatus}`);
+        console.log(
+          `💰 Payment details: hasPaid=${finalHasPaid}, paymentStatus=${finalPaymentStatus}`,
+        );
 
         // Create registration
         const registration = await storage.createEventRegistration({
@@ -616,6 +714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasPaid: finalHasPaid,
           paymentStatus: finalPaymentStatus,
           paymentEvidence: null,
+          dinnerGalaAttendance: false,
         });
 
         console.log(`✅ Admin registered user ${userId} for event ${eventId}`);
@@ -645,8 +744,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sponsorshipData = req.body;
 
       // Validate required fields
-      if (!sponsorshipData.eventId || !sponsorshipData.companyName || !sponsorshipData.contactPerson || 
-          !sponsorshipData.email || !sponsorshipData.phoneNumber || !sponsorshipData.sponsorshipLevel) {
+      if (
+        !sponsorshipData.eventId ||
+        !sponsorshipData.companyName ||
+        !sponsorshipData.contactPerson ||
+        !sponsorshipData.email ||
+        !sponsorshipData.phoneNumber ||
+        !sponsorshipData.sponsorshipLevel
+      ) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
@@ -668,13 +773,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sponsorshipLevel: sponsorship.sponsorshipLevel,
           amount: sponsorship.amount,
           eventTitle: event.title,
-          eventDate: format(new Date(event.startDate), 'MMM d, yyyy'),
+          eventDate: format(new Date(event.startDate), "MMM d, yyyy"),
         })
         .catch((emailError) => {
-          console.error("Failed to send sponsorship confirmation email:", emailError.message);
+          console.error(
+            "Failed to send sponsorship confirmation email:",
+            emailError.message,
+          );
         });
 
-      console.log(`✅ Sponsorship application submitted for event ${sponsorshipData.eventId}`);
+      console.log(
+        `✅ Sponsorship application submitted for event ${sponsorshipData.eventId}`,
+      );
       res.status(201).json({
         message: "Sponsorship application submitted successfully",
         sponsorship: {
@@ -700,8 +810,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const exhibitionData = req.body;
 
       // Validate required fields
-      if (!exhibitionData.eventId || !exhibitionData.companyName || !exhibitionData.contactPerson || 
-          !exhibitionData.email || !exhibitionData.phoneNumber) {
+      if (
+        !exhibitionData.eventId ||
+        !exhibitionData.companyName ||
+        !exhibitionData.contactPerson ||
+        !exhibitionData.email ||
+        !exhibitionData.phoneNumber
+      ) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
@@ -709,6 +824,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const event = await storage.getEvent(exhibitionData.eventId);
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
+      }
+
+      // Check for existing exhibition registration with same email/phone for this event
+      const existingExhibitions = await storage.getExhibitionsByUserEmail(
+        exhibitionData.email,
+      );
+      const alreadyRegistered = existingExhibitions.some(
+        (exhibition) =>
+          exhibition.eventId === exhibitionData.eventId &&
+          (exhibition.email === exhibitionData.email ||
+            exhibition.phoneNumber === exhibitionData.phoneNumber) &&
+          exhibition.paymentStatus !== "cancelled",
+      );
+
+      if (alreadyRegistered) {
+        return res.status(400).json({
+          message: "Already registered for this event",
+          details:
+            "A registration already exists with this email or phone number for this event.",
+        });
       }
 
       // Create exhibition application
@@ -722,13 +857,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: exhibition.email,
           amount: exhibition.amount,
           eventTitle: event.title,
-          eventDate: format(new Date(event.startDate), 'MMM d, yyyy'),
+          eventDate: format(new Date(event.startDate), "MMM d, yyyy"),
         })
         .catch((emailError) => {
-          console.error("Failed to send exhibition confirmation email:", emailError.message);
+          console.error(
+            "Failed to send exhibition confirmation email:",
+            emailError.message,
+          );
         });
 
-      console.log(`✅ Exhibition application submitted for event ${exhibitionData.eventId}`);
+      console.log(
+        `✅ Exhibition application submitted for event ${exhibitionData.eventId}`,
+      );
       res.status(201).json({
         message: "Exhibition application submitted successfully",
         exhibition: {
@@ -752,33 +892,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/admin/sponsorships",
     authenticateSupabase,
-    requireRoles([Roles.SuperAdmin, Roles.Finance]),
-    async (req: any, res) => {
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req, res) => {
       try {
         const sponsorships = await storage.getAllSponsorships();
         res.json({ sponsorships });
       } catch (error: any) {
         console.error("Error fetching sponsorships:", error);
-        res.status(500).json({ message: "Failed to fetch sponsorships", details: error.message });
+        res.status(500).json({
+          message: "Failed to fetch sponsorships",
+          details: error.message,
+        });
       }
-    }
+    },
   );
 
   // Get all exhibitions (admin only)
   app.get(
     "/api/admin/exhibitions",
     authenticateSupabase,
-    requireRoles([Roles.SuperAdmin, Roles.Finance]),
-    async (req: any, res) => {
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req, res) => {
       try {
         const exhibitions = await storage.getAllExhibitions();
         res.json({ exhibitions });
       } catch (error: any) {
         console.error("Error fetching exhibitions:", error);
-        res.status(500).json({ message: "Failed to fetch exhibitions", details: error.message });
+        res.status(500).json({
+          message: "Failed to fetch exhibitions",
+          details: error.message,
+        });
       }
-    }
+    },
   );
+
+  // Public showcase endpoints for approved exhibitions and sponsorships only
+  app.get("/api/showcase/sponsorships", async (req, res) => {
+    try {
+      const sponsorships = await storage.getAllSponsorships();
+      // Filter only approved sponsorships
+      const approvedSponsorships = sponsorships.filter(
+        (s: any) => s.status === "approved" || s.status === "Approved",
+      );
+      res.json(approvedSponsorships);
+    } catch (error: any) {
+      console.error("Error fetching approved sponsorships:", error);
+      res.status(500).json({
+        message: "Failed to fetch approved sponsorships",
+        details: error.message,
+      });
+    }
+  });
+
+  app.get("/api/showcase/exhibitions", async (req, res) => {
+    try {
+      const exhibitions = await storage.getAllExhibitions();
+      // Filter only approved exhibitions
+      const approvedExhibitions = exhibitions.filter(
+        (e: any) => e.status === "approved" || e.status === "Approved",
+      );
+      res.json(approvedExhibitions);
+    } catch (error: any) {
+      console.error("Error fetching approved exhibitions:", error);
+      res.status(500).json({
+        message: "Failed to fetch approved exhibitions",
+        details: error.message,
+      });
+    }
+  });
 
   // Update sponsorship status (admin only)
   app.patch(
@@ -790,17 +971,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { id } = req.params;
         const { status, paymentStatus } = req.body;
 
-        const updatedSponsorship = await storage.updateSponsorshipStatus(id, status, paymentStatus);
-        
+        const updatedSponsorship = await storage.updateSponsorshipStatus(
+          id,
+          status,
+          paymentStatus,
+        );
+
         res.json({
           message: "Sponsorship status updated successfully",
           sponsorship: updatedSponsorship,
         });
       } catch (error: any) {
         console.error("Error updating sponsorship status:", error);
-        res.status(500).json({ message: "Failed to update sponsorship status", details: error.message });
+        res.status(500).json({
+          message: "Failed to update sponsorship status",
+          details: error.message,
+        });
       }
-    }
+    },
   );
 
   // Update exhibition status (admin only)
@@ -813,37 +1001,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { id } = req.params;
         const { status, paymentStatus } = req.body;
 
-        const updatedExhibition = await storage.updateExhibitionStatus(id, status, paymentStatus);
-        
+        const updatedExhibition = await storage.updateExhibitionStatus(
+          id,
+          status,
+          paymentStatus,
+        );
+
         res.json({
           message: "Exhibition status updated successfully",
           exhibition: updatedExhibition,
         });
       } catch (error: any) {
         console.error("Error updating exhibition status:", error);
-        res.status(500).json({ message: "Failed to update exhibition status", details: error.message });
+        res.status(500).json({
+          message: "Failed to update exhibition status",
+          details: error.message,
+        });
       }
-    }
+    },
   );
 
-  // Public endpoints for approved sponsors and exhibitors (for showcase)
-  app.get("/api/sponsorships/approved", async (req, res) => {
+  // Update sponsorship logo (admin only)
+  app.patch(
+    "/api/admin/sponsorships/:id/logo",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+        const { logoPath } = req.body;
+
+        if (!logoPath) {
+          return res.status(400).json({ message: "Logo path is required" });
+        }
+
+        await storage.updateSponsorshipLogo(id, logoPath);
+        res.json({ message: "Sponsorship logo updated successfully" });
+      } catch (error: any) {
+        console.error("Error updating sponsorship logo:", error);
+        res.status(500).json({
+          message: "Failed to update sponsorship logo",
+          details: error.message,
+        });
+      }
+    },
+  );
+
+  // Update exhibition logo (admin only)
+  app.patch(
+    "/api/admin/exhibitions/:id/logo",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+        const { logoPath } = req.body;
+
+        if (!logoPath) {
+          return res.status(400).json({ message: "Logo path is required" });
+        }
+
+        await storage.updateExhibitionLogo(id, logoPath);
+        res.json({ message: "Exhibition logo updated successfully" });
+      } catch (error: any) {
+        console.error("Error updating exhibition logo:", error);
+        res.status(500).json({
+          message: "Failed to update exhibition logo",
+          details: error.message,
+        });
+      }
+    },
+  );
+
+  // Logo upload endpoint (admin only)
+  app.post(
+    "/api/admin/upload-logo",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance]),
+    async (req: any, res) => {
+      try {
+        const files = req.files;
+        const { type, id } = req.body;
+
+        console.log("🚀 Logo upload request received:", { type, id });
+        console.log("📁 Files received:", files ? Object.keys(files) : "none");
+
+        if (!files || !files.file || !type || !id) {
+          console.error("❌ Missing required fields:", {
+            files: !!files,
+            type,
+            id,
+          });
+          return res
+            .status(400)
+            .json({ message: "File, type, and ID are required" });
+        }
+
+        const file = Array.isArray(files.file) ? files.file[0] : files.file;
+
+        console.log("📄 File details:", {
+          name: file.name,
+          size: file.size,
+          mimetype: file.mimetype,
+        });
+
+        // Generate unique filename
+        const timestamp = Date.now();
+        const fileName = `${type}_logo_${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+        const filePath = `${type}s/${id}/logos/${fileName}`;
+
+        console.log("📁 Generated file path:", filePath);
+
+        // Create Supabase client
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          return res
+            .status(500)
+            .json({ message: "Supabase server credentials not configured" });
+        }
+
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+        // Upload to Supabase storage
+        console.log("☁️ Uploading to Supabase storage...");
+        const { data, error } = await supabaseAdmin.storage
+          .from("payment-evidence")
+          .upload(filePath, file.data, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: file.mimetype,
+          });
+
+        if (error) {
+          console.error("❌ Storage upload error:", error);
+          return res
+            .status(500)
+            .json({ message: "Failed to upload file", details: error.message });
+        }
+
+        console.log("✅ File uploaded successfully to storage:", data?.path);
+
+        console.log("📤 Returning file path to client:", filePath);
+        res.json({ filePath, message: "File uploaded successfully" });
+      } catch (error: any) {
+        console.error("❌ Error uploading logo:", error);
+        console.error("❌ Error stack:", error.stack);
+        res
+          .status(500)
+          .json({ message: "Failed to upload logo", details: error.message });
+      }
+    },
+  );
+
+  // Public endpoints for showcase (get all data for filtering on frontend)
+  app.get("/api/showcase/sponsorships", async (req, res) => {
     try {
-      const sponsors = await storage.getApprovedSponsorships();
-      res.json(sponsors);
+      const sponsorships = await storage.getAllSponsorships();
+      console.log(
+        "🔍 Showcase API returning sponsorships:",
+        sponsorships.length,
+        "items",
+      );
+      res.json(sponsorships);
     } catch (error: any) {
-      console.error("Error fetching approved sponsors:", error);
-      res.status(500).json({ message: "Failed to fetch sponsors" });
+      console.error("Error fetching sponsorships for showcase:", error);
+      res.status(500).json({ message: "Failed to fetch sponsorships" });
     }
   });
 
-  app.get("/api/exhibitions/approved", async (req, res) => {
+  app.get("/api/showcase/exhibitions", async (req, res) => {
     try {
-      const exhibitors = await storage.getApprovedExhibitions();
-      res.json(exhibitors);
+      const exhibitions = await storage.getAllExhibitions();
+      console.log(
+        "🔍 Showcase API returning exhibitions:",
+        exhibitions.length,
+        "items",
+      );
+      res.json(exhibitions);
     } catch (error: any) {
-      console.error("Error fetching approved exhibitors:", error);
-      res.status(500).json({ message: "Failed to fetch exhibitors" });
+      console.error("Error fetching exhibitions for showcase:", error);
+      res.status(500).json({ message: "Failed to fetch exhibitions" });
     }
   });
 
@@ -970,6 +1308,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { userId } = req.params;
 
+        console.log("🔍 Fetching registrations debug:", {
+          requestedUserId: userId,
+          authUserId: req.supabaseUser.id,
+          authUserEmail: req.supabaseUser.email,
+          userRole: req.supabaseRole,
+        });
+
         // Ensure user can only access their own data (unless admin)
         if (
           req.supabaseRole !== "super_admin" &&
@@ -980,6 +1325,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const registrations = await storage.getEventRegistrationsByUser(userId);
+        console.log("📋 Found registrations:", {
+          userId,
+          count: registrations.length,
+          registrationIds: registrations.map((r) => r.id),
+        });
         const registrationsWithEvents = await Promise.all(
           registrations.map(async (registration) => {
             const event = await storage.getEvent(registration.eventId);
@@ -991,6 +1341,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error fetching registrations:", error);
         res.status(500).json({ message: "Failed to fetch registrations" });
+      }
+    },
+  );
+
+  // Get user exhibitions by email
+  app.get(
+    "/api/users/:userId/exhibitions",
+    authenticateSupabase,
+    async (req: any, res) => {
+      try {
+        const { userId } = req.params;
+
+        // Ensure user can only access their own data (unless admin)
+        if (
+          req.supabaseRole !== "super_admin" &&
+          req.supabaseRole !== "finance_person" &&
+          req.supabaseUser.id !== userId
+        ) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        // Get user email from their profile
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        const exhibitions = await storage.getExhibitionsByUserEmail(user.email);
+        console.log(
+          `✅ Exhibitions API: Returned ${exhibitions?.length || 0} exhibitions for user ${userId}`,
+        );
+        res.json(exhibitions);
+      } catch (error) {
+        console.error("Error fetching user exhibitions:", error);
+        res.status(500).json({ message: "Failed to fetch exhibitions" });
       }
     },
   );
@@ -1107,7 +1492,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
-
 
   // Admin registrations listing (all admin roles)
   app.get(
@@ -1397,8 +1781,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const decodedPath = decodeURIComponent(evidencePath);
 
         console.log(`🔍 Admin fetching evidence from path: ${decodedPath}`);
-        console.log(`🔍 Path segments:`, decodedPath.split('/'));
-        console.log(`🔍 Path length:`, decodedPath.split('/').length);
+        console.log(`🔍 Path segments:`, decodedPath.split("/"));
+        console.log(`🔍 Path length:`, decodedPath.split("/").length);
 
         if (!decodedPath) {
           console.log(`❌ No evidence path provided`);
@@ -1435,18 +1819,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
             decodedPath.replace("/storage/v1/object/public/", ""),
             decodedPath.replace("public/", ""),
             // Handle direct paths as-is (for sponsorships/eventId/filename, exhibitions/eventId/filename)
-            decodedPath.includes("/") && decodedPath.split("/").length >= 2 ? decodedPath : null,
+            decodedPath.includes("/") && decodedPath.split("/").length >= 2
+              ? decodedPath
+              : null,
             // Handle the evidence structure: evidence/userId/eventId/filename
-            decodedPath.includes("/") && decodedPath.split("/").length >= 3 ? decodedPath : null,
+            decodedPath.includes("/") && decodedPath.split("/").length >= 3
+              ? decodedPath
+              : null,
             // If path doesn't start with evidence/, try adding it for paths with proper structure
-            !decodedPath.startsWith("evidence/") && !decodedPath.startsWith("sponsorships/") && !decodedPath.startsWith("exhibitions/") && decodedPath.includes("/") && decodedPath.split("/").length >= 3 ? `evidence/${decodedPath}` : null,
+            !decodedPath.startsWith("evidence/") &&
+            !decodedPath.startsWith("sponsorships/") &&
+            !decodedPath.startsWith("exhibitions/") &&
+            decodedPath.includes("/") &&
+            decodedPath.split("/").length >= 3
+              ? `evidence/${decodedPath}`
+              : null,
             // For sponsorships and exhibitions, ensure they're tried as-is
-            decodedPath.startsWith("sponsorships/") || decodedPath.startsWith("exhibitions/") ? decodedPath : null,
+            decodedPath.startsWith("sponsorships/") ||
+            decodedPath.startsWith("exhibitions/")
+              ? decodedPath
+              : null,
             // Last 3 parts: userId/eventId/filename (for backwards compatibility)
             decodedPath.split("/").slice(-3).join("/"),
             `evidence/${decodedPath.split("/").slice(-3).join("/")}`, // Ensure evidence prefix
             // Add evidence prefix if missing (for backwards compatibility)
-            decodedPath.startsWith("evidence/") ? decodedPath : `evidence/${decodedPath}`,
+            decodedPath.startsWith("evidence/")
+              ? decodedPath
+              : `evidence/${decodedPath}`,
           ].filter(Boolean); // Remove null values
 
           console.log(`🔄 Trying alternative paths:`, alternativePaths);
@@ -1455,7 +1854,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               console.log(`🔄 Attempting: ${altPath}`);
               const { data: altData, error: altError } =
-                await supabaseAdmin.storage.from(bucket).download(altPath as string);
+                await supabaseAdmin.storage
+                  .from(bucket)
+                  .download(altPath as string);
 
               if (!altError && altData) {
                 console.log(`✅ Success with alternative path: ${altPath}`);
@@ -1545,7 +1946,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(
             `❌ User ${userId} trying to access evidence not owned by them`,
           );
-          console.log(`❌ Path: ${decodedPath} does not contain userId: ${userId}`);
+          console.log(
+            `❌ Path: ${decodedPath} does not contain userId: ${userId}`,
+          );
           return res
             .status(403)
             .json({ message: "Access denied to this evidence" });
@@ -1581,14 +1984,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             decodedPath.replace("/storage/v1/object/public/", ""),
             decodedPath.replace("public/", ""),
             // Handle the new structure: evidence/userId/eventId/filename
-            decodedPath.includes("/") && decodedPath.split("/").length >= 3 ? decodedPath : null,
+            decodedPath.includes("/") && decodedPath.split("/").length >= 3
+              ? decodedPath
+              : null,
             // If path doesn't start with evidence/, try adding it for paths with proper structure
-            !decodedPath.startsWith("evidence/") && decodedPath.includes("/") && decodedPath.split("/").length >= 3 ? `evidence/${decodedPath}` : null,
+            !decodedPath.startsWith("evidence/") &&
+            decodedPath.includes("/") &&
+            decodedPath.split("/").length >= 3
+              ? `evidence/${decodedPath}`
+              : null,
             // Last 3 parts: userId/eventId/filename (for backwards compatibility)
             decodedPath.split("/").slice(-3).join("/"),
             `evidence/${decodedPath.split("/").slice(-3).join("/")}`, // Ensure evidence prefix
             // Add evidence prefix if missing (for backwards compatibility)
-            decodedPath.startsWith("evidence/") ? decodedPath : `evidence/${decodedPath}`,
+            decodedPath.startsWith("evidence/")
+              ? decodedPath
+              : `evidence/${decodedPath}`,
           ].filter(Boolean); // Remove null values
 
           console.log(`🔄 Trying alternative paths:`, alternativePaths);
@@ -1596,15 +2007,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           for (const altPath of alternativePaths) {
             try {
               console.log(`🔄 Attempting: ${altPath}`);
-              
+
               // Verify the user still owns this evidence in the alternative path
               if (!(altPath as string).includes(userId)) {
-                console.log(`❌ Alternative path ${altPath} doesn't contain user ID ${userId}`);
+                console.log(
+                  `❌ Alternative path ${altPath} doesn't contain user ID ${userId}`,
+                );
                 continue;
               }
-              
+
               const { data: altData, error: altError } =
-                await supabaseAdmin.storage.from(bucket).download(altPath as string);
+                await supabaseAdmin.storage
+                  .from(bucket)
+                  .download(altPath as string);
 
               if (!altError && altData) {
                 console.log(`✅ Success with alternative path: ${altPath}`);
@@ -1794,7 +2209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const event = await storage.createEvent(req.body);
-        
+
         // Send notification to all users about new event (fire-and-forget)
         const allUsers = await storage.getAllUsers();
         const userEmails = allUsers.map((user) => ({
@@ -1822,7 +2237,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
         }
 
-        console.log(`✅ Event "${event.title}" created successfully by ${req.supabaseUser.email}`);
+        console.log(
+          `✅ Event "${event.title}" created successfully by ${req.supabaseUser.email}`,
+        );
         res.status(201).json(event);
       } catch (error: any) {
         res
@@ -1874,7 +2291,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireRoles([Roles.SuperAdmin]),
     async (req: any, res) => {
       try {
-        const { recipients, subject, content, recipientType, excludedUsers = [] } = req.body;
+        const {
+          recipients,
+          subject,
+          content,
+          recipientType,
+          excludedUsers = [],
+        } = req.body;
 
         if (!recipients || !subject || !content || !recipientType) {
           return res.status(400).json({ message: "Missing required fields" });
@@ -1885,14 +2308,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Filter out excluded users
-        const filteredRecipients = recipients.filter(recipient => 
-          !excludedUsers.some((excluded: any) => 
-            excluded.email === recipient.email || excluded.id === recipient.id
-          )
+        const filteredRecipients = recipients.filter(
+          (recipient) =>
+            !excludedUsers.some(
+              (excluded: any) =>
+                excluded.email === recipient.email ||
+                excluded.id === recipient.id,
+            ),
         );
 
         if (filteredRecipients.length === 0) {
-          return res.status(400).json({ message: "No recipients remaining after exclusions" });
+          return res
+            .status(400)
+            .json({ message: "No recipients remaining after exclusions" });
         }
 
         // Generate HTML template for the email

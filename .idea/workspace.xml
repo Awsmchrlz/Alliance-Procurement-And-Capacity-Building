@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="Sponsorship and registration dialogs and flow" />
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="testimonial change, modal resizing project clean up">
+      <change beforePath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -49,14 +51,14 @@
     <option name="showLibraryContents" value="true" />
     <option name="showVisibilityIcons" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;fixes/feedback1&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "#20 on fixes/feedback1"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration default="true" type="JetRunConfigurationType">
       <module name="Alliance-Procurement-And-Capacity-Building" />
@@ -350,7 +352,31 @@
       <option name="project" value="LOCAL" />
       <updated>1758435314370</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="Sponsorship and registration dialogs and flow">
+      <option name="closed" value="true" />
+      <created>1758435766922</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1758435766922</updated>
+    </task>
+    <task id="LOCAL-00036" summary="testimonial change, modal resizing project clean up">
+      <option name="closed" value="true" />
+      <created>1758720952526</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1758720952526</updated>
+    </task>
+    <task id="LOCAL-00037" summary="testimonial change, modal resizing project clean up">
+      <option name="closed" value="true" />
+      <created>1758721469952</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1758721469952</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -375,6 +401,7 @@
     <MESSAGE value="SEO and few other changes" />
     <MESSAGE value="Group payments and unique identifier as email and phone" />
     <MESSAGE value="Sponsorship and registration dialogs and flow" />
-    <option name="LAST_COMMIT_MESSAGE" value="Sponsorship and registration dialogs and flow" />
+    <MESSAGE value="testimonial change, modal resizing project clean up" />
+    <option name="LAST_COMMIT_MESSAGE" value="testimonial change, modal resizing project clean up" />
   </component>
 </project>
