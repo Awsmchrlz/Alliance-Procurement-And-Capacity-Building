@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { supabase } from "@/lib/supabase";
 import {
   Card,
   CardContent,
@@ -6,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -53,9 +53,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Calendar,
   Users,
+  User,
   DollarSign,
   Mail,
   Send,
@@ -84,24 +87,110 @@ import {
   Phone,
   MapPin,
   CreditCard,
-  User,
   History,
   RotateCcw,
   Loader2,
   X,
   Check,
   Info,
-  Upload,
-  Edit
+  Edit,
 } from "lucide-react";
+
+// Type definitions
+type RoleValue =
+  | "super_admin"
+  | "finance_person"
+  | "event_manager"
+  | "ordinary_user";
+
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  gender?: string | null;
+  role: RoleValue;
+  createdAt: string;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  description?: string | null;
+  startDate: string;
+  endDate: string;
+  location: string;
+  createdAt: string;
+}
+
+interface EventRegistration {
+  id: string;
+  userId: string;
+  eventId: string;
+  registrationNumber: string;
+  country: string;
+  organization: string;
+  position: string;
+  hasPaid: boolean;
+  paymentStatus: string;
+  registeredAt: string;
+  dinnerGalaAttendance?: boolean;
+}
+
+interface Sponsorship {
+  id: string;
+  eventId: string;
+  companyName: string;
+  contactPerson: string;
+  email: string;
+  phoneNumber: string;
+  website?: string | null;
+  companyAddress?: string | null;
+  sponsorshipLevel: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paymentStatus: string;
+  paymentEvidence?: string | null;
+  specialRequirements?: string | null;
+  marketingMaterials?: string | null;
+  notes?: string | null;
+  submittedAt: string;
+  updatedAt: string;
+  logo_url?: string | null;
+}
+
+interface Exhibition {
+  id: string;
+  eventId: string;
+  companyName: string;
+  contactPerson: string;
+  email: string;
+  phoneNumber: string;
+  website?: string | null;
+  companyAddress?: string | null;
+  boothSize: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paymentStatus: string;
+  paymentEvidence?: string | null;
+  productsServices?: string | null;
+  boothRequirements?: string | null;
+  electricalRequirements: boolean;
+  internetRequirements: boolean;
+  notes?: string | null;
+  submittedAt: string;
+  updatedAt: string;
+  logo_url?: string | null;
+}
 
 import { EvidenceViewer } from "@/components/evidence-viewer";
 import { SponsorshipDialog } from "@/components/sponsorship-dialog";
 import { ExhibitionDialog } from "@/components/exhibition-dialog";
-
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useQueryClient } from "@tanstack/react-query";
+
 import { apiRequest } from "@/lib/queryClient";
 
 // Real data interfaces
@@ -158,9 +247,29 @@ export default function AdminDashboard() {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [sponsorships, setSponsorships] = useState<any[]>([]);
-  const [exhibitions, setExhibitions] = useState<any[]>([]);
+  const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
+  const [sponsorships, setSponsorships] = useState<
+    (Sponsorship & {
+      event?: {
+        id: string;
+        title: string;
+        startDate: string;
+        location: string;
+      } | null;
+      logo_url?: string | null;
+    })[]
+  >([]);
+  const [exhibitions, setExhibitions] = useState<
+    (Exhibition & {
+      event?: {
+        id: string;
+        title: string;
+        startDate: string;
+        location: string;
+      } | null;
+      logo_url?: string | null;
+    })[]
+  >([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +283,9 @@ export default function AdminDashboard() {
   const [emailContent, setEmailContent] = useState("");
   const [emailRecipientType, setEmailRecipientType] = useState("all");
   const [emailSending, setEmailSending] = useState(false);
-  const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(new Set());
+  const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Role change functionality
   const [confirmRoleChange, setConfirmRoleChange] = useState<{
@@ -231,91 +342,67 @@ export default function AdminDashboard() {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [filteredRegistrations, setFilteredRegistrations] = useState<
-    Registration[]
+    EventRegistration[]
   >([]);
 
   // Admin creation dialogs
-  const [showCreateSponsorshipDialog, setShowCreateSponsorshipDialog] = useState(false);
-  const [showCreateExhibitionDialog, setShowCreateExhibitionDialog] = useState(false);
+  const [showCreateSponsorshipDialog, setShowCreateSponsorshipDialog] =
+    useState(false);
+  const [showCreateExhibitionDialog, setShowCreateExhibitionDialog] =
+    useState(false);
 
-  // Logo upload functionality
-  const [logoUploadDialog, setLogoUploadDialog] = useState<{
-    open: boolean;
-    type: 'sponsorship' | 'exhibition';
-    id: string;
-    companyName: string;
-    currentLogo?: string;
-  }>({
-    open: false,
-    type: 'sponsorship',
-    id: '',
-    companyName: '',
-  });
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoUploading, setLogoUploading] = useState(false);
-
-  // Logo upload functionality
-  const handleLogoUpload = async () => {
-    if (!logoFile || !logoUploadDialog.id) return;
-
+  // Defensive render helpers to avoid rendering objects directly in JSX
+  const asText = (value: any): string => {
+    if (value === null || value === undefined) return "";
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    )
+      return String(value);
+    if (Array.isArray(value)) return value.map(asText).join(", ");
     try {
-      setLogoUploading(true);
+      return JSON.stringify(value);
+    } catch {
+      return "";
+    }
+  };
+  const asMoney = (amount: any, currency?: any): string => {
+    const num = Number(amount);
+    if (!isFinite(num)) return asText(amount);
+    return `${num.toLocaleString()} ${asText(currency)}`.trim();
+  };
+  const asDate = (value: any): string => {
+    try {
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? asText(value) : d.toLocaleDateString();
+    } catch {
+      return asText(value);
+    }
+  };
 
-      // Get current session for auth token
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("Authentication token not found. Please log in again.");
-      }
-      
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append('file', logoFile);
-      formData.append('type', logoUploadDialog.type);
-      formData.append('id', logoUploadDialog.id);
-
-      // Upload file through our API endpoint
-      const uploadResponse = await fetch('/api/admin/upload-logo', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: formData,
+  // Manual cache refresh function
+  const handleManualCacheRefresh = async () => {
+    try {
+      console.log("🔄 Manual cache refresh initiated...");
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/showcase/exhibitions"],
       });
-
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json();
-        throw new Error(errorData.message || 'Upload failed');
-      }
-
-      const { filePath } = await uploadResponse.json();
-
-      // Update the record with the logo path
-      const endpoint = logoUploadDialog.type === 'sponsorship' 
-        ? `/api/admin/sponsorships/${logoUploadDialog.id}/logo`
-        : `/api/admin/exhibitions/${logoUploadDialog.id}/logo`;
-        
-      await apiRequest('PATCH', endpoint, { logoPath: filePath });
-
-      // Refresh data and close dialog
-      await refreshData();
-      setLogoUploadDialog(prev => ({ ...prev, open: false }));
-      setLogoFile(null);
-      
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/showcase/sponsorships"],
+      });
+      console.log("✅ Manual cache refresh completed");
       toast({
-        title: "Logo uploaded successfully!",
-        description: `Company logo has been updated for ${logoUploadDialog.companyName}.`,
+        title: "Cache refreshed",
+        description: "Homepage data has been refreshed successfully.",
       });
     } catch (error: any) {
-      console.error('Logo upload error:', error);
+      console.error("❌ Cache refresh failed:", error);
       toast({
-        title: "Upload failed",
-        description: error.message || "Failed to upload logo. Please try again.",
+        title: "Cache refresh failed",
+        description: "Failed to refresh cache. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setLogoUploading(false);
     }
   };
 
@@ -331,7 +418,7 @@ export default function AdminDashboard() {
 
     // Filter out excluded users
     return recipients
-      .filter(user => !excludedUserIds.has(user.id))
+      .filter((user) => !excludedUserIds.has(user.id))
       .map((user) => ({
         id: user.id,
         email: user.email,
@@ -340,7 +427,7 @@ export default function AdminDashboard() {
   };
 
   const toggleExcludeUser = (userId: string) => {
-    setExcludedUserIds(prev => {
+    setExcludedUserIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(userId)) {
         newSet.delete(userId);
@@ -359,7 +446,7 @@ export default function AdminDashboard() {
     if (emailRecipientType === "all") {
       return users;
     }
-    return users.filter(user => user.role === emailRecipientType);
+    return users.filter((user) => user.role === emailRecipientType);
   };
 
   const handleSendEmail = async () => {
@@ -378,7 +465,10 @@ export default function AdminDashboard() {
       const recipients = getEmailRecipients();
 
       // Format recipients to match the expected API format
-      const formattedRecipients = recipients.map(({ email, name }) => ({ email, name }));
+      const formattedRecipients = recipients.map(({ email, name }) => ({
+        email,
+        name,
+      }));
 
       const response = await fetch("/api/email/campaign", {
         method: "POST",
@@ -568,7 +658,8 @@ export default function AdminDashboard() {
             },
           });
           if (sponsorshipsResponse.ok) {
-            const { sponsorships: sponsorshipsData } = await sponsorshipsResponse.json();
+            const { sponsorships: sponsorshipsData } =
+              await sponsorshipsResponse.json();
             setSponsorships(sponsorshipsData || []);
           } else {
             console.error(
@@ -589,7 +680,8 @@ export default function AdminDashboard() {
             },
           });
           if (exhibitionsResponse.ok) {
-            const { exhibitions: exhibitionsData } = await exhibitionsResponse.json();
+            const { exhibitions: exhibitionsData } =
+              await exhibitionsResponse.json();
             setExhibitions(exhibitionsData || []);
           } else {
             console.error(
@@ -672,10 +764,14 @@ export default function AdminDashboard() {
     paymentStatus?: string,
   ) => {
     try {
-      await apiRequest("PATCH", `/api/admin/sponsorships/${sponsorshipId}/status`, {
-        status: newStatus,
-        paymentStatus,
-      });
+      await apiRequest(
+        "PATCH",
+        `/api/admin/sponsorships/${sponsorshipId}/status`,
+        {
+          status: newStatus,
+          paymentStatus,
+        },
+      );
 
       toast({
         title: "Sponsorship Status Updated",
@@ -701,10 +797,14 @@ export default function AdminDashboard() {
     paymentStatus?: string,
   ) => {
     try {
-      await apiRequest("PATCH", `/api/admin/exhibitions/${exhibitionId}/status`, {
-        status: newStatus,
-        paymentStatus,
-      });
+      await apiRequest(
+        "PATCH",
+        `/api/admin/exhibitions/${exhibitionId}/status`,
+        {
+          status: newStatus,
+          paymentStatus,
+        },
+      );
 
       toast({
         title: "Exhibition Status Updated",
@@ -737,11 +837,12 @@ export default function AdminDashboard() {
   const completedPayments = registrations.filter(
     (reg) => reg.paymentStatus === "completed" || reg.paymentStatus === "paid",
   ).length;
-  const superAdminUsers = users?.filter((u) => u.role === "super_admin").length || 0;
-  const financeUsers = users?.filter((u) => u.role === "finance_person").length || 0;
-  const eventManagerUsers = users?.filter(
-    (u) => u.role === "event_manager",
-  ).length || 0;
+  const superAdminUsers =
+    users?.filter((u) => u.role === "super_admin").length || 0;
+  const financeUsers =
+    users?.filter((u) => u.role === "finance_person").length || 0;
+  const eventManagerUsers =
+    users?.filter((u) => u.role === "event_manager").length || 0;
 
   const handleRoleChangeRequest = (
     userId: string,
@@ -1296,15 +1397,21 @@ export default function AdminDashboard() {
                     <div className="text-sm text-blue-200">Total Users</div>
                   </div>
                   <div className="text-white/90">
-                    <div className="text-2xl font-bold">{registrations.length}</div>
+                    <div className="text-2xl font-bold">
+                      {registrations.length}
+                    </div>
                     <div className="text-sm text-blue-200">Registrations</div>
                   </div>
                   <div className="text-white/90">
-                    <div className="text-2xl font-bold">{sponsorships.length}</div>
+                    <div className="text-2xl font-bold">
+                      {sponsorships.length}
+                    </div>
                     <div className="text-sm text-blue-200">Sponsorships</div>
                   </div>
                   <div className="text-white/90">
-                    <div className="text-2xl font-bold">{exhibitions.length}</div>
+                    <div className="text-2xl font-bold">
+                      {exhibitions.length}
+                    </div>
                     <div className="text-sm text-blue-200">Exhibitions</div>
                   </div>
                   <div className="text-white/90">
@@ -1569,7 +1676,6 @@ export default function AdminDashboard() {
                   <span className="hidden xs:inline">Emails</span>
                 </TabsTrigger>
               )}
-
             </TabsList>
           </div>
 
@@ -2433,170 +2539,184 @@ export default function AdminDashboard() {
               <CardContent>
                 {/* Desktop Table View */}
                 <div className="hidden lg:block rounded-lg border border-slate-200 overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-slate-50">
-                      <TableRow>
-                        <TableHead className="font-semibold">Reg. #</TableHead>
-                        <TableHead className="font-semibold">
-                          Participant
-                        </TableHead>
-                        <TableHead className="font-semibold">Country</TableHead>
-                        <TableHead className="font-semibold">
-                          Organization
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          Delegate Type
-                        </TableHead>
-                        <TableHead className="font-semibold">Event</TableHead>
-                        <TableHead className="font-semibold">
-                          Registration
-                        </TableHead>
-                        <TableHead className="font-semibold">Payment</TableHead>
-                        <TableHead className="font-semibold">Method</TableHead>
-                        <TableHead className="font-semibold">Amount</TableHead>
-                        <TableHead className="font-semibold">
-                          Evidence
-                        </TableHead>
-                        <TableHead className="font-semibold text-center">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredRegistrations.map((registration, index) => (
-                        <TableRow
-                          key={registration.id}
-                          className={
-                            index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
-                          }
-                        >
-                          <TableCell>
-                            <div className="font-mono text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                              {registration.registrationNumber || "N/A"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="w-8 h-8">
-                                <AvatarFallback className="bg-[#1C356B] text-white font-semibold">
-                                  {registration.user?.firstName
-                                    ?.charAt(0)
-                                    ?.toUpperCase() || "U"}
-                                  {registration.user?.lastName
-                                    ?.charAt(0)
-                                    ?.toUpperCase() || ""}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-semibold text-gray-900">
-                                  {registration.user
-                                    ? `${registration.user.firstName} ${registration.user.lastName}`
-                                    : "Unknown User"}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {registration.user?.email || "No email"}
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-full">
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Reg. #
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Participant
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Country
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Organization
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Type
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            🍽️ Gala
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Event
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Payment
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Method
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Amount
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            Evidence
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2 text-center">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredRegistrations.map((registration, index) => (
+                          <TableRow
+                            key={registration.id}
+                            className={
+                              index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                            }
+                          >
+                            <TableCell className="px-2 py-2">
+                              <div className="font-mono text-xs text-gray-600 bg-gray-100 px-1 py-0.5 rounded">
+                                {registration.registrationNumber || "N/A"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              <div className="flex items-center gap-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarFallback className="bg-[#1C356B] text-white text-xs font-semibold">
+                                    {registration.user?.firstName
+                                      ?.charAt(0)
+                                      ?.toUpperCase() || "U"}
+                                    {registration.user?.lastName
+                                      ?.charAt(0)
+                                      ?.toUpperCase() || ""}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                  <div className="font-medium text-gray-900 text-xs truncate">
+                                    {registration.user
+                                      ? `${registration.user.firstName} ${registration.user.lastName}`
+                                      : "Unknown User"}
+                                  </div>
+                                  <div className="text-xs text-gray-500 truncate">
+                                    {registration.user?.email || "No email"}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm text-gray-700">
-                              {registration.country || "N/A"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium text-gray-900">
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              <div className="text-xs text-gray-700">
+                                {registration.country || "N/A"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              <div className="text-xs font-medium text-gray-900 truncate max-w-24">
                                 {registration.organization || "N/A"}
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                registration.delegateType === "international"
-                                  ? "border-blue-300 text-blue-700 bg-blue-50"
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              <Badge
+                                variant="outline"
+                                className={`text-xs px-1 py-0 ${
+                                  registration.delegateType === "international"
+                                    ? "border-blue-300 text-blue-700 bg-blue-50"
+                                    : registration.delegateType === "private"
+                                      ? "border-green-300 text-green-700 bg-green-50"
+                                      : "border-purple-300 text-purple-700 bg-purple-50"
+                                }`}
+                              >
+                                {registration.delegateType === "international"
+                                  ? "Intl"
                                   : registration.delegateType === "private"
-                                    ? "border-green-300 text-green-700 bg-green-50"
-                                    : "border-purple-300 text-purple-700 bg-purple-50"
-                              }
-                            >
-                              {registration.delegateType === "international"
-                                ? "International"
-                                : registration.delegateType === "private"
-                                  ? "Private"
-                                  : registration.delegateType === "public"
-                                    ? "Public"
+                                    ? "Priv"
+                                    : registration.delegateType === "public"
+                                      ? "Pub"
+                                      : "N/A"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-2 py-2 text-center">
+                              {registration.dinnerGalaAttendance ? (
+                                <span className="text-green-600 text-lg">
+                                  ✅
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 text-lg">
+                                  ❌
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              <div>
+                                <div className="font-medium text-gray-900 text-xs truncate max-w-20">
+                                  {registration.event?.title || "Unknown Event"}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {registration.event?.startDate
+                                    ? formatDate(registration.event.startDate)
+                                    : "No date"}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              {getStatusBadge(registration.paymentStatus)}
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              <div className="text-xs">
+                                {registration.paymentMethod === "mobile" && (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-green-300 text-green-700 bg-green-50 text-xs px-1 py-0"
+                                  >
+                                    Mobile
+                                  </Badge>
+                                )}
+                                {registration.paymentMethod === "bank" && (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-blue-300 text-blue-700 bg-blue-50 text-xs px-1 py-0"
+                                  >
+                                    Bank
+                                  </Badge>
+                                )}
+                                {registration.paymentMethod === "cash" && (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-amber-300 text-amber-700 bg-amber-50 text-xs px-1 py-0"
+                                  >
+                                    Cash
+                                  </Badge>
+                                )}
+                                {!registration.paymentMethod && (
+                                  <span className="text-gray-400">N/A</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              <div className="font-semibold text-sm text-[#1C356B]">
+                                {registration.currency && registration.pricePaid
+                                  ? `${registration.currency} ${registration.pricePaid}`
+                                  : registration.event?.price
+                                    ? `K${registration.event.price}`
                                     : "N/A"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-semibold text-gray-900 text-sm">
-                                {registration.event?.title || "Unknown Event"}
                               </div>
-                              <div className="text-xs text-gray-500">
-                                {registration.event?.startDate
-                                  ? formatDate(registration.event.startDate)
-                                  : "No date"}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {registration.registeredAt
-                                ? formatDate(registration.registeredAt)
-                                : "Unknown"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(registration.paymentStatus)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {registration.paymentMethod === "mobile" && (
-                                <Badge
-                                  variant="outline"
-                                  className="border-green-300 text-green-700 bg-green-50"
-                                >
-                                  Mobile Money
-                                </Badge>
-                              )}
-                              {registration.paymentMethod === "bank" && (
-                                <Badge
-                                  variant="outline"
-                                  className="border-blue-300 text-blue-700 bg-blue-50"
-                                >
-                                  Bank Transfer
-                                </Badge>
-                              )}
-                              {registration.paymentMethod === "cash" && (
-                                <Badge
-                                  variant="outline"
-                                  className="border-amber-300 text-amber-700 bg-amber-50"
-                                >
-                                  Cash
-                                </Badge>
-                              )}
-                              {!registration.paymentMethod && (
-                                <span className="text-gray-400">N/A</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold text-lg text-[#1C356B]">
-                              {registration.currency && registration.pricePaid
-                                ? `${registration.currency} ${registration.pricePaid}`
-                                : registration.event?.price
-                                  ? `K${registration.event.price}`
-                                  : "N/A"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {registration.paymentEvidence &&
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              {registration.paymentEvidence &&
                               registration.paymentEvidence.trim() ? (
-                              <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -2609,101 +2729,102 @@ export default function AdminDashboard() {
                                       registration.id,
                                     )
                                   }
-                                  className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                                  className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 text-xs px-2 py-1"
                                 >
-                                  <Eye className="w-4 h-4 mr-1" />
-                                  View Evidence
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  View
                                 </Button>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-sm">
-                                No evidence
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="hover:bg-slate-100"
-                                >
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
-                              >
-                                {canUpdatePaymentStatus && (
-                                  <>
-                                    <DropdownMenuItem
-                                      disabled={
-                                        registration.paymentStatus ===
-                                        "completed" ||
-                                        registration.paymentStatus === "paid"
-                                      }
-                                      className="text-emerald-600"
-                                      onSelect={() =>
-                                        handlePaymentStatusUpdate(
-                                          registration.id,
-                                          "paid",
-                                        )
-                                      }
-                                    >
-                                      <CheckCircle className="w-4 h-4 mr-2" />
-                                      Mark as Paid
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      disabled={
-                                        registration.paymentStatus === "pending"
-                                      }
-                                      className="text-amber-600"
-                                      onSelect={() =>
-                                        handlePaymentStatusUpdate(
-                                          registration.id,
-                                          "pending",
-                                        )
-                                      }
-                                    >
-                                      <Clock className="w-4 h-4 mr-2" />
-                                      Mark as Pending
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      disabled={
-                                        registration.paymentStatus ===
-                                        "cancelled"
-                                      }
-                                      className="text-red-600"
-                                      onSelect={() =>
-                                        handlePaymentStatusUpdate(
-                                          registration.id,
-                                          "cancelled",
-                                        )
-                                      }
-                                    >
-                                      <XCircle className="w-4 h-4 mr-2" />
-                                      Mark as Cancelled
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                {!canUpdatePaymentStatus && (
-                                  <DropdownMenuItem
-                                    disabled
-                                    className="text-gray-400"
+                              ) : (
+                                <span className="text-gray-400 text-xs">
+                                  No evidence
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="hover:bg-slate-100"
                                   >
-                                    <Shield className="w-4 h-4 mr-2" />
-                                    Payment actions restricted
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-56 bg-white border border-slate-200 shadow-lg rounded-md"
+                                >
+                                  {canUpdatePaymentStatus && (
+                                    <>
+                                      <DropdownMenuItem
+                                        disabled={
+                                          registration.paymentStatus ===
+                                            "completed" ||
+                                          registration.paymentStatus === "paid"
+                                        }
+                                        className="text-emerald-600"
+                                        onSelect={() =>
+                                          handlePaymentStatusUpdate(
+                                            registration.id,
+                                            "paid",
+                                          )
+                                        }
+                                      >
+                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                        Mark as Paid
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        disabled={
+                                          registration.paymentStatus ===
+                                          "pending"
+                                        }
+                                        className="text-amber-600"
+                                        onSelect={() =>
+                                          handlePaymentStatusUpdate(
+                                            registration.id,
+                                            "pending",
+                                          )
+                                        }
+                                      >
+                                        <Clock className="w-4 h-4 mr-2" />
+                                        Mark as Pending
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        disabled={
+                                          registration.paymentStatus ===
+                                          "cancelled"
+                                        }
+                                        className="text-red-600"
+                                        onSelect={() =>
+                                          handlePaymentStatusUpdate(
+                                            registration.id,
+                                            "cancelled",
+                                          )
+                                        }
+                                      >
+                                        <XCircle className="w-4 h-4 mr-2" />
+                                        Mark as Cancelled
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                  {!canUpdatePaymentStatus && (
+                                    <DropdownMenuItem
+                                      disabled
+                                      className="text-gray-400"
+                                    >
+                                      <Shield className="w-4 h-4 mr-2" />
+                                      Payment actions restricted
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
 
                 {/* Mobile Card View */}
@@ -2818,11 +2939,25 @@ export default function AdminDashboard() {
                               {registration.paymentEvidence && (
                                 <Button
                                   onClick={() => {
-                                    console.log('🔍 Admin Dashboard Debug - Opening evidence viewer:');
-                                    console.log('  - registration.paymentEvidence:', registration.paymentEvidence);
-                                    console.log('  - registration.id:', registration.id);
-                                    console.log('  - registration.user:', registration.user);
-                                    console.log('  - registration object:', registration);
+                                    console.log(
+                                      "🔍 Admin Dashboard Debug - Opening evidence viewer:",
+                                    );
+                                    console.log(
+                                      "  - registration.paymentEvidence:",
+                                      registration.paymentEvidence,
+                                    );
+                                    console.log(
+                                      "  - registration.id:",
+                                      registration.id,
+                                    );
+                                    console.log(
+                                      "  - registration.user:",
+                                      registration.user,
+                                    );
+                                    console.log(
+                                      "  - registration object:",
+                                      registration,
+                                    );
 
                                     setEvidenceViewer({
                                       open: true,
@@ -2830,7 +2965,7 @@ export default function AdminDashboard() {
                                         registration.paymentEvidence || "",
                                       fileName: `${registration.user?.firstName}_${registration.user?.lastName}_payment_evidence`,
                                       registrationId: registration.id,
-                                    })
+                                    });
                                   }}
                                   variant="outline"
                                   size="sm"
@@ -2975,18 +3110,20 @@ export default function AdminDashboard() {
                         ].map(({ value, label, count, icon: Icon }) => (
                           <div
                             key={value}
-                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${emailRecipientType === value
+                            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                              emailRecipientType === value
                                 ? "border-[#1C356B] bg-[#1C356B]/5 shadow-lg"
                                 : "border-slate-200 hover:border-slate-300 hover:shadow-md"
-                              }`}
+                            }`}
                             onClick={() => setEmailRecipientType(value)}
                           >
                             <div className="flex items-center gap-3">
                               <div
-                                className={`p-2 rounded-lg ${emailRecipientType === value
+                                className={`p-2 rounded-lg ${
+                                  emailRecipientType === value
                                     ? "bg-[#1C356B] text-white"
                                     : "bg-slate-100 text-slate-600"
-                                  }`}
+                                }`}
                               >
                                 <Icon className="w-4 h-4" />
                               </div>
@@ -3046,7 +3183,8 @@ export default function AdminDashboard() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Label className="text-base font-medium text-gray-900">
-                          Recipients ({getEmailRecipients().length} of {getFilteredUsers().length} selected)
+                          Recipients ({getEmailRecipients().length} of{" "}
+                          {getFilteredUsers().length} selected)
                         </Label>
                         {excludedUserIds.size > 0 && (
                           <Button
@@ -3076,46 +3214,66 @@ export default function AdminDashboard() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All Users</SelectItem>
-                              <SelectItem value="super_admin">Super Admins</SelectItem>
-                              <SelectItem value="finance_person">Finance Team</SelectItem>
-                              <SelectItem value="event_manager">Event Managers</SelectItem>
-                              <SelectItem value="ordinary_user">Regular Users</SelectItem>
+                              <SelectItem value="super_admin">
+                                Super Admins
+                              </SelectItem>
+                              <SelectItem value="finance_person">
+                                Finance Team
+                              </SelectItem>
+                              <SelectItem value="event_manager">
+                                Event Managers
+                              </SelectItem>
+                              <SelectItem value="ordinary_user">
+                                Regular Users
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="max-h-60 overflow-y-auto bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
                           {getFilteredUsers().length === 0 ? (
-                            <p className="text-sm text-slate-500 text-center py-4">No users found in this group</p>
+                            <p className="text-sm text-slate-500 text-center py-4">
+                              No users found in this group
+                            </p>
                           ) : (
                             <div className="space-y-1">
                               {getFilteredUsers().map((user) => (
                                 <div
                                   key={user.id}
-                                  className={`flex items-center justify-between p-2 rounded-md ${excludedUserIds.has(user.id) ? 'bg-red-50' : 'bg-white'}`}
+                                  className={`flex items-center justify-between p-2 rounded-md ${excludedUserIds.has(user.id) ? "bg-red-50" : "bg-white"}`}
                                 >
                                   <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-gray-900 truncate">
                                       {user.firstName} {user.lastName}
                                     </p>
-                                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                    <p className="text-xs text-gray-500 truncate">
+                                      {user.email}
+                                    </p>
                                   </div>
                                   <Button
                                     type="button"
-                                    variant={excludedUserIds.has(user.id) ? "outline" : "ghost"}
+                                    variant={
+                                      excludedUserIds.has(user.id)
+                                        ? "outline"
+                                        : "ghost"
+                                    }
                                     size="sm"
                                     onClick={() => toggleExcludeUser(user.id)}
-                                    className={`ml-2 ${excludedUserIds.has(user.id) ? 'text-red-600 hover:text-red-700' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`ml-2 ${excludedUserIds.has(user.id) ? "text-red-600 hover:text-red-700" : "text-gray-500 hover:text-gray-700"}`}
                                   >
                                     {excludedUserIds.has(user.id) ? (
                                       <>
                                         <X className="w-3.5 h-3.5 mr-1" />
-                                        <span className="text-xs">Excluded</span>
+                                        <span className="text-xs">
+                                          Excluded
+                                        </span>
                                       </>
                                     ) : (
                                       <>
                                         <Check className="w-3.5 h-3.5 mr-1 text-green-600" />
-                                        <span className="text-xs">Included</span>
+                                        <span className="text-xs">
+                                          Included
+                                        </span>
                                       </>
                                     )}
                                   </Button>
@@ -3130,8 +3288,10 @@ export default function AdminDashboard() {
                             <div className="flex items-start">
                               <Info className="w-3.5 h-3.5 mt-0.5 mr-1.5 flex-shrink-0" />
                               <span>
-                                {excludedUserIds.size} user{excludedUserIds.size !== 1 ? 's' : ''} excluded from this campaign.
-                                They will not receive this email.
+                                {excludedUserIds.size} user
+                                {excludedUserIds.size !== 1 ? "s" : ""} excluded
+                                from this campaign. They will not receive this
+                                email.
                               </span>
                             </div>
                           </div>
@@ -3210,8 +3370,12 @@ export default function AdminDashboard() {
                       <Crown className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-gray-900">Sponsorship Applications</CardTitle>
-                      <CardDescription>Manage sponsorship applications and partnerships</CardDescription>
+                      <CardTitle className="text-xl text-gray-900">
+                        Sponsorship Applications
+                      </CardTitle>
+                      <CardDescription>
+                        Manage sponsorship applications and partnerships
+                      </CardDescription>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
@@ -3234,12 +3398,13 @@ export default function AdminDashboard() {
                 {sponsorships.length === 0 ? (
                   <div className="text-center py-8">
                     <Crown className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Sponsorship Applications</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No Sponsorship Applications
+                    </h3>
                     <p className="text-gray-600">
-                      {canManageFinance 
-                        ? "Sponsorship applications will appear here when submitted." 
-                        : "Sponsorship applications will appear here. Only Super Admins and Finance Managers can create new sponsorships."
-                      }
+                      {canManageFinance
+                        ? "Sponsorship applications will appear here when submitted."
+                        : "Sponsorship applications will appear here. Only Super Admins and Finance Managers can create new sponsorships."}
                     </p>
                   </div>
                 ) : (
@@ -3264,83 +3429,72 @@ export default function AdminDashboard() {
                           <TableRow key={sponsorship.id}>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{sponsorship.companyName}</div>
-                                <div className="text-sm text-gray-500">{sponsorship.email}</div>
+                                <div className="font-medium">
+                                  {sponsorship.companyName}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {sponsorship.email}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{sponsorship.contactPerson}</div>
-                                <div className="text-sm text-gray-500">{sponsorship.phoneNumber}</div>
+                                <div className="font-medium">
+                                  {sponsorship.contactPerson}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {sponsorship.phoneNumber}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <Badge
-                                className={`${sponsorship.sponsorshipLevel === 'platinum' ? 'bg-gray-100 text-gray-800' :
-                                    sponsorship.sponsorshipLevel === 'gold' ? 'bg-yellow-100 text-yellow-800' :
-                                      sponsorship.sponsorshipLevel === 'silver' ? 'bg-gray-100 text-gray-600' :
-                                        'bg-orange-100 text-orange-800'
-                                  }`}
+                                className={`${
+                                  sponsorship.sponsorshipLevel === "platinum"
+                                    ? "bg-gray-100 text-gray-800"
+                                    : sponsorship.sponsorshipLevel === "gold"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : sponsorship.sponsorshipLevel ===
+                                          "silver"
+                                        ? "bg-gray-100 text-gray-600"
+                                        : "bg-orange-100 text-orange-800"
+                                }`}
                               >
-                                {sponsorship.sponsorshipLevel.charAt(0).toUpperCase() + sponsorship.sponsorshipLevel.slice(1)}
+                                {sponsorship.sponsorshipLevel
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  sponsorship.sponsorshipLevel.slice(1)}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="font-medium">${sponsorship.amount?.toLocaleString()} {sponsorship.currency}</div>
+                              <div className="font-medium">
+                                {asMoney(
+                                  sponsorship.amount,
+                                  sponsorship.currency,
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Badge
                                 variant={
-                                  sponsorship.status === 'approved' ? 'default' :
-                                    sponsorship.status === 'rejected' ? 'destructive' :
-                                      'secondary'
+                                  sponsorship.status === "approved"
+                                    ? "default"
+                                    : sponsorship.status === "rejected"
+                                      ? "destructive"
+                                      : "secondary"
                                 }
                               >
-                                {sponsorship.status.charAt(0).toUpperCase() + sponsorship.status.slice(1)}
+                                {sponsorship.status.charAt(0).toUpperCase() +
+                                  sponsorship.status.slice(1)}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center space-x-2">
-                                {sponsorship.companyLogo ? (
-                                  <div className="flex items-center space-x-2">
-                                    <img 
-                                      src={sponsorship.companyLogo} 
-                                      alt={`${sponsorship.companyName} logo`}
-                                      className="w-8 h-8 object-contain rounded border"
-                                    />
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setLogoUploadDialog({
-                                        open: true,
-                                        type: 'sponsorship',
-                                        id: sponsorship.id,
-                                        companyName: sponsorship.companyName,
-                                        currentLogo: sponsorship.companyLogo
-                                      })}
-                                      className="text-xs"
-                                    >
-                                      <Upload className="w-3 h-3 mr-1" />
-                                      Update
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  {/* <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setLogoUploadDialog({
-                                      open: true,
-                                      type: 'sponsorship',
-                                      id: sponsorship.id,
-                                      companyName: sponsorship.companyName,
-                                      currentLogo: sponsorship.companyLogo
-                                    })}
-                                    className="text-xs"
-                                  >
-                                    <Upload className="w-3 h-3 mr-1" />
-                                    Add Logo
-                                  </Button> */}
-                                )}
+                              <div className="flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                                  {sponsorship.companyName
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -3348,48 +3502,71 @@ export default function AdminDashboard() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleViewPaymentEvidence(
-                                    sponsorship.paymentEvidence || "",
-                                    sponsorship.paymentEvidence?.split("/").pop(),
-                                    sponsorship.id
-                                  )}
+                                  onClick={() =>
+                                    handleViewPaymentEvidence(
+                                      sponsorship.paymentEvidence || "",
+                                      sponsorship.paymentEvidence
+                                        ?.split("/")
+                                        .pop(),
+                                      sponsorship.id,
+                                    )
+                                  }
                                   className="text-xs"
                                 >
                                   <Eye className="w-3 h-3 mr-1" />
                                   View Evidence
                                 </Button>
                               ) : (
-                                <span className="text-xs text-gray-500">No evidence</span>
+                                <span className="text-xs text-gray-500">
+                                  No evidence
+                                </span>
                               )}
                             </TableCell>
                             <TableCell>
                               <div className="text-sm">
-                                <div className="font-medium">{sponsorship.event?.title || 'N/A'}</div>
-                                <div className="text-gray-500">{sponsorship.event?.location || ''}</div>
+                                <div className="font-medium">
+                                  {asText(sponsorship.event?.title) || "N/A"}
+                                </div>
+                                <div className="text-gray-500">
+                                  {asText(sponsorship.event?.location) || ""}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="text-sm text-gray-500">
-                                {new Date(sponsorship.submittedAt).toLocaleDateString()}
+                                {asDate(sponsorship.submittedAt)}
                               </div>
                             </TableCell>
                             <TableCell>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0"
+                                  >
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem
-                                    onClick={() => handleSponsorshipStatusUpdate(sponsorship.id, 'approved')}
+                                    onClick={() =>
+                                      handleSponsorshipStatusUpdate(
+                                        sponsorship.id,
+                                        "approved",
+                                      )
+                                    }
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white focus:bg-emerald-700"
                                   >
                                     <CheckCircle className="mr-2 h-4 w-4" />
                                     Approve & Activate
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() => handleSponsorshipStatusUpdate(sponsorship.id, 'rejected')}
+                                    onClick={() =>
+                                      handleSponsorshipStatusUpdate(
+                                        sponsorship.id,
+                                        "rejected",
+                                      )
+                                    }
                                     className="border-red-600 text-red-600 hover:bg-red-50 focus:bg-red-50"
                                   >
                                     <XCircle className="mr-2 h-4 w-4" />
@@ -3399,7 +3576,8 @@ export default function AdminDashboard() {
                                     onClick={() => {
                                       toast({
                                         title: "Edit Functionality",
-                                        description: "Sponsorship editing feature coming soon! Contact admin for manual updates.",
+                                        description:
+                                          "Sponsorship editing feature coming soon! Contact admin for manual updates.",
                                         variant: "default",
                                       });
                                     }}
@@ -3407,9 +3585,14 @@ export default function AdminDashboard() {
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit Details
                                   </DropdownMenuItem>
-                                  {sponsorship.status === 'approved' && (
+                                  {sponsorship.status === "approved" && (
                                     <DropdownMenuItem
-                                      onClick={() => handleSponsorshipStatusUpdate(sponsorship.id, 'pending')}
+                                      onClick={() =>
+                                        handleSponsorshipStatusUpdate(
+                                          sponsorship.id,
+                                          "pending",
+                                        )
+                                      }
                                     >
                                       <XCircle className="mr-2 h-4 w-4" />
                                       Deactivate
@@ -3428,7 +3611,6 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-
           {/* Exhibitions Tab */}
           <TabsContent value="exhibitions">
             <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
@@ -3439,8 +3621,12 @@ export default function AdminDashboard() {
                       <Store className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-gray-900">Exhibition Applications</CardTitle>
-                      <CardDescription>Manage exhibition booth applications</CardDescription>
+                      <CardTitle className="text-xl text-gray-900">
+                        Exhibition Applications
+                      </CardTitle>
+                      <CardDescription>
+                        Manage exhibition booth applications
+                      </CardDescription>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
@@ -3463,12 +3649,13 @@ export default function AdminDashboard() {
                 {exhibitions.length === 0 ? (
                   <div className="text-center py-8">
                     <Store className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Exhibition Applications</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No Exhibition Applications
+                    </h3>
                     <p className="text-gray-600">
-                      {canManageFinance 
-                        ? "Exhibition applications will appear here when submitted." 
-                        : "Exhibition applications will appear here. Only Super Admins and Finance Managers can create new exhibitions."
-                      }
+                      {canManageFinance
+                        ? "Exhibition applications will appear here when submitted."
+                        : "Exhibition applications will appear here. Only Super Admins and Finance Managers can create new exhibitions."}
                     </p>
                   </div>
                 ) : (
@@ -3492,73 +3679,54 @@ export default function AdminDashboard() {
                           <TableRow key={exhibition.id}>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{exhibition.companyName}</div>
-                                <div className="text-sm text-gray-500">{exhibition.email}</div>
+                                <div className="font-medium">
+                                  {exhibition.companyName}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {exhibition.email}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{exhibition.contactPerson}</div>
-                                <div className="text-sm text-gray-500">{exhibition.phoneNumber}</div>
+                                <div className="font-medium">
+                                  {exhibition.contactPerson}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {exhibition.phoneNumber}
+                                </div>
                               </div>
                             </TableCell>
 
                             <TableCell>
-                              <div className="font-medium">${exhibition.amount?.toLocaleString()} {exhibition.currency}</div>
+                              <div className="font-medium">
+                                {asMoney(
+                                  exhibition.amount,
+                                  exhibition.currency,
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Badge
                                 variant={
-                                  exhibition.status === 'approved' ? 'default' :
-                                    exhibition.status === 'rejected' ? 'destructive' :
-                                      'secondary'
+                                  exhibition.status === "approved"
+                                    ? "default"
+                                    : exhibition.status === "rejected"
+                                      ? "destructive"
+                                      : "secondary"
                                 }
                               >
-                                {exhibition.status.charAt(0).toUpperCase() + exhibition.status.slice(1)}
+                                {exhibition.status.charAt(0).toUpperCase() +
+                                  exhibition.status.slice(1)}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center space-x-2">
-                                {exhibition.companyLogo ? (
-                                  <div className="flex items-center space-x-2">
-                                    <img 
-                                      src={exhibition.companyLogo} 
-                                      alt={`${exhibition.companyName} logo`}
-                                      className="w-8 h-8 object-contain rounded border"
-                                    />
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setLogoUploadDialog({
-                                        open: true,
-                                        type: 'exhibition',
-                                        id: exhibition.id,
-                                        companyName: exhibition.companyName,
-                                        currentLogo: exhibition.companyLogo
-                                      })}
-                                      className="text-xs"
-                                    >
-                                      <Upload className="w-3 h-3 mr-1" />
-                                      Update
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  {/* <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setLogoUploadDialog({
-                                      open: true,
-                                      type: 'exhibition',
-                                      id: exhibition.id,
-                                      companyName: exhibition.companyName,
-                                      currentLogo: exhibition.companyLogo
-                                    })}
-                                    className="text-xs"
-                                  >
-                                    <Upload className="w-3 h-3 mr-1" />
-                                    Add Logo
-                                  </Button> */}
-                                )}
+                              <div className="flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-red-500 to-orange-600 flex items-center justify-center text-white font-semibold text-sm">
+                                  {exhibition.companyName
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -3566,56 +3734,84 @@ export default function AdminDashboard() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleViewPaymentEvidence(
-                                    exhibition.paymentEvidence || "",
-                                    exhibition.paymentEvidence?.split("/").pop(),
-                                    exhibition.id
-                                  )}
+                                  onClick={() =>
+                                    handleViewPaymentEvidence(
+                                      exhibition.paymentEvidence || "",
+                                      exhibition.paymentEvidence
+                                        ?.split("/")
+                                        .pop(),
+                                      exhibition.id,
+                                    )
+                                  }
                                   className="text-xs"
                                 >
                                   <Eye className="w-3 h-3 mr-1" />
                                   View Evidence
                                 </Button>
                               ) : (
-                                <span className="text-xs text-gray-500">No evidence</span>
+                                <span className="text-xs text-gray-500">
+                                  No evidence
+                                </span>
                               )}
                             </TableCell>
                             <TableCell>
                               <div className="text-sm">
-                                <div className="font-medium">{exhibition.event?.title || 'N/A'}</div>
-                                <div className="text-gray-500">{exhibition.event?.location || ''}</div>
+                                <div className="font-medium">
+                                  {asText(exhibition.event?.title) || "N/A"}
+                                </div>
+                                <div className="text-gray-500">
+                                  {asText(exhibition.event?.location) || ""}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="text-sm text-gray-500">
-                                {new Date(exhibition.submittedAt).toLocaleDateString()}
+                                {asDate(exhibition.submittedAt)}
                               </div>
                             </TableCell>
                             <TableCell>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0"
+                                  >
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem
-                                    onClick={() => handleExhibitionStatusUpdate(exhibition.id, 'approved')}
+                                    onClick={() =>
+                                      handleExhibitionStatusUpdate(
+                                        exhibition.id,
+                                        "approved",
+                                      )
+                                    }
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white focus:bg-emerald-700"
                                   >
                                     <CheckCircle className="mr-2 h-4 w-4" />
                                     Approve & Activate
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() => handleExhibitionStatusUpdate(exhibition.id, 'rejected')}
+                                    onClick={() =>
+                                      handleExhibitionStatusUpdate(
+                                        exhibition.id,
+                                        "rejected",
+                                      )
+                                    }
                                     className="border-red-600 text-red-600 hover:bg-red-50 focus:bg-red-50"
                                   >
                                     <XCircle className="mr-2 h-4 w-4" />
                                     Reject
                                   </DropdownMenuItem>
-                                  {exhibition.status === 'approved' && (
+                                  {exhibition.status === "approved" && (
                                     <DropdownMenuItem
-                                      onClick={() => handleExhibitionStatusUpdate(exhibition.id, 'pending')}
+                                      onClick={() =>
+                                        handleExhibitionStatusUpdate(
+                                          exhibition.id,
+                                          "pending",
+                                        )
+                                      }
                                     >
                                       <XCircle className="mr-2 h-4 w-4" />
                                       Deactivate
@@ -4361,7 +4557,6 @@ export default function AdminDashboard() {
                     </Label>
                   </div>
                 </div>
-
               </div>
 
               {/* Info Box */}
@@ -4440,7 +4635,7 @@ export default function AdminDashboard() {
                       const errorData = await response.json();
                       throw new Error(
                         errorData.message ||
-                        "Failed to register user for event",
+                          "Failed to register user for event",
                       );
                     }
 
@@ -4534,7 +4729,8 @@ export default function AdminDashboard() {
                 refreshData();
                 toast({
                   title: "Sponsorship Created!",
-                  description: "The sponsorship application has been created successfully.",
+                  description:
+                    "The sponsorship application has been created successfully.",
                 });
               }}
             />
@@ -4548,113 +4744,13 @@ export default function AdminDashboard() {
                 refreshData();
                 toast({
                   title: "Exhibition Created!",
-                  description: "The exhibition application has been created successfully.",
+                  description:
+                    "The exhibition application has been created successfully.",
                 });
               }}
             />
           </>
         )}
-
-        {/* Logo Upload Dialog */}
-        <Dialog open={logoUploadDialog.open} onOpenChange={(open) => {
-          setLogoUploadDialog(prev => ({ ...prev, open }));
-          if (!open) {
-            setLogoFile(null);
-          }
-        }}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {logoUploadDialog.currentLogo ? 'Update' : 'Upload'} Company Logo
-              </DialogTitle>
-              <DialogDescription>
-                Upload a logo for {logoUploadDialog.companyName}. Recommended size: 200x200px or larger.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {logoUploadDialog.currentLogo && (
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">Current Logo:</p>
-                  <img 
-                    src={logoUploadDialog.currentLogo} 
-                    alt="Current logo"
-                    className="w-20 h-20 object-contain mx-auto border rounded"
-                  />
-                </div>
-              )}
-              
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  id="logoUpload"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      if (file.size > 2 * 1024 * 1024) {
-                        toast({
-                          title: "File too large",
-                          description: "Please select an image smaller than 2MB.",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      setLogoFile(file);
-                    }
-                  }}
-                  className="hidden"
-                />
-                <label htmlFor="logoUpload" className="cursor-pointer">
-                  <div className="flex flex-col items-center space-y-2">
-                    <Upload className="w-8 h-8 text-gray-400" />
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
-                    </div>
-                    <div className="text-xs text-gray-500">PNG, JPG, SVG (max 2MB)</div>
-                  </div>
-                </label>
-              </div>
-
-              {logoFile && (
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">Selected file:</p>
-                  <p className="text-sm font-medium">{logoFile.name}</p>
-                  <p className="text-xs text-gray-500">({(logoFile.size / 1024 / 1024).toFixed(2)} MB)</p>
-                </div>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setLogoUploadDialog(prev => ({ ...prev, open: false }));
-                  setLogoFile(null);
-                }}
-                disabled={logoUploading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleLogoUpload}
-                disabled={!logoFile || logoUploading}
-              >
-                {logoUploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Logo
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

@@ -12,7 +12,11 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Define role types
-export type RoleValue = "super_admin" | "finance_person" | "event_manager" | "ordinary_user";
+export type RoleValue =
+  | "super_admin"
+  | "finance_person"
+  | "event_manager"
+  | "ordinary_user";
 
 export const users = pgTable("users", {
   id: varchar("id")
@@ -70,9 +74,13 @@ export const eventRegistrations = pgTable("event_registrations", {
   currency: text("currency"), // ZMW, USD
   pricePaid: decimal("price_paid", { precision: 10, scale: 2 }),
   delegateType: text("delegate_type"), // private, public, international
+  dinnerGalaAttendance: boolean("dinner_gala_attendance").default(false), // Whether attending dinner gala
   // Group payment fields
   groupSize: integer("group_size").default(1),
-  groupPaymentAmount: decimal("group_payment_amount", { precision: 10, scale: 2 }),
+  groupPaymentAmount: decimal("group_payment_amount", {
+    precision: 10,
+    scale: 2,
+  }),
   groupPaymentCurrency: text("group_payment_currency"), // ZMW, USD
   organizationReference: text("organization_reference"), // Reference for group/org payments
 });
@@ -128,7 +136,9 @@ export const exhibitions = pgTable("exhibitions", {
   website: text("website"),
   companyAddress: text("company_address"),
   boothSize: text("booth_size").default("standard"), // standard, premium, custom
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull().default("7000.00"),
+  amount: decimal("amount", { precision: 10, scale: 2 })
+    .notNull()
+    .default("7000.00"),
   currency: text("currency").default("USD"),
   status: text("status").default("pending"), // pending, approved, rejected, paid
   paymentStatus: text("payment_status").default("pending"), // pending, paid, cancelled
@@ -143,19 +153,21 @@ export const exhibitions = pgTable("exhibitions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-}).refine(
-  (data) => {
-    // Ensure phone number is provided
-    return data.phoneNumber && data.phoneNumber.trim().length > 0;
-  },
-  {
-    message: "Phone number is required",
-    path: ["phoneNumber"],
-  }
-);
+export const insertUserSchema = createInsertSchema(users)
+  .omit({
+    id: true,
+    createdAt: true,
+  })
+  .refine(
+    (data) => {
+      // Ensure phone number is provided
+      return data.phoneNumber && data.phoneNumber.trim().length > 0;
+    },
+    {
+      message: "Phone number is required",
+      path: ["phoneNumber"],
+    },
+  );
 
 // Login schema that accepts either email or phone
 export const loginSchema = z.object({
@@ -181,7 +193,10 @@ export const insertEventRegistrationSchema = z.object({
     .enum(["pending", "paid", "cancelled"])
     .optional()
     .default("pending"),
-  paymentMethod: z.enum(["mobile", "bank", "cash", "group_payment", "org_paid"]).optional().nullable(),
+  paymentMethod: z
+    .enum(["mobile", "bank", "cash", "group_payment", "org_paid"])
+    .optional()
+    .nullable(),
   currency: z.string().optional().nullable(),
   pricePaid: z.number().optional().nullable(),
   paymentEvidence: z.string().optional().nullable(),
@@ -189,10 +204,11 @@ export const insertEventRegistrationSchema = z.object({
     .enum(["private", "public", "international"])
     .optional()
     .nullable(),
+  dinnerGalaAttendance: z.boolean().optional().default(false),
   // Group payment fields
-  groupSize: z.number().optional().default(1),
+  groupSize: z.number().optional(),
   groupPaymentAmount: z.number().optional().nullable(),
-  groupPaymentCurrency: z.string().optional().nullable(),
+  groupPaymentCurrency: z.enum(["ZMW", "USD"]).optional().nullable(),
   organizationReference: z.string().optional().nullable(),
 });
 
@@ -204,9 +220,13 @@ export const insertNewsletterSubscriptionSchema = z.object({
 export const insertSponsorshipSchema = z.object({
   eventId: z.string(),
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
-  contactPerson: z.string().min(2, "Contact person must be at least 2 characters"),
+  contactPerson: z
+    .string()
+    .min(2, "Contact person must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  phoneNumber: z.string().min(10, "Phone number must be at least 10 characters"),
+  phoneNumber: z
+    .string()
+    .min(10, "Phone number must be at least 10 characters"),
   website: z.string().optional().nullable(),
   companyAddress: z.string().optional().nullable(),
   sponsorshipLevel: z.enum(["platinum", "gold", "silver", "bronze"]),
@@ -220,9 +240,13 @@ export const insertSponsorshipSchema = z.object({
 export const insertExhibitionSchema = z.object({
   eventId: z.string(),
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
-  contactPerson: z.string().min(2, "Contact person must be at least 2 characters"),
+  contactPerson: z
+    .string()
+    .min(2, "Contact person must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  phoneNumber: z.string().min(10, "Phone number must be at least 10 characters"),
+  phoneNumber: z
+    .string()
+    .min(10, "Phone number must be at least 10 characters"),
   website: z.string().optional().nullable(),
   companyAddress: z.string().optional().nullable(),
   boothSize: z.enum(["standard", "premium", "custom"]).default("standard"),
