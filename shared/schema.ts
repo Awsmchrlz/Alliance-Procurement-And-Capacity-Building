@@ -75,6 +75,9 @@ export const eventRegistrations = pgTable("event_registrations", {
   pricePaid: decimal("price_paid", { precision: 10, scale: 2 }),
   delegateType: text("delegate_type"), // private, public, international
   dinnerGalaAttendance: boolean("dinner_gala_attendance").default(false), // Whether attending dinner gala
+  // International delegate add-on packages
+  accommodationPackage: boolean("accommodation_package").default(false), // Accommodation package for international delegates
+  victoriaFallsPackage: boolean("victoria_falls_package").default(false), // Victoria Falls adventure package for international delegates
   // Group payment fields
   groupSize: integer("group_size").default(1),
   groupPaymentAmount: decimal("group_payment_amount", {
@@ -205,6 +208,9 @@ export const insertEventRegistrationSchema = z.object({
     .optional()
     .nullable(),
   dinnerGalaAttendance: z.boolean().optional().default(false),
+  // International delegate add-on packages
+  accommodationPackage: z.boolean().optional().default(false),
+  victoriaFallsPackage: z.boolean().optional().default(false),
   // Group payment fields
   groupSize: z.number().optional(),
   groupPaymentAmount: z.number().optional().nullable(),

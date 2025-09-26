@@ -715,6 +715,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentStatus: finalPaymentStatus,
           paymentEvidence: null,
           dinnerGalaAttendance: false,
+          accommodationPackage: false,
+          victoriaFallsPackage: false,
         });
 
         console.log(`✅ Admin registered user ${userId} for event ${eventId}`);

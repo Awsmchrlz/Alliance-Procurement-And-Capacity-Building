@@ -137,6 +137,8 @@ interface EventRegistration {
   paymentStatus: string;
   registeredAt: string;
   dinnerGalaAttendance?: boolean;
+  accommodationPackage?: boolean;
+  victoriaFallsPackage?: boolean;
 }
 
 interface Sponsorship {
@@ -1118,6 +1120,13 @@ export default function AdminDashboard() {
               registration.pricePaid || registration.event?.price || "N/A",
             "Has Paid": registration.hasPaid ? "Yes" : "No",
             "Payment Evidence": registration.paymentEvidence ? "Yes" : "No",
+            "Dinner Gala": registration.dinnerGalaAttendance ? "Yes" : "No",
+            "Accommodation Package": registration.accommodationPackage
+              ? "Yes"
+              : "No",
+            "Victoria Falls Adventure": registration.victoriaFallsPackage
+              ? "Yes"
+              : "No",
             "Registered At": formatTime(registration.registeredAt),
           }));
           filename = `registrations_export_${new Date().toISOString().split("T")[0]}.csv`;
@@ -1140,6 +1149,9 @@ export default function AdminDashboard() {
             "Price Paid",
             "Has Paid",
             "Payment Evidence",
+            "Dinner Gala",
+            "Accommodation Package",
+            "Victoria Falls Adventure",
             "Notes",
             "Registered At",
           ];
@@ -2563,6 +2575,12 @@ export default function AdminDashboard() {
                             🍽️ Gala
                           </TableHead>
                           <TableHead className="font-semibold text-xs px-2 py-2">
+                            🏨 Accommodation
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
+                            🦁 V.Falls
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
                             Event
                           </TableHead>
                           <TableHead className="font-semibold text-xs px-2 py-2">
@@ -2655,6 +2673,28 @@ export default function AdminDashboard() {
                             <TableCell className="px-2 py-2 text-center">
                               {registration.dinnerGalaAttendance ? (
                                 <span className="text-green-600 text-lg">
+                                  ✅
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 text-lg">
+                                  ❌
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="px-2 py-2 text-center">
+                              {registration.accommodationPackage ? (
+                                <span className="text-blue-600 text-lg">
+                                  ✅
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 text-lg">
+                                  ❌
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="px-2 py-2 text-center">
+                              {registration.victoriaFallsPackage ? (
+                                <span className="text-emerald-600 text-lg">
                                   ✅
                                 </span>
                               ) : (

@@ -1,6 +1,8 @@
 -- ================================================================
 -- Alliance Procurement & Capacity Building - Complete Database Schema
--- Production-ready schema with all latest changes
+-- Production-ready schema with international delegate packages
+-- Includes: Users, Events, Registrations, Sponsorships, Exhibitions, Newsletter
+-- Features: Role-based access, Payment tracking, International delegate packages
 -- ================================================================
 
 -- Enable UUID extension for generating unique IDs
@@ -104,6 +106,10 @@ CREATE TABLE event_registrations (
     delegate_type TEXT CHECK (delegate_type IN ('private', 'public', 'international')),
     dinner_gala_attendance BOOLEAN NOT NULL DEFAULT false,
 
+    -- International Delegate Add-on Packages
+    accommodation_package BOOLEAN DEFAULT false,
+    victoria_falls_package BOOLEAN DEFAULT false,
+
     -- Group Payment Fields
     group_size INTEGER DEFAULT 1 CHECK (group_size >= 1),
     group_payment_amount DECIMAL(10,2) CHECK (group_payment_amount >= 0),
@@ -127,6 +133,8 @@ CREATE INDEX idx_registrations_user_id ON event_registrations(user_id);
 CREATE INDEX idx_registrations_event_id ON event_registrations(event_id);
 CREATE INDEX idx_registrations_payment_status ON event_registrations(payment_status);
 CREATE INDEX idx_registrations_dinner_gala ON event_registrations(dinner_gala_attendance);
+CREATE INDEX idx_registrations_accommodation_package ON event_registrations(accommodation_package);
+CREATE INDEX idx_registrations_victoria_falls_package ON event_registrations(victoria_falls_package);
 CREATE INDEX idx_registrations_registration_number ON event_registrations(registration_number);
 CREATE INDEX idx_registrations_registered_at ON event_registrations(registered_at);
 
@@ -135,6 +143,8 @@ COMMENT ON TABLE event_registrations IS 'User registrations for events';
 COMMENT ON COLUMN event_registrations.registration_number IS 'Unique auto-generated registration identifier';
 COMMENT ON COLUMN event_registrations.dinner_gala_attendance IS 'Whether participant is attending the dinner gala';
 COMMENT ON COLUMN event_registrations.delegate_type IS 'Type of delegate: private, public, or international';
+COMMENT ON COLUMN event_registrations.accommodation_package IS 'Whether international delegate selected accommodation package (+$150)';
+COMMENT ON COLUMN event_registrations.victoria_falls_package IS 'Whether international delegate selected Victoria Falls adventure package (+$300)';
 
 -- ================================================================
 -- SPONSORSHIPS TABLE
@@ -297,6 +307,35 @@ CREATE TRIGGER update_sponsorships_updated_at BEFORE UPDATE ON sponsorships
 
 CREATE TRIGGER update_exhibitions_updated_at BEFORE UPDATE ON exhibitions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ================================================================
+-- SCHEMA VERIFICATION
+-- ================================================================
+
+-- Verify international delegate package columns exist
+SELECT
+    table_name,
+    column_name,
+    data_type,
+    column_default,
+    is_nullable
+FROM information_schema.columns
+WHERE table_name = 'event_registrations'
+AND column_name IN ('accommodation_package', 'victoria_falls_package')
+ORDER BY column_name;
+
+-- Verify all required tables exist
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+AND table_name IN ('users', 'events', 'event_registrations', 'sponsorships', 'exhibitions', 'newsletter_subscriptions')
+ORDER BY table_name;
+
+-- ================================================================
+-- SETUP COMPLETE
+-- Database schema ready for Alliance Procurement & Capacity Building
+-- Features: International delegate packages, role-based access, payment tracking
+-- ================================================================
 
 -- Function to auto-generate registration numbers
 CREATE OR REPLACE FUNCTION generate_registration_number()
