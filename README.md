@@ -1,72 +1,60 @@
-# Alliance Procurement and Capacity Building
+# 🏢 Alliance Procurement and Capacity Building
 
-A comprehensive event management system for Alliance Procurement and Capacity Building, featuring user registration, payment processing, evidence management, and administrative controls.
+**Production-Ready Event Management System**
 
-## 🚀 Features
+A comprehensive web application for managing events, registrations, payments, and participants with advanced features for international delegates including accommodation and tourism packages.
 
-### User Features
-- **User Registration & Authentication** - Secure account creation and login
-- **Event Browsing** - View upcoming events with detailed information
-- **Event Registration** - Multi-step registration process with payment options
-- **Payment Evidence Upload** - Upload proof of payment during registration
-- **Personal Dashboard** - Manage registrations and upload evidence
-- **Email Notifications** - Automated confirmation emails
+---
 
-### Admin Features
-- **Admin Dashboard** - Comprehensive management interface
-- **User Management** - Create and manage user accounts
-- **Event Management** - Create, edit, and manage events
-- **Registration Oversight** - View and manage all event registrations
-- **Payment Evidence Review** - View and verify payment proofs
-- **Role-based Access Control** - Super Admin, Finance Person, Event Manager roles
-- **Email Campaigns** - Send newsletters and notifications
+## 🎯 **Overview**
 
-## 🛠 Tech Stack
+This system provides a complete event management solution featuring:
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **Backend**: Node.js + Express + TypeScript
-- **Database**: PostgreSQL (via Supabase)
-- **Authentication**: Supabase Auth
-- **Storage**: Supabase Storage
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Email**: Resend API
-- **State Management**: TanStack Query (React Query)
+- **Multi-step Registration Process** with payment integration
+- **International Delegate Packages** (accommodation + Victoria Falls adventure)
+- **Role-based Admin Dashboard** with comprehensive reporting
+- **Payment Evidence Management** with file uploads
+- **Email Notifications** and automated confirmations
+- **Export Capabilities** for participant data and analytics
 
-## 📁 Project Structure
+---
 
-```
-Alliance-Procurement-And-Capacity-Building/
-├── client/                 # Frontend React application
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Page components
-│   │   ├── hooks/         # Custom React hooks
-│   │   └── lib/           # Utility libraries
-├── server/                 # Backend Express application
-│   ├── routes.ts          # API route handlers
-│   └── storage.ts         # Database operations
-├── shared/                 # Shared TypeScript types and schemas
-│   └── schema.ts          # Database schema definitions
-├── supabase/              # Supabase configuration
-├── COMPLETE_SETUP.sql     # One script for complete database setup
-```
+## 🛠 **Tech Stack**
 
-## ⚙️ Setup Instructions
+### Frontend
+- **React 18** + **TypeScript** + **Vite**
+- **Tailwind CSS** + **shadcn/ui** components
+- **TanStack Query** for state management
+- **React Hook Form** for form validation
+
+### Backend
+- **Node.js** + **Express** + **TypeScript**
+- **Supabase** for database and authentication
+- **Resend API** for email services
+- **File upload** with Supabase Storage
+
+### Database
+- **PostgreSQL** via Supabase
+- **Row Level Security** (RLS) enabled
+- **Automated functions** and triggers
+
+---
+
+## 🚀 **Quick Start**
 
 ### Prerequisites
-- Node.js 18+ 
-- PostgreSQL database (Supabase recommended)
+- Node.js 18+
 - Supabase account
-- Resend account (for emails)
+- Email service (Resend) account
 
-### 1. Clone Repository
+### 1. Clone and Install
 ```bash
 git clone <repository-url>
 cd Alliance-Procurement-And-Capacity-Building
 npm install
 ```
 
-### 2. Environment Variables
+### 2. Environment Configuration
 
 Create `.env` in the root directory:
 ```env
@@ -76,217 +64,280 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # Email Service
 RESEND_API_KEY=your_resend_api_key
-FROM_EMAIL=charles@allianceprocurementandcapacitybuilding.org
-
-# Storage
-VITE_SUPABASE_EVIDENCE_BUCKET=registrations
+FROM_EMAIL=noreply@yourdomain.com
 
 # Server
 PORT=3000
-NODE_ENV=development
+NODE_ENV=production
 ```
 
-Create `.env.local` in the client directory:
+Create `client/.env.local`:
 ```env
-# Client-side Supabase config
+# Client Configuration
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_anon_key
 VITE_SUPABASE_EVIDENCE_BUCKET=registrations
-
-# API Base URL
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=https://your-api-domain.com
 ```
 
 ### 3. Database Setup
 
-**One Script Does Everything!**
+**Single Script Deployment:**
 
-Run the complete setup script in your Supabase SQL Editor:
+1. Copy the entire contents of `database-schema.sql`
+2. Paste into your Supabase SQL Editor
+3. Execute the script
 
-```sql
--- Copy and paste the entire COMPLETE_SETUP.sql file into your Supabase SQL Editor and run it
--- This single script handles:
--- ✅ Database schema creation
--- ✅ Storage bucket setup with policies  
--- ✅ Title field removal (normalization)
--- ✅ Indexes and performance optimization
--- ✅ Data cleanup and validation
--- ✅ Functions and triggers
-```
+The schema includes:
+- ✅ All tables and relationships
+- ✅ International delegate package fields
+- ✅ Indexes for performance
+- ✅ RLS policies
+- ✅ Functions and triggers
+- ✅ Verification queries
 
-The script will show you progress messages and confirm everything is set up correctly.
+### 4. Deploy
 
-### 4. Start Development Servers
-
-**Terminal 1 - Backend**:
+**Frontend (Vercel/Netlify):**
 ```bash
-npm run server
-```
-
-**Terminal 2 - Frontend**:
-```bash
-cd client
-npm run dev
-```
-
-## 📊 Database Schema
-
-### Core Tables
-- **users** - User accounts with role-based access
-- **events** - Event information and details
-- **event_registrations** - User event registrations with payment tracking
-- **newsletter_subscriptions** - Email newsletter subscribers
-
-### Storage
-- **registrations bucket** - Payment evidence files (images, PDFs)
-
-## 🔐 Authentication & Roles
-
-### User Roles
-- **Ordinary User** - Can register for events, manage own registrations
-- **Event Manager** - Can view registrations and evidence
-- **Finance Person** - Can update payment status and manage evidence
-- **Super Admin** - Full system access and user management
-
-### Permissions Matrix
-| Feature | Ordinary User | Event Manager | Finance Person | Super Admin |
-|---------|---------------|---------------|----------------|-------------|
-| Register for Events | ✅ | ✅ | ✅ | ✅ |
-| View Own Registrations | ✅ | ✅ | ✅ | ✅ |
-| Upload Evidence | ✅ | ✅ | ✅ | ✅ |
-| View All Registrations | ❌ | ✅ | ✅ | ✅ |
-| Update Payment Status | ❌ | ❌ | ✅ | ✅ |
-| Manage Users | ❌ | ❌ | ❌ | ✅ |
-| Create Events | ❌ | ❌ | ❌ | ✅ |
-
-## 🎯 Key Features
-
-### Event Registration Process
-1. **Step 1**: Personal Information (name, email, phone, gender, country)
-2. **Step 2**: Organization Details (organization, type, position, notes)
-3. **Step 3**: Payment & Evidence Upload
-   - Select payment method (mobile money, bank transfer, cash)
-   - Upload payment proof (optional, PNG/JPG/PDF up to 10MB)
-   - Complete registration
-
-### Payment Methods
-- **Mobile Money** - Airtel/MTN numbers provided
-- **Bank Transfer** - Standard Chartered Bank details
-- **Cash Payment** - Pay at event (no evidence needed)
-
-### Email System
-- Registration confirmations
-- Admin notifications for new registrations
-- Newsletter campaigns
-- Payment status updates
-
-## 🚀 Quick Start
-
-1. **Clone and Install**:
-   ```bash
-   git clone <repository-url>
-   cd Alliance-Procurement-And-Capacity-Building
-   npm install
-   ```
-
-2. **Set Environment Variables** (see above)
-
-3. **Run Database Setup**:
-   - Copy entire `COMPLETE_SETUP.sql` content
-   - Paste in Supabase SQL Editor
-   - Run it once - handles everything!
-
-4. **Start Application**:
-   ```bash
-   # Terminal 1 - Backend
-   npm run server
-   
-   # Terminal 2 - Frontend  
-   cd client && npm run dev
-   ```
-
-## 🔧 API Endpoints
-
-### Public Endpoints
-- `GET /api/events` - List all events
-- `GET /api/events/:id` - Get event details
-
-### Authenticated User Endpoints
-- `POST /api/events/register` - Register for event
-- `GET /api/users/registrations` - Get user's registrations
-- `PUT /api/users/payment-evidence/:id` - Upload payment evidence
-- `POST /api/newsletter/subscribe` - Subscribe to newsletter
-
-### Admin Endpoints
-- `GET /api/admin/users` - List all users
-- `POST /api/admin/users` - Create new user
-- `GET /api/admin/registrations` - List all registrations
-- `PATCH /api/admin/registrations/:id` - Update registration
-- `POST /api/admin/events` - Create event
-- `PUT /api/admin/events/:id` - Update event
-
-## 🔍 Troubleshooting
-
-### Storage Issues
-**Error**: "Bucket not found"
-- Ensure you ran `COMPLETE_SETUP.sql` successfully
-- Check `VITE_SUPABASE_EVIDENCE_BUCKET` environment variable
-
-**Error**: "Permission denied"
-- Verify user authentication
-- Check RLS policies in Supabase
-- Ensure user roles are set correctly
-
-### Authentication Issues
-**Error**: "No active session"
-- Clear browser localStorage
-- Re-login to application
-- Check Supabase Auth configuration
-
-### Email Issues
-**Error**: Email not sending
-- Verify Resend API key
-- Check FROM_EMAIL configuration
-- Ensure domain verification in Resend
-
-## 🆕 Recent Changes
-
-### Complete System Normalization
-- **Single Setup Script**: `COMPLETE_SETUP.sql` handles everything
-- **Title Field Removal**: Normalized database - removed title dropdowns
-- **Payment Evidence Upload**: Restored file upload during registration
-- **Project Cleanup**: Consolidated documentation, removed unused files
-- **Consistent Bucket Configuration**: Fixed storage bucket issues
-- **Enhanced Error Handling**: Better user feedback for upload failures
-
-## 🚀 Deployment
-
-### Prerequisites for Production
-1. Supabase project configured
-2. Domain configured for emails
-3. Environment variables set
-4. SSL certificate (recommended)
-
-### Build Commands
-```bash
-# Build frontend
 cd client && npm run build
+# Deploy the 'dist' folder
+```
 
-# Start production server
+**Backend (Railway/Heroku/VPS):**
+```bash
+npm run build
 npm start
 ```
 
-## 📞 Support
+---
 
-For technical issues or questions:
-- Check the troubleshooting section above
-- Review Supabase logs for database issues
-- Verify environment variable configuration
-- Ensure all required services are running
+## 🏗 **Project Structure**
+
+```
+├── client/                 # React Frontend
+│   ├── src/
+│   │   ├── components/    # UI Components
+│   │   ├── pages/         # Route Pages
+│   │   ├── hooks/         # Custom Hooks
+│   │   └── lib/           # Utilities
+│   └── dist/              # Built Frontend
+├── server/                 # Express Backend
+│   ├── routes.ts          # API Endpoints
+│   ├── storage.ts         # Database Layer
+│   └── email-service.ts   # Email Functions
+├── shared/                 # Shared Types
+│   └── schema.ts          # Database Schema & Validation
+├── database-schema.sql     # Complete Database Setup
+├── package.json           # Dependencies & Scripts
+└── README.md              # This File
+```
 
 ---
 
-**Version**: 2.0.0  
+## 🎯 **Core Features**
+
+### 🎫 **Event Registration**
+- **3-Step Process**: Personal Info → Organization → Payment
+- **International Packages**: Accommodation ($800) + Adventure ($950)
+- **Payment Methods**: Mobile Money, Bank Transfer, Cash
+- **Evidence Upload**: PNG/JPG/PDF files up to 10MB
+
+### 👥 **User Management**
+- **Role-based Access**: Super Admin, Finance, Event Manager, User
+- **Authentication**: Secure Supabase Auth
+- **Profile Management**: Complete user profiles
+
+### 📊 **Admin Dashboard**
+- **Registration Overview**: All participants at a glance
+- **Package Tracking**: See who selected accommodation/adventure
+- **Payment Management**: Status tracking and evidence review
+- **Data Export**: Excel/CSV reports with all details
+
+### 📧 **Email System**
+- **Registration Confirmations**: Automated emails
+- **Admin Notifications**: New registration alerts
+- **Newsletter System**: Subscriber management
+
+---
+
+## 💰 **Pricing Structure**
+
+| Delegate Type | Base Price | Accommodation | Victoria Falls | Dinner Gala |
+|---------------|------------|---------------|----------------|-------------|
+| Private Sector | ZMW 7,000 | N/A | N/A | +ZMW 2,500 |
+| Public Sector | ZMW 6,500 | N/A | N/A | +ZMW 2,500 |
+| **International** | **USD 650** | **+USD 150** | **+USD 300** | **+USD 110** |
+
+### International Packages
+- **🏨 Accommodation**: Hotel stay during event
+- **🦁 Victoria Falls Adventure**: Accommodation + Game viewing + Boat cruise + Falls visit
+
+---
+
+## 🔐 **User Roles & Permissions**
+
+| Feature | User | Event Manager | Finance | Super Admin |
+|---------|------|---------------|---------|-------------|
+| Event Registration | ✅ | ✅ | ✅ | ✅ |
+| View Own Data | ✅ | ✅ | ✅ | ✅ |
+| Upload Evidence | ✅ | ✅ | ✅ | ✅ |
+| View All Registrations | ❌ | ✅ | ✅ | ✅ |
+| Update Payment Status | ❌ | ❌ | ✅ | ✅ |
+| User Management | ❌ | ❌ | ❌ | ✅ |
+| Event Management | ❌ | ❌ | ❌ | ✅ |
+
+---
+
+## 📡 **API Endpoints**
+
+### Public
+```
+GET  /api/events              # List events
+GET  /api/events/:id          # Event details
+POST /api/newsletter/subscribe # Newsletter signup
+```
+
+### Authenticated
+```
+POST /api/events/register          # Register for event
+GET  /api/users/registrations      # User's registrations
+PUT  /api/users/payment-evidence   # Upload evidence
+```
+
+### Admin
+```
+GET    /api/admin/users             # List users
+POST   /api/admin/users             # Create user
+GET    /api/admin/registrations     # All registrations
+PATCH  /api/admin/registrations/:id # Update registration
+POST   /api/admin/events            # Create event
+PUT    /api/admin/events/:id        # Update event
+```
+
+---
+
+## 🚀 **Production Deployment**
+
+### Environment Preparation
+1. **Database**: Set up production Supabase project
+2. **Email**: Configure Resend with verified domain
+3. **Storage**: Configure Supabase storage bucket
+4. **DNS**: Set up custom domain
+
+### Security Checklist
+- [ ] Environment variables secured
+- [ ] Database RLS policies enabled
+- [ ] HTTPS enforced
+- [ ] CORS configured properly
+- [ ] File upload limits enforced
+- [ ] Rate limiting implemented
+
+### Performance Optimization
+- [ ] Database indexes created
+- [ ] CDN configured for assets
+- [ ] Image optimization enabled
+- [ ] Compression enabled
+- [ ] Caching headers set
+
+---
+
+## 🔍 **Monitoring & Analytics**
+
+### Key Metrics
+- **Registration Conversion**: Registration starts → completions
+- **Package Adoption**: International package selection rates
+- **Payment Success**: Payment completion rates
+- **User Engagement**: Dashboard usage and activity
+
+### Error Monitoring
+- API response times and error rates
+- Database query performance
+- File upload success/failure rates
+- Email delivery status
+
+---
+
+## 🐛 **Troubleshooting**
+
+### Common Issues
+
+**Database Connection**
+```bash
+# Check Supabase connection
+curl -H "apikey: YOUR_ANON_KEY" \
+     -H "Authorization: Bearer YOUR_ANON_KEY" \
+     "https://your-project.supabase.co/rest/v1/users?select=*"
+```
+
+**File Upload Issues**
+- Verify bucket exists: `registrations`
+- Check bucket policies in Supabase
+- Confirm file size limits (10MB max)
+
+**Email Not Sending**
+- Verify Resend API key
+- Check domain verification status
+- Review email template syntax
+
+### Database Queries
+```sql
+-- Check registration counts
+SELECT delegate_type, COUNT(*) 
+FROM event_registrations 
+GROUP BY delegate_type;
+
+-- International package statistics
+SELECT 
+  SUM(CASE WHEN accommodation_package THEN 1 ELSE 0 END) as accommodation,
+  SUM(CASE WHEN victoria_falls_package THEN 1 ELSE 0 END) as victoria_falls
+FROM event_registrations 
+WHERE delegate_type = 'international';
+```
+
+---
+
+## 📞 **Support**
+
+### Getting Help
+1. Check this README for common solutions
+2. Review API error messages in browser console
+3. Check server logs for backend issues
+4. Verify environment variable configuration
+
+### Production Support
+- **Database Issues**: Check Supabase dashboard logs
+- **Email Issues**: Review Resend delivery logs  
+- **Performance**: Monitor server resource usage
+- **Security**: Review access logs and failed attempts
+
+---
+
+## 📝 **Version Information**
+
+**Current Version**: 2.0.0  
 **Last Updated**: 2024  
-**License**: Private  
-**Maintainer**: Alliance Procurement and Capacity Building
+**Node.js**: 18+  
+**Database**: PostgreSQL (Supabase)  
+
+### Recent Updates
+- ✅ International delegate packages implemented
+- ✅ Admin dashboard enhanced with package tracking
+- ✅ Single database schema for clean deployments
+- ✅ Production-ready documentation
+- ✅ Complete TypeScript coverage
+
+---
+
+## 🎉 **Success!**
+
+Your Alliance Procurement and Capacity Building event management system is now production-ready with:
+
+- ✅ **International Delegate Packages** for accommodation and Victoria Falls adventures
+- ✅ **Comprehensive Admin Dashboard** for complete event oversight  
+- ✅ **Professional UI/UX** with responsive design
+- ✅ **Robust Backend** with proper error handling
+- ✅ **Production Security** with role-based access
+- ✅ **Complete Documentation** for maintenance and scaling
+
+**Ready to handle your next major event!** 🚀

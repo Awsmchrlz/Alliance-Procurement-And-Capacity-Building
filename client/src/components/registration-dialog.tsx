@@ -39,6 +39,9 @@ interface FormDataType {
   delegateType: "private" | "public" | "international" | "";
   bankCurrency?: "ZMW" | "USD";
   dinnerGalaAttendance: boolean;
+  // International delegate add-ons
+  accommodationPackage: boolean;
+  victoriaFallsPackage: boolean;
   // Group payment fields
   groupSize?: number;
   groupPaymentAmount?: number;
@@ -104,6 +107,9 @@ export function RegistrationDialog({
     paymentMethod: "",
     bankCurrency: "ZMW",
     dinnerGalaAttendance: false,
+    // International delegate add-ons
+    accommodationPackage: false,
+    victoriaFallsPackage: false,
     // Group payment defaults
     groupSize: 1,
     groupPaymentAmount: 0,
@@ -214,17 +220,33 @@ export function RegistrationDialog({
     (tier) => tier.type === formData.delegateType,
   );
 
-  // Calculate total price including dinner gala
+  // Calculate total price including dinner gala and international add-ons
   const calculateTotalPrice = (
     basePrice: string,
     currency: string,
     includeDinnerGala: boolean,
+    accommodationPackage: boolean = false,
+    victoriaFallsPackage: boolean = false,
   ) => {
     const base = parseFloat(basePrice.replace(",", ""));
-    if (!includeDinnerGala) return base;
+    let total = base;
 
-    const dinnerGalaCost = currency === "USD" ? 110 : 2500;
-    return base + dinnerGalaCost;
+    // Add dinner gala cost
+    if (includeDinnerGala) {
+      const dinnerGalaCost = currency === "USD" ? 110 : 2500;
+      total += dinnerGalaCost;
+    }
+
+    // Add international delegate packages (only for USD currency)
+    if (currency === "USD") {
+      if (victoriaFallsPackage) {
+        total += 300; // Game viewing, boat cruise, Victoria Falls visit
+      } else if (accommodationPackage) {
+        total += 150; // Accommodation only
+      }
+    }
+
+    return total;
   };
 
   const getTotalPriceDisplay = (pricing: any, includeDinnerGala: boolean) => {
@@ -233,6 +255,8 @@ export function RegistrationDialog({
       pricing.price,
       pricing.currency,
       includeDinnerGala,
+      formData.accommodationPackage,
+      formData.victoriaFallsPackage,
     );
     return `${pricing.currency} ${total.toLocaleString()}`;
   };
@@ -260,6 +284,9 @@ export function RegistrationDialog({
       paymentMethod: "",
       bankCurrency: "ZMW",
       dinnerGalaAttendance: false,
+      // International delegate add-ons
+      accommodationPackage: false,
+      victoriaFallsPackage: false,
       // Group payment defaults
       groupSize: 1,
       groupPaymentAmount: 0,
@@ -481,17 +508,21 @@ export function RegistrationDialog({
         paymentMethod: formData.paymentMethod,
         delegateType: formData.delegateType,
         dinnerGalaAttendance: formData.dinnerGalaAttendance,
+        accommodationPackage: formData.accommodationPackage,
+        victoriaFallsPackage: formData.victoriaFallsPackage,
         hasPaid: formData.paymentMethod === "org_paid", // Mark as paid if organization already paid
         paymentEvidence: evidenceUrl,
         paymentStatus:
           formData.paymentMethod === "org_paid" ? "paid" : "pending",
-        // Pricing information including dinner gala
+        // Pricing information including dinner gala and international add-ons
         currency: selectedPricing?.currency || "ZMW",
         pricePaid: selectedPricing
           ? calculateTotalPrice(
               selectedPricing.price,
               selectedPricing.currency,
               formData.dinnerGalaAttendance,
+              formData.accommodationPackage,
+              formData.victoriaFallsPackage,
             )
           : 0,
         // Group payment specific fields
@@ -793,6 +824,92 @@ export function RegistrationDialog({
                     </Select>
                   </div>
 
+                  {/* International Delegate Add-on Options */}
+                  {formData.delegateType === "international" && (
+                    <div className="mt-3">
+                      <h4 className="text-xs font-medium text-gray-700 mb-2">
+                        Additional Packages
+                      </h4>
+                      <div className="space-y-1.5">
+                        {/* Event Only */}
+                        <label className="flex items-center space-x-2 p-2 bg-gray-50 border border-gray-200 rounded cursor-pointer hover:bg-gray-100 transition-colors">
+                          <input
+                            type="radio"
+                            name="internationalPackage"
+                            checked={
+                              !formData.accommodationPackage &&
+                              !formData.victoriaFallsPackage
+                            }
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                updateField("accommodationPackage", false);
+                                updateField("victoriaFallsPackage", false);
+                              }
+                            }}
+                            className="w-3.5 h-3.5 text-gray-600"
+                          />
+                          <span className="flex-1 text-xs text-gray-800">
+                            📋 Event Only
+                          </span>
+                          <span className="text-xs font-medium text-gray-800">
+                            USD 650
+                          </span>
+                        </label>
+
+                        {/* Accommodation Package */}
+                        <label className="flex items-center space-x-2 p-2 bg-blue-50 border border-blue-200 rounded cursor-pointer hover:bg-blue-100 transition-colors">
+                          <input
+                            type="radio"
+                            name="internationalPackage"
+                            checked={
+                              formData.accommodationPackage &&
+                              !formData.victoriaFallsPackage
+                            }
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                updateField("accommodationPackage", true);
+                                updateField("victoriaFallsPackage", false);
+                              }
+                            }}
+                            className="w-3.5 h-3.5 text-blue-600"
+                          />
+                          <span className="flex-1 text-xs text-blue-800">
+                            🏨 + Accommodation
+                          </span>
+                          <span className="text-xs font-medium text-blue-800">
+                            USD 800
+                          </span>
+                        </label>
+
+                        {/* Victoria Falls Package */}
+                        <label className="flex items-center space-x-2 p-2 bg-emerald-50 border border-emerald-200 rounded cursor-pointer hover:bg-emerald-100 transition-colors">
+                          <input
+                            type="radio"
+                            name="internationalPackage"
+                            checked={formData.victoriaFallsPackage}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                updateField("victoriaFallsPackage", true);
+                                updateField("accommodationPackage", false);
+                              }
+                            }}
+                            className="w-3.5 h-3.5 text-emerald-600"
+                          />
+                          <span className="flex-1 text-xs text-emerald-800">
+                            🦁 + Victoria Falls Adventure
+                            <br />
+                            <span className="text-xs text-emerald-600">
+                              Game viewing • Boat cruise
+                            </span>
+                          </span>
+                          <span className="text-xs font-medium text-emerald-800">
+                            USD 950
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Dinner Gala Attendance */}
                   <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg">
                     <div className="flex items-start space-x-3">
@@ -859,6 +976,28 @@ export function RegistrationDialog({
                             </span>
                           </div>
                         )}
+                        {formData.accommodationPackage &&
+                          selectedPricing.currency === "USD" && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-blue-700">
+                                🏨 Accommodation Package
+                              </span>
+                              <span className="font-bold text-sm text-blue-800 bg-blue-50 px-2 py-1 rounded shadow-sm">
+                                USD 150
+                              </span>
+                            </div>
+                          )}
+                        {formData.victoriaFallsPackage &&
+                          selectedPricing.currency === "USD" && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-emerald-700">
+                                🦁 Victoria Falls Adventure
+                              </span>
+                              <span className="font-bold text-sm text-emerald-800 bg-emerald-50 px-2 py-1 rounded shadow-sm">
+                                USD 300
+                              </span>
+                            </div>
+                          )}
                         <div className="border-t pt-2 flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-900">
                             Total Amount
@@ -991,6 +1130,8 @@ export function RegistrationDialog({
                                       selectedPricing.price,
                                       selectedPricing.currency,
                                       formData.dinnerGalaAttendance,
+                                      formData.accommodationPackage,
+                                      formData.victoriaFallsPackage,
                                     )
                                   : 0;
                                 const amount = baseAmount * size;
@@ -1022,6 +1163,8 @@ export function RegistrationDialog({
                                       selectedPricing.price,
                                       selectedPricing.currency,
                                       formData.dinnerGalaAttendance,
+                                      formData.accommodationPackage,
+                                      formData.victoriaFallsPackage,
                                     ) * (formData.groupSize || 1)
                                   ).toLocaleString()}
                                 </div>
