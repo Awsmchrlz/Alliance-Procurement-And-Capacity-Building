@@ -106,9 +106,10 @@ CREATE TABLE event_registrations (
     delegate_type TEXT CHECK (delegate_type IN ('private', 'public', 'international')),
     dinner_gala_attendance BOOLEAN NOT NULL DEFAULT false,
 
-    -- International Delegate Add-on Packages
+    -- Add-on Packages (available for all delegate types)
     accommodation_package BOOLEAN DEFAULT false,
     victoria_falls_package BOOLEAN DEFAULT false,
+    boat_cruise_package BOOLEAN DEFAULT false,
 
     -- Group Payment Fields
     group_size INTEGER DEFAULT 1 CHECK (group_size >= 1),
@@ -135,6 +136,7 @@ CREATE INDEX idx_registrations_payment_status ON event_registrations(payment_sta
 CREATE INDEX idx_registrations_dinner_gala ON event_registrations(dinner_gala_attendance);
 CREATE INDEX idx_registrations_accommodation_package ON event_registrations(accommodation_package);
 CREATE INDEX idx_registrations_victoria_falls_package ON event_registrations(victoria_falls_package);
+CREATE INDEX idx_registrations_boat_cruise_package ON event_registrations(boat_cruise_package);
 CREATE INDEX idx_registrations_registration_number ON event_registrations(registration_number);
 CREATE INDEX idx_registrations_registered_at ON event_registrations(registered_at);
 
@@ -143,8 +145,9 @@ COMMENT ON TABLE event_registrations IS 'User registrations for events';
 COMMENT ON COLUMN event_registrations.registration_number IS 'Unique auto-generated registration identifier';
 COMMENT ON COLUMN event_registrations.dinner_gala_attendance IS 'Whether participant is attending the dinner gala';
 COMMENT ON COLUMN event_registrations.delegate_type IS 'Type of delegate: private, public, or international';
-COMMENT ON COLUMN event_registrations.accommodation_package IS 'Whether international delegate selected accommodation package (+$150)';
-COMMENT ON COLUMN event_registrations.victoria_falls_package IS 'Whether international delegate selected Victoria Falls adventure package (+$300)';
+COMMENT ON COLUMN event_registrations.accommodation_package IS 'Whether delegate selected accommodation package';
+COMMENT ON COLUMN event_registrations.victoria_falls_package IS 'Whether delegate selected Victoria Falls adventure package';
+COMMENT ON COLUMN event_registrations.boat_cruise_package IS 'Whether delegate selected boat cruise package';
 
 -- ================================================================
 -- SPONSORSHIPS TABLE
@@ -312,7 +315,7 @@ CREATE TRIGGER update_exhibitions_updated_at BEFORE UPDATE ON exhibitions
 -- SCHEMA VERIFICATION
 -- ================================================================
 
--- Verify international delegate package columns exist
+-- Verify add-on package columns exist
 SELECT
     table_name,
     column_name,
@@ -321,7 +324,7 @@ SELECT
     is_nullable
 FROM information_schema.columns
 WHERE table_name = 'event_registrations'
-AND column_name IN ('accommodation_package', 'victoria_falls_package')
+AND column_name IN ('accommodation_package', 'victoria_falls_package', 'boat_cruise_package')
 ORDER BY column_name;
 
 -- Verify all required tables exist

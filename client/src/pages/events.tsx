@@ -208,7 +208,7 @@ const EventsPage = () => {
                 <>
                   <CheckCircle className="w-5 h-5 text-green-400" />
                   <span className="text-green-400 font-medium">
-                    Welcome back, {user?.firstName}! You're already registered
+                    Welcome back, {user?.lastName}! You're already registered
                     for {registrationsArray.length} event
                     {registrationsArray.length > 1 ? "s" : ""}
                   </span>
@@ -217,7 +217,7 @@ const EventsPage = () => {
                 <>
                   <CheckCircle className="w-5 h-5 text-[#87CEEB]" />
                   <span className="text-[#87CEEB] font-medium">
-                    Welcome back, {user?.firstName}! Ready to register?
+                    Welcome back, {user?.lastName}! Ready to register?
                   </span>
                 </>
               )}
@@ -320,49 +320,29 @@ const EventsPage = () => {
                         )}
                       </div>
 
-                      <div className="pt-4 border-t border-gray-100 space-y-3">
+                      <div className="pt-4 border-t border-gray-100">
                         {status === "upcoming" && !isRegistered ? (
-                          <Button
+                          <button
                             onClick={() => handleRegisterClick(event)}
-                            className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 group text-sm sm:text-base min-h-[48px]"
+                            className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] active:bg-[#1a2f5a] text-white font-bold py-5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 min-h-[64px] text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
                           >
-                            <span className="hidden sm:inline">
-                              Register for Event
-                            </span>
-                            <span className="sm:hidden">Register</span>
-                            <ArrowRight className="w-4 h-4 ml-1 sm:ml-2 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-                          </Button>
+                            <span>Register for Event</span>
+                            <ArrowRight className="w-5 h-5" />
+                          </button>
                         ) : isRegistered ? (
-                          <Button
-                            variant="outline"
-                            className="w-full text-sm sm:text-base min-h-[48px] px-4"
-                            disabled
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
-                            <span className="hidden sm:inline">
-                              Already Registered
-                            </span>
-                            <span className="sm:hidden">Registered</span>
-                          </Button>
+                          <div className="w-full bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold py-5 px-4 rounded-xl flex items-center justify-center gap-3 min-h-[64px] text-lg">
+                            <CheckCircle className="w-5 h-5 text-emerald-600" />
+                            <span>Already Registered</span>
+                          </div>
                         ) : (
-                          <Button
-                            variant="outline"
-                            className="w-full text-sm sm:text-base min-h-[48px] px-4"
-                            disabled
-                          >
-                            <span className="hidden sm:inline">
-                              {status === "ongoing"
-                                ? "Event in Progress"
-                                : "Event Completed"}
+                          <div className="w-full bg-gray-50 border-2 border-gray-200 text-gray-500 font-bold py-5 px-4 rounded-xl flex items-center justify-center min-h-[64px] text-lg">
+                            <span>
+                              {status === "ongoing" ? "Event in Progress" : "Event Completed"}
                             </span>
-                            <span className="sm:hidden">
-                              {status === "ongoing"
-                                ? "In Progress"
-                                : "Completed"}
-                            </span>
-                          </Button>
+                          </div>
                         )}
                       </div>
+
                     </CardContent>
                   </Card>
                 );
@@ -426,19 +406,15 @@ const EventsPage = () => {
               }
             }}
             event={selectedEvent}
+            skipSuccessModal={true}
             onSuccess={() => {
               setShowRegistrationDialog(false);
               // Clear auto-open flag after successful registration
               localStorage.removeItem("autoOpenEventModal");
-              toast({
-                title: "Registration Successful! 🎉",
-                description:
-                  "You've been registered for the event. Check your email for confirmation.",
-              });
-              // Route to dashboard after successful registration
-              setTimeout(() => {
-                navigate("/dashboard");
-              }, 2000);
+              // Set flag to show success modal only on dashboard
+              sessionStorage.setItem("showRegistrationSuccess", "true");
+              // Navigate immediately to dashboard to show success modal there
+              navigate("/dashboard");
             }}
           />
         </>

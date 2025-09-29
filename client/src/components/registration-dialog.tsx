@@ -25,6 +25,7 @@ interface RegistrationDialogProps {
   onOpenChange: (open: boolean) => void;
   event: Event;
   onSuccess?: () => void;
+  skipSuccessModal?: boolean;
 }
 
 interface FormDataType {
@@ -39,9 +40,10 @@ interface FormDataType {
   delegateType: "private" | "public" | "international" | "";
   bankCurrency?: "ZMW" | "USD";
   dinnerGalaAttendance: boolean;
-  // International delegate add-ons
+  // Add-on packages available for all delegate types
   accommodationPackage: boolean;
   victoriaFallsPackage: boolean;
+  boatCruisePackage: boolean;
   // Group payment fields
   groupSize?: number;
   groupPaymentAmount?: number;
@@ -81,11 +83,12 @@ const pricingTiers: PricingTier[] = [
   },
 ];
 
-export function RegistrationDialog({
-  event,
+function RegistrationDialog({
   open,
   onOpenChange,
+  event,
   onSuccess,
+  skipSuccessModal = false,
 }: RegistrationDialogProps) {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -107,9 +110,10 @@ export function RegistrationDialog({
     paymentMethod: "",
     bankCurrency: "ZMW",
     dinnerGalaAttendance: false,
-    // International delegate add-ons
+    // Add-on packages available for all delegate types
     accommodationPackage: false,
     victoriaFallsPackage: false,
+    boatCruisePackage: false,
     // Group payment defaults
     groupSize: 1,
     groupPaymentAmount: 0,
@@ -220,29 +224,56 @@ export function RegistrationDialog({
     (tier) => tier.type === formData.delegateType,
   );
 
-  // Calculate total price including dinner gala and international add-ons
+  // Pricing configuration for all delegate types
+  const PRICING_CONFIG = {
+    private: {
+      packages: {
+        victoriaFallsAndBoatCruise: 2500, // Combined package for local delegates
+        dinnerGala: 2500,
+      },
+    },
+    public: {
+      packages: {
+        victoriaFallsAndBoatCruise: 2500, // Combined package for local delegates
+        dinnerGala: 2500,
+      },
+    },
+    international: {
+      packages: {
+        accommodation: 150,
+        victoriaFallsAndBoatCruise: 150, // Combined package for international delegates
+        dinnerGala: 110,
+      },
+    },
+  };
+
+  // Calculate total price including all add-on packages
   const calculateTotalPrice = (
     basePrice: string,
     currency: string,
     includeDinnerGala: boolean,
     accommodationPackage: boolean = false,
     victoriaFallsPackage: boolean = false,
+    boatCruisePackage: boolean = false,
   ) => {
     const base = parseFloat(basePrice.replace(",", ""));
     let total = base;
 
-    // Add dinner gala cost
-    if (includeDinnerGala) {
-      const dinnerGalaCost = currency === "USD" ? 110 : 2500;
-      total += dinnerGalaCost;
-    }
-
-    // Add international delegate packages (only for USD currency)
-    if (currency === "USD") {
-      if (victoriaFallsPackage) {
-        total += 300; // Game viewing, boat cruise, Victoria Falls visit
-      } else if (accommodationPackage) {
-        total += 150; // Accommodation only
+    const delegateType = formData.delegateType as keyof typeof PRICING_CONFIG;
+    const config = PRICING_CONFIG[delegateType];
+    
+    if (config) {
+      // Add package costs based on delegate type
+      if (includeDinnerGala) {
+        total += config.packages.dinnerGala;
+      }
+      if (accommodationPackage && config.packages.accommodation) {
+        total += config.packages.accommodation;
+      }
+      
+      // For all delegates, Victoria Falls and Boat Cruise are now combined into one package
+      if (victoriaFallsPackage || boatCruisePackage) {
+        total += config.packages.victoriaFallsAndBoatCruise;
       }
     }
 
@@ -257,6 +288,7 @@ export function RegistrationDialog({
       includeDinnerGala,
       formData.accommodationPackage,
       formData.victoriaFallsPackage,
+      formData.boatCruisePackage,
     );
     return `${pricing.currency} ${total.toLocaleString()}`;
   };
@@ -284,9 +316,10 @@ export function RegistrationDialog({
       paymentMethod: "",
       bankCurrency: "ZMW",
       dinnerGalaAttendance: false,
-      // International delegate add-ons
+      // Add-on packages available for all delegate types
       accommodationPackage: false,
       victoriaFallsPackage: false,
+      boatCruisePackage: false,
       // Group payment defaults
       groupSize: 1,
       groupPaymentAmount: 0,
@@ -510,6 +543,7 @@ export function RegistrationDialog({
         dinnerGalaAttendance: formData.dinnerGalaAttendance,
         accommodationPackage: formData.accommodationPackage,
         victoriaFallsPackage: formData.victoriaFallsPackage,
+        boatCruisePackage: formData.boatCruisePackage,
         hasPaid: formData.paymentMethod === "org_paid", // Mark as paid if organization already paid
         paymentEvidence: evidenceUrl,
         paymentStatus:
@@ -523,6 +557,7 @@ export function RegistrationDialog({
               formData.dinnerGalaAttendance,
               formData.accommodationPackage,
               formData.victoriaFallsPackage,
+              formData.boatCruisePackage,
             )
           : 0,
         // Group payment specific fields
@@ -541,7 +576,16 @@ export function RegistrationDialog({
 
       console.log("✅ Registration completed successfully");
       setRegistrationData(registration);
-      setSuccess(true);
+
+      // Handle success flow based on skipSuccessModal prop
+      if (skipSuccessModal && onSuccess) {
+        // Close dialog and call success callback directly
+        onOpenChange(false);
+        onSuccess();
+      } else {
+        // Show success modal
+        setSuccess(true);
+      }
 
       // Invalidate relevant queries to refresh dashboard data
       console.log("🔄 Invalidating registration queries for user:", user?.id);
@@ -807,9 +851,13 @@ export function RegistrationDialog({
                     </Label>
                     <Select
                       value={formData.delegateType}
-                      onValueChange={(value) =>
-                        updateField("delegateType", value as any)
-                      }
+                      onValueChange={(value) => {
+                        updateField("delegateType", value as any);
+                        // Clear accommodation package if switching to local delegate
+                        if (value !== "international") {
+                          updateField("accommodationPackage", false);
+                        }
+                      }}
                     >
                       <SelectTrigger className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200 hover:border-[#87CEEB]/50">
                         <SelectValue placeholder="Choose delegate type" />
@@ -824,88 +872,79 @@ export function RegistrationDialog({
                     </Select>
                   </div>
 
-                  {/* International Delegate Add-on Options */}
-                  {formData.delegateType === "international" && (
-                    <div className="mt-3">
-                      <h4 className="text-xs font-medium text-gray-700 mb-2">
-                        Additional Packages
+                  {/* Add-on Packages - Available for all delegate types */}
+                  {formData.delegateType && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">
+                        Optional Add-on Packages
                       </h4>
-                      <div className="space-y-1.5">
-                        {/* Event Only */}
-                        <label className="flex items-center space-x-2 p-2 bg-gray-50 border border-gray-200 rounded cursor-pointer hover:bg-gray-100 transition-colors">
-                          <input
-                            type="radio"
-                            name="internationalPackage"
-                            checked={
-                              !formData.accommodationPackage &&
-                              !formData.victoriaFallsPackage
-                            }
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                updateField("accommodationPackage", false);
-                                updateField("victoriaFallsPackage", false);
-                              }
-                            }}
-                            className="w-3.5 h-3.5 text-gray-600"
-                          />
-                          <span className="flex-1 text-xs text-gray-800">
-                            📋 Event Only
-                          </span>
-                          <span className="text-xs font-medium text-gray-800">
-                            USD 650
-                          </span>
-                        </label>
+                      <div className="space-y-3">
+                        {/* Accommodation Package - Only for International Delegates */}
+                        {formData.delegateType === "international" && (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-start space-x-3">
+                              <input
+                                type="checkbox"
+                                id="accommodationPackage"
+                                checked={formData.accommodationPackage}
+                                onChange={(e) =>
+                                  updateField("accommodationPackage", e.target.checked)
+                                }
+                                className="mt-1 w-4 h-4 text-blue-600 bg-white border-blue-300 rounded focus:ring-blue-500 focus:ring-2"
+                              />
+                              <div className="flex-1">
+                                <Label
+                                  htmlFor="accommodationPackage"
+                                  className="text-sm font-medium text-blue-800 cursor-pointer"
+                                >
+                                  🏨 Accommodation Package
+                                </Label>
+                                <p className="text-xs text-blue-700 mt-1">
+                                  Premium hotel accommodation during the event
+                                </p>
+                                <div className="mt-2 text-xs font-medium text-blue-800">
+                                  Additional cost: <span className="ml-1">USD 150</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
-                        {/* Accommodation Package */}
-                        <label className="flex items-center space-x-2 p-2 bg-blue-50 border border-blue-200 rounded cursor-pointer hover:bg-blue-100 transition-colors">
-                          <input
-                            type="radio"
-                            name="internationalPackage"
-                            checked={
-                              formData.accommodationPackage &&
-                              !formData.victoriaFallsPackage
-                            }
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                updateField("accommodationPackage", true);
-                                updateField("victoriaFallsPackage", false);
-                              }
-                            }}
-                            className="w-3.5 h-3.5 text-blue-600"
-                          />
-                          <span className="flex-1 text-xs text-blue-800">
-                            🏨 + Accommodation
-                          </span>
-                          <span className="text-xs font-medium text-blue-800">
-                            USD 800
-                          </span>
-                        </label>
-
-                        {/* Victoria Falls Package */}
-                        <label className="flex items-center space-x-2 p-2 bg-emerald-50 border border-emerald-200 rounded cursor-pointer hover:bg-emerald-100 transition-colors">
-                          <input
-                            type="radio"
-                            name="internationalPackage"
-                            checked={formData.victoriaFallsPackage}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                updateField("victoriaFallsPackage", true);
-                                updateField("accommodationPackage", false);
-                              }
-                            }}
-                            className="w-3.5 h-3.5 text-emerald-600"
-                          />
-                          <span className="flex-1 text-xs text-emerald-800">
-                            🦁 + Victoria Falls Adventure
-                            <br />
-                            <span className="text-xs text-emerald-600">
-                              Game viewing • Boat cruise
-                            </span>
-                          </span>
-                          <span className="text-xs font-medium text-emerald-800">
-                            USD 950
-                          </span>
-                        </label>
+                        {/* Victoria Falls + Boat Cruise Package - Combined for all delegate types */}
+                        <div className="p-3 bg-gradient-to-r from-emerald-50 to-cyan-50 border border-emerald-200 rounded-lg">
+                          <div className="flex items-start space-x-3">
+                            <input
+                              type="checkbox"
+                              id="victoriaFallsAndBoatCruise"
+                              checked={formData.victoriaFallsPackage || formData.boatCruisePackage}
+                              onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                updateField("victoriaFallsPackage", isChecked);
+                                updateField("boatCruisePackage", isChecked);
+                              }}
+                              className="mt-1 w-4 h-4 text-emerald-600 bg-white border-emerald-300 rounded focus:ring-emerald-500 focus:ring-2"
+                            />
+                            <div className="flex-1">
+                              <Label
+                                htmlFor="victoriaFallsAndBoatCruise"
+                                className="text-sm font-medium text-emerald-800 cursor-pointer"
+                              >
+                                🌊🚤 Victoria Falls Adventure + Boat Cruise Package
+                              </Label>
+                              <p className="text-xs text-emerald-700 mt-1">
+                                Combined package: Victoria Falls tour with adventure activities and scenic Zambezi River boat cruise
+                              </p>
+                              <div className="mt-2 text-xs font-medium text-emerald-800">
+                                Additional cost:
+                                <span className="ml-1">
+                                  {formData.delegateType === "international"
+                                    ? "USD 150"
+                                    : "ZMW 2,500"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1132,6 +1171,7 @@ export function RegistrationDialog({
                                       formData.dinnerGalaAttendance,
                                       formData.accommodationPackage,
                                       formData.victoriaFallsPackage,
+                                      formData.boatCruisePackage,
                                     )
                                   : 0;
                                 const amount = baseAmount * size;
@@ -1165,6 +1205,7 @@ export function RegistrationDialog({
                                       formData.dinnerGalaAttendance,
                                       formData.accommodationPackage,
                                       formData.victoriaFallsPackage,
+                                      formData.boatCruisePackage,
                                     ) * (formData.groupSize || 1)
                                   ).toLocaleString()}
                                 </div>
@@ -1597,3 +1638,5 @@ export function RegistrationDialog({
     </Dialog>
   );
 }
+
+export { RegistrationDialog };

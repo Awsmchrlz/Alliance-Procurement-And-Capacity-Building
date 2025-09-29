@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  generateInvoice,
+  formatRegistrationForInvoice,
+} from "@/lib/invoice-generator";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -43,6 +47,7 @@ import {
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { EvidenceViewer } from "@/components/evidence-viewer";
+import { RegistrationSuccessModal } from "@/components/registration-success-modal";
 
 interface RegistrationWithEvent extends EventRegistration {
   event: Event;
@@ -72,6 +77,10 @@ export default function Dashboard() {
     open: boolean;
     registrations: RegistrationWithEvent[];
   }>({ open: false, registrations: [] });
+  const [successModal, setSuccessModal] = useState<{
+    open: boolean;
+    registration: RegistrationWithEvent | null;
+  }>({ open: false, registration: null });
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -120,40 +129,75 @@ export default function Dashboard() {
     refetchOnWindowFocus: true,
   });
 
-  // Check for new registrations and show modal
+  // Check for registration success flag and show modal
   useEffect(() => {
-    if (registrations && registrations.length > 0) {
-      // Check if there are recent registrations (within last 5 minutes)
-      const recentRegistrations = registrations.filter((reg) => {
-        if (!reg.registeredAt) return false;
-        const registrationTime = new Date(reg.registeredAt);
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-        return (
-          registrationTime > fiveMinutesAgo && reg.paymentStatus === "pending"
-        );
-      });
+    const shouldShowSuccess = sessionStorage.getItem("showRegistrationSuccess");
+
+    if (
+      shouldShowSuccess === "true" &&
+      registrations &&
+      registrations.length > 0
+    ) {
+      // Get the most recent registration (just completed)
+      const sortedRegistrations = [...registrations].sort(
+        (a, b) =>
+          new Date(b.registeredAt || 0).getTime() -
+          new Date(a.registeredAt || 0).getTime(),
+      );
+
+      const recentRegistrations = sortedRegistrations
+        .filter((reg) => {
+          if (!reg.registeredAt) return false;
+          const registrationTime = new Date(reg.registeredAt);
+          const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000); // Extended to 10 minutes
+          return registrationTime > tenMinutesAgo;
+        })
+        .slice(0, 1); // Only show the most recent one
 
       if (recentRegistrations.length > 0) {
-        // Check if we haven't shown this modal for these registrations yet
-        const hasShownModal = sessionStorage.getItem("registrationModalShown");
-        const currentRegistrationIds = recentRegistrations
-          .map((r) => r.id)
-          .sort()
-          .join(",");
-
-        if (hasShownModal !== currentRegistrationIds) {
-          setRegistrationModal({
+        // Small delay to ensure everything is loaded
+        setTimeout(() => {
+          setSuccessModal({
             open: true,
-            registrations: recentRegistrations,
+            registration: recentRegistrations[0],
           });
-          sessionStorage.setItem(
-            "registrationModalShown",
-            currentRegistrationIds,
-          );
-        }
+        }, 500);
+        // Clear the flag so modal doesn't show again
+        sessionStorage.removeItem("showRegistrationSuccess");
+      } else {
+        // If no recent registrations found, clear the flag
+        sessionStorage.removeItem("showRegistrationSuccess");
       }
     }
   }, [registrations]);
+
+  // Handle invoice download
+  const handleDownloadInvoice = async (registration: any) => {
+    try {
+      // Merge user data with registration data
+      const registrationWithUser = {
+        ...registration,
+        firstName: user?.firstName || 'N/A',
+        lastName: user?.lastName || 'N/A',
+        email: user?.email || 'N/A',
+        phoneNumber: user?.phoneNumber || 'N/A',
+      };
+      const invoiceData = formatRegistrationForInvoice(registrationWithUser);
+      await generateInvoice(invoiceData);
+      toast({
+        title: "Receipt Downloaded! 📄",
+        description:
+          "Your registration receipt has been downloaded successfully.",
+      });
+    } catch (error: any) {
+      console.error("Error generating invoice:", error);
+      toast({
+        title: "Download Failed",
+        description: "Unable to generate receipt. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const {
     paidRegistrations,
@@ -162,7 +206,7 @@ export default function Dashboard() {
     allRegistrations,
   } = useMemo(() => {
     const eventRegistrations = registrations || [];
-    const exhibitionRegistrations = (exhibitions || []).map((ex) => ({
+    const exhibitionRegistrations = (exhibitions || []).map((ex: any) => ({
       ...ex,
       registrationNumber: `EXH-${ex.id.slice(-8)}`,
       registrationType: "exhibition" as const,
@@ -333,12 +377,14 @@ export default function Dashboard() {
                           </h3>
                           <Badge
                             className={
-                              registration.registrationType === "exhibition"
+                              (registration as any).registrationType ===
+                              "exhibition"
                                 ? "bg-purple-100 text-purple-800 border-purple-200"
                                 : "bg-blue-100 text-blue-800 border-blue-200"
                             }
                           >
-                            {registration.registrationType === "exhibition"
+                            {(registration as any).registrationType ===
+                            "exhibition"
                               ? "Exhibition"
                               : "Event"}
                           </Badge>
@@ -393,30 +439,30 @@ export default function Dashboard() {
                         <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Show different fields based on registration type */}
-                            {registration.registrationType === "exhibition" ? (
+                            {(registration as any).registrationType ===
+                            "exhibition" ? (
                               <>
-                                {registration.boothSize && (
+                                {(registration as any).boothSize && (
                                   <div>
                                     <span className="font-medium text-gray-700">
                                       Booth Size:
                                     </span>
                                     <span className="ml-2 text-gray-600 capitalize">
-                                      {registration.boothSize}
+                                      {(registration as any).boothSize}
                                     </span>
                                   </div>
                                 )}
-                                {registration.productsServices && (
+                                {(registration as any).productsServices && (
                                   <div className="col-span-2">
                                     <span className="font-medium text-gray-700">
                                       Products/Services:
                                     </span>
                                     <span className="ml-2 text-gray-600">
-                                      {registration.productsServices.substring(
-                                        0,
-                                        100,
-                                      )}
-                                      {registration.productsServices.length >
-                                        100 && "..."}
+                                      {(
+                                        registration as any
+                                      ).productsServices.substring(0, 100)}
+                                      {(registration as any).productsServices
+                                        .length > 100 && "..."}
                                     </span>
                                   </div>
                                 )}
@@ -524,6 +570,16 @@ export default function Dashboard() {
 
                   {/* Actions Column - Always rendered for consistent layout */}
                   <div className="flex flex-col sm:flex-row lg:flex-col gap-3 lg:w-40 flex-shrink-0">
+                    {/* Download Invoice Button - Available for all registrations */}
+                    <Button
+                      variant="outline"
+                      className="border-[#87CEEB] text-[#1C356B] hover:bg-[#87CEEB]/10 w-full"
+                      onClick={() => handleDownloadInvoice(registration)}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Receipt
+                    </Button>
+
                     {registration.paymentStatus === "pending" && (
                       <>
                         <Button
@@ -574,7 +630,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2">
-                  Welcome back, {user?.firstName}!
+                  Welcome back, {user?.lastName}!
                 </h1>
                 <p className="text-blue-100 text-lg">
                   Manage your event registrations and track your learning
@@ -875,7 +931,20 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <DialogFooter className="mt-6">
+          <DialogFooter className="mt-6 space-y-3">
+            {/* Download Invoice Button */}
+            {registrationModal.registrations.length === 1 && (
+              <Button
+                onClick={() =>
+                  handleDownloadInvoice(registrationModal.registrations[0])
+                }
+                className="w-full bg-[#87CEEB] hover:bg-[#7bb8db] text-[#1C356B] font-semibold py-3 shadow-lg border-2 border-[#87CEEB] hover:border-[#7bb8db] transition-all duration-200"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Receipt Again
+              </Button>
+            )}
+
             <Button
               onClick={() =>
                 setRegistrationModal({ open: false, registrations: [] })
@@ -905,6 +974,20 @@ export default function Dashboard() {
           refetch();
         }}
       />
+
+      {/* Registration Success Modal */}
+      {successModal.registration && (
+        <RegistrationSuccessModal
+          open={successModal.open}
+          onOpenChange={(open) => setSuccessModal({ open, registration: null })}
+          registration={successModal.registration}
+          onDownloadInvoice={() => {
+            if (successModal.registration) {
+              handleDownloadInvoice(successModal.registration);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

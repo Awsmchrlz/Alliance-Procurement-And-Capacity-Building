@@ -71,7 +71,7 @@ function App() {
           <Toaster />
           <Router />
           <WhatsAppFloat
-            phoneNumber="+260964024532"
+            phoneNumber="+260964796634"
             message="Hello! I'd like to know more about Alliance Procurement and Capacity Building services."
             showTooltip={true}
           />
