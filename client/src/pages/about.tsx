@@ -79,121 +79,125 @@ export default function About() {
     },
   ];
 
-const teamMembers = [
-  {
-    name: "Mr. Joseph Kalaluka",
-    position: "Director – Procurement & Supply / Vice Chairperson – Southern Africa Region",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757283264/WhatsApp_Image_2025-09-04_at_19.03.20_l35bu5.jpg",
-    bio: "Mr. Joseph Kalaluka is a procurement and supply chain executive with over 22 years of experience in strategic sourcing, logistics, and supply chain management across energy, development, and humanitarian sectors. He is Director of Procurement and Supply at a major Solar Energy Corporation and Vice Chairperson of Alliance Procurement and Capacity Building Ltd. He is skilled in SCM training, contract negotiation, risk mitigation, and cost-saving strategies. Previously, he held senior positions with the Road Transport & Safety Agency, Oxfam GB, Catholic Relief Services, and CARITAS Zambia. He holds an MSc in Procurement and Logistics, is a PhD candidate in Logistics and Supply Chain Management, and is certified with CIPS (UK), ZIPS, CILT (UK), and ZCILT.",
-    expertise: [
-      "Strategic Sourcing",
-      "Logistics Operations",
-      "SCM Training",
-      "Contract Negotiation",
-      "Risk Mitigation",
-      "Cost-saving Strategies",
-      "Vendor Relations"
-    ],
-  },
-  {
-    name: "Consultant Kelvin M. Nsemu",
-    position: "Chairperson – Southern Africa Region",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/e_background_removal/v1756973662/WhatsApp_Image_2025-09-02_at_12.45.31_kweji1.jpg",
-    bio: "Consultant Kelvin M. Nsemu is Chairperson of Alliance Procurement and Capacity Building Ltd and Foundation, with 15 years of experience in procurement and supply chain management. He holds advanced degrees in Procurement, Logistics, Political Science, and Materials Administration. He is recognized as a leading consultancy trainer in Zambia with expertise in capacity building, financial management, and public sector reforms, and has a proven track record of implementing strategic initiatives, leading teams, and fostering operational efficiency.",
-    expertise: [
-      "Strategic Sourcing",
-      "Negotiation",
-      "Supplier Relationship Management",
-      "Regulatory Compliance",
-      "Leadership and Coaching",
-      "Business Transformation",
-    ],
-  },
-  {
-    name: "Lotson M.K. Buumba",
-    position: "Training Specialist",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756973993/WhatsApp_Image_2025-09-02_at_12.45.56_zkbshw.jpg",
-    bio: "Lotson M.K. Buumba is a training specialist with 16 years of experience in research, planning, monitoring, and evaluation. He holds a Master of Arts in Human Resource Management, a Bachelor of Business Administration, and a Primary Teacher’s Diploma. He is recognized for strong interpersonal and leadership skills, a proactive mindset, and ability to deliver results. He has experience in designing and implementing training programs, mentoring teams, and improving organizational performance across multiple sectors.",
-    expertise: [
-      "Training & Capacity Building",
-      "Monitoring and Evaluation",
-      "Human Resource Management",
-      "Planning and Research",
-      "Leadership Development",
-    ],
-  },
-  {
-    name: "Mr. Noel Sandukiya",
-    position: "Supply Chain Management Specialist & Consultant",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757831645/Screenshot_2025-09-13_at_8.00.53_AM_1_bx36fn.png",
-    bio: "Mr. Noel Sandukiya is a seasoned Supply Chain Management Specialist and Consultant with over 25 years of experience in public and private sectors, particularly in energy generation, transmission, distribution, and the hospitality industry. He has worked on major World Bank–funded projects in Zambia, including GREAT TDP, GEWEL, ZATP II, DFID renewable energy initiatives, and ZPPA procurement reforms. He has also served in diplomacy and international relations. As President of CIPS Zambia (2015), he introduced international conferences to Zambia, and as Vice President of ZIPS (2015–2021), he contributed to advancing procurement and supply chain professionalism. He holds an MBA from Maastricht School of Management (Netherlands) and ESAMI, a Graduate Diploma (Level 6) from CIPS UK, a CABS certificate, and a certificate in Diplomacy and International Relations from ZIDIS.",
-    expertise: [
-      "Supply Chain Management",
-      "Procurement Strategy",
-      "Business Administration",
-      "Finance",
-      "Energy & Hospitality Sector Management",
-      "Consultancy Services",
-      "Diplomacy & International Relations",
-    ],
-  },  
-  {
-    name: "Siphiwe Mabhena",
-    position: "Director – Secretarial Services (Southern Region)",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.46.41_ymeqvm.jpg",
-    bio: "Siphiwe Mabhena is Director of Secretarial Services – Southern Region at Alliance Procurement and Capacity Building Ltd. She holds a Master’s and a Bachelor’s in Public Administration and a Diploma in International Travel & Tourism. She is dedicated to continuous learning, professional growth, and building strong networks. She has a record of enhancing administrative processes, coordinating projects, mentoring staff, and promoting efficiency, transparency, and accountability within secretarial and governance functions.",
-    expertise: [
-      "Public Administration",
-      "Organizational Development",
-      "Secretarial & Governance Support",
-      "Networking & Relationship Building",
-    ],
-  },
-  {
-    name: "Ms. Chomba Chileshe",
-    position: "Manager – Consultancy Services",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.48.51_tfmqm9.jpg",
-    bio: "Ms. Chomba Chileshe is a procurement and supply chain consultant with over 12 years of experience in procurement planning, contract management, and supply chain coordination. She holds a BSc in Purchasing & Supply Management and is pursuing an MBA in Strategic Management. A full member of ZIPS, she is recognized for integrity, stakeholder engagement, and ability to enhance efficiency and accountability. She has experience designing procurement strategies, optimizing inventory, supervising performance, and providing consultancy services that improve organizational capacity.",
-    expertise: [
-      "Procurement Strategy",
-      "Contract Management",
-      "Inventory Management",
-      "Performance Supervision",
-      "Stakeholder Engagement",
-    ],
-  },
-  {
-    name: "Dr. Joseph Selisho",
-    position: "Director – Corporate Affairs (Southern Africa Region)",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974009/WhatsApp_Image_2025-09-02_at_12.51.05_wswnjq.jpg",
-    bio: "Dr. Joseph Selisho, APCB Ltd’s first training specialist in 2023, was appointed Director of Corporate Affairs in 2024. He oversees corporate strategy, capacity building, training, research, and consultancy initiatives. He was a key driver of the first International Indaba in Procurement, Supply Chain, and Financial Management, advancing regional integration. He is recognized for implementing strategic initiatives, mentoring staff, promoting best practices, and fostering innovation and research in corporate affairs to maintain high standards of professionalism, efficiency, and sustainable growth.",
-    expertise: [
-      "Corporate Strategy",
-      "Capacity Development",
-      "Training & Research",
-      "Consultancy Services",
-      "Regional Integration",
-    ],
-  },
-  {
-    name: "Rabby Kazwala Sikozi",
-    position: "IT Specialist",
-    image: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757435266/WhatsApp_Image_2025-09-09_at_09.54.35_lh8mls.jpg",
-    bio: "Rabby Kazwala Sikozi is an IT specialist with expertise in disaster recovery, cybersecurity awareness, and digital systems development. He has developed comprehensive ICT disaster recovery manuals and incident management procedures tailored for government, private, and NGO sectors.",
-    expertise: [
-      "Disaster Recovery",
-      "Cybersecurity Awareness",
-      "Digital Systems Development",
-      "Incident Management",
-    ],
-    contact: [
-      "+260963530936",
-      "+260973595988",
-    ],
-  },
-
-];
-
+  const teamMembers = [
+    {
+      name: "Mr. Joseph Kalaluka",
+      position:
+        "Director – Procurement & Supply / Vice Chairperson – Southern Africa Region",
+      image:
+        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757283264/WhatsApp_Image_2025-09-04_at_19.03.20_l35bu5.jpg",
+      bio: "Mr. Joseph Kalaluka is a procurement and supply chain executive with over 22 years of experience in strategic sourcing, logistics, and supply chain management across energy, development, and humanitarian sectors. He is Director of Procurement and Supply at a major Solar Energy Corporation and Vice Chairperson of Alliance Procurement and Capacity Building Ltd. He is skilled in SCM training, contract negotiation, risk mitigation, and cost-saving strategies. Previously, he held senior positions with the Road Transport & Safety Agency, Oxfam GB, Catholic Relief Services, and CARITAS Zambia. He holds an MSc in Procurement and Logistics, is a PhD candidate in Logistics and Supply Chain Management, and is certified with CIPS (UK), ZIPS, CILT (UK), and ZCILT.",
+      expertise: [
+        "Strategic Sourcing",
+        "Logistics Operations",
+        "SCM Training",
+        "Contract Negotiation",
+        "Risk Mitigation",
+        "Cost-saving Strategies",
+        "Vendor Relations",
+      ],
+    },
+    {
+      name: "Consultant Kelvin M. Nsemu",
+      position: "Chairperson – Southern Africa Region",
+      image:
+        "https://res.cloudinary.com/duu5rnmeu/image/upload/e_background_removal/v1756973662/WhatsApp_Image_2025-09-02_at_12.45.31_kweji1.jpg",
+      bio: "Consultant Kelvin M. Nsemu is Chairperson of Alliance Procurement and Capacity Building Ltd and Foundation, with 15 years of experience in procurement and supply chain management. He holds advanced degrees in Procurement, Logistics, Political Science, and Materials Administration. He is recognized as a leading consultancy trainer in Zambia with expertise in capacity building, financial management, and public sector reforms, and has a proven track record of implementing strategic initiatives, leading teams, and fostering operational efficiency.",
+      expertise: [
+        "Strategic Sourcing",
+        "Negotiation",
+        "Supplier Relationship Management",
+        "Regulatory Compliance",
+        "Leadership and Coaching",
+        "Business Transformation",
+      ],
+    },
+    {
+      name: "Lotson M.K. Buumba",
+      position: "Training Specialist",
+      image:
+        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756973993/WhatsApp_Image_2025-09-02_at_12.45.56_zkbshw.jpg",
+      bio: "Lotson M.K. Buumba is a training specialist with 16 years of experience in research, planning, monitoring, and evaluation. He holds a Master of Arts in Human Resource Management, a Bachelor of Business Administration, and a Primary Teacher’s Diploma. He is recognized for strong interpersonal and leadership skills, a proactive mindset, and ability to deliver results. He has experience in designing and implementing training programs, mentoring teams, and improving organizational performance across multiple sectors.",
+      expertise: [
+        "Training & Capacity Building",
+        "Monitoring and Evaluation",
+        "Human Resource Management",
+        "Planning and Research",
+        "Leadership Development",
+      ],
+    },
+    {
+      name: "Mr. Noel Sandukiya",
+      position: "Supply Chain Management Specialist & Consultant",
+      image:
+        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757831645/Screenshot_2025-09-13_at_8.00.53_AM_1_bx36fn.png",
+      bio: "Mr. Noel Sandukiya is a seasoned Supply Chain Management Specialist and Consultant with over 25 years of experience in public and private sectors, particularly in energy generation, transmission, distribution, and the hospitality industry. He has worked on major World Bank–funded projects in Zambia, including GREAT TDP, GEWEL, ZATP II, DFID renewable energy initiatives, and ZPPA procurement reforms. He has also served in diplomacy and international relations. As President of CIPS Zambia (2015), he introduced international conferences to Zambia, and as Vice President of ZIPS (2015–2021), he contributed to advancing procurement and supply chain professionalism. He holds an MBA from Maastricht School of Management (Netherlands) and ESAMI, a Graduate Diploma (Level 6) from CIPS UK, a CABS certificate, and a certificate in Diplomacy and International Relations from ZIDIS.",
+      expertise: [
+        "Supply Chain Management",
+        "Procurement Strategy",
+        "Business Administration",
+        "Finance",
+        "Energy & Hospitality Sector Management",
+        "Consultancy Services",
+        "Diplomacy & International Relations",
+      ],
+    },
+    {
+      name: "Siphiwe Mabhena",
+      position: "Director – Secretarial Services (Southern Region)",
+      image:
+        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.46.41_ymeqvm.jpg",
+      bio: "Siphiwe Mabhena is Director of Secretarial Services – Southern Region at Alliance Procurement and Capacity Building Ltd. She holds a Master’s and a Bachelor’s in Public Administration and a Diploma in International Travel & Tourism. She is dedicated to continuous learning, professional growth, and building strong networks. She has a record of enhancing administrative processes, coordinating projects, mentoring staff, and promoting efficiency, transparency, and accountability within secretarial and governance functions.",
+      expertise: [
+        "Public Administration",
+        "Organizational Development",
+        "Secretarial & Governance Support",
+        "Networking & Relationship Building",
+      ],
+    },
+    {
+      name: "Ms. Chomba Chileshe",
+      position: "Manager – Consultancy Services",
+      image:
+        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974008/WhatsApp_Image_2025-09-02_at_12.48.51_tfmqm9.jpg",
+      bio: "Ms. Chomba Chileshe is a procurement and supply chain consultant with over 12 years of experience in procurement planning, contract management, and supply chain coordination. She holds a BSc in Purchasing & Supply Management and is pursuing an MBA in Strategic Management. A full member of ZIPS, she is recognized for integrity, stakeholder engagement, and ability to enhance efficiency and accountability. She has experience designing procurement strategies, optimizing inventory, supervising performance, and providing consultancy services that improve organizational capacity.",
+      expertise: [
+        "Procurement Strategy",
+        "Contract Management",
+        "Inventory Management",
+        "Performance Supervision",
+        "Stakeholder Engagement",
+      ],
+    },
+    {
+      name: "Dr. Joseph Selisho",
+      position: "Director – Corporate Affairs (Southern Africa Region)",
+      image:
+        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1756974009/WhatsApp_Image_2025-09-02_at_12.51.05_wswnjq.jpg",
+      bio: "Dr. Joseph Selisho, APCB Ltd’s first training specialist in 2023, was appointed Director of Corporate Affairs in 2024. He oversees corporate strategy, capacity building, training, research, and consultancy initiatives. He was a key driver of the first International Indaba in Procurement, Supply Chain, and Financial Management, advancing regional integration. He is recognized for implementing strategic initiatives, mentoring staff, promoting best practices, and fostering innovation and research in corporate affairs to maintain high standards of professionalism, efficiency, and sustainable growth.",
+      expertise: [
+        "Corporate Strategy",
+        "Capacity Development",
+        "Training & Research",
+        "Consultancy Services",
+        "Regional Integration",
+      ],
+    },
+    {
+      name: "Rabby Kazwala Sikozi",
+      position: "IT Specialist",
+      image:
+        "https://res.cloudinary.com/duu5rnmeu/image/upload/v1757435266/WhatsApp_Image_2025-09-09_at_09.54.35_lh8mls.jpg",
+      bio: "Rabby Kazwala Sikozi is an IT specialist with expertise in disaster recovery, cybersecurity awareness, and digital systems development. He has developed comprehensive ICT disaster recovery manuals and incident management procedures tailored for government, private, and NGO sectors.",
+      expertise: [
+        "Disaster Recovery",
+        "Cybersecurity Awareness",
+        "Digital Systems Development",
+        "Incident Management",
+      ],
+      contact: ["+260963530936", "+260973595988"],
+    },
+  ];
 
   const journey = {
     past: {
@@ -323,7 +327,9 @@ const teamMembers = [
                 Home
               </Button>
               <ChevronRight className="w-4 h-4 text-gray-400" />
-              <span className="text-[#1C356B] dark:text-[#87CEEB] font-medium">About</span>
+              <span className="text-[#1C356B] dark:text-[#87CEEB] font-medium">
+                About
+              </span>
             </div>
             <Button
               variant="outline"
@@ -368,8 +374,6 @@ const teamMembers = [
                 Transforming procurement capabilities across Africa through
                 expert training, advisory services, and innovative solutions.
               </p>
-
-      
             </div>
           </div>
         </div>
@@ -751,7 +755,7 @@ const teamMembers = [
                   {journey.future.indaba.location}
                 </p>
                 <p className="text-sm">
-                  <span className="font-bold">Guest of Honour:</span>{" "}
+                  <span className="font-bold">Invited Guest of Honour:</span>{" "}
                   {journey.future.indaba.guest}
                 </p>
               </div>
@@ -856,7 +860,6 @@ const teamMembers = [
               Let's discuss how APCBL can help transform your procurement
               capabilities and drive organizational success.
             </p>
-      
           </div>
         </div>
       </section>

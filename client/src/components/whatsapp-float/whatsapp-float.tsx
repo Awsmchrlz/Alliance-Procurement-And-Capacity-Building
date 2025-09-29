@@ -14,7 +14,7 @@ export interface WhatsAppFloatProps {
 }
 
 export const WhatsAppFloat: React.FC<WhatsAppFloatProps> = ({
-  phoneNumber = "+1234567890", // Default phone number - replace with actual
+  phoneNumber = "+260964796634", // Default phone number - replace with actual
   message = "Hello! I'm interested in your services.",
   position = { bottom: "24px", right: "24px" },
   showTooltip = true,

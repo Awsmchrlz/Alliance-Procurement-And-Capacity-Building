@@ -193,7 +193,7 @@ export function EventCard({
                 <div className="flex items-center mb-2">
                   <Crown className="w-4 h-4 mr-2 text-primary-yellow" />
                   <h4 className="text-xs font-bold text-primary-blue uppercase tracking-wider">
-                    Guest of Honor
+                    Invited Guest of Honor
                   </h4>
                 </div>
                 <div className="text-center">
@@ -422,7 +422,7 @@ export function EventCard({
                 <div className="flex items-center mb-3">
                   <Crown className="w-5 h-5 mr-2 text-primary-yellow" />
                   <h4 className="text-sm font-bold text-primary-blue uppercase tracking-wider">
-                    Guest of Honor
+                    Invited Guest of Honor
                   </h4>
                 </div>
                 <div className="text-center">
@@ -515,7 +515,19 @@ export function EventCard({
         </div>
       </div>
       {user && featured && (
-        <RegistrationDialog open={open} onOpenChange={setOpen} event={event} />
+        <RegistrationDialog 
+          open={open} 
+          onOpenChange={setOpen} 
+          event={event}
+          skipSuccessModal={true}
+          onSuccess={() => {
+            setOpen(false);
+            // Set flag to show success modal on dashboard
+            sessionStorage.setItem("showRegistrationSuccess", "true");
+            // Navigate to dashboard to show success modal
+            window.location.href = "/dashboard";
+          }}
+        />
       )}
 
       <LocationModal
