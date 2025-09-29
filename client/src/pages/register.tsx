@@ -143,7 +143,7 @@ const RegisterPage = () => {
           title: "Welcome to Alliance!",
           description: "Account created and logged in successfully.",
         });
-        setLocation("/events?from=auth");
+        setLocation("/events");
       } else {
         toast({
           title: "Account Created Successfully!",
