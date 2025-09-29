@@ -224,30 +224,39 @@ function RegistrationDialog({
     (tier) => tier.type === formData.delegateType,
   );
 
-  // Pricing configuration for all delegate types
+  // Pricing configuration - showing total costs instead of add-on costs
   const PRICING_CONFIG = {
     private: {
+      basePrices: {
+        withoutPackages: 7000,
+        withBoatCruiseAndVictoriaFalls: 10000, // Total cost including boat cruise + Victoria Falls
+      },
       packages: {
-        victoriaFallsAndBoatCruise: 2500, // Combined package for local delegates
-        dinnerGala: 2500,
+        dinnerGala: 2500, // Still an add-on
       },
     },
     public: {
+      basePrices: {
+        withoutPackages: 6500,
+        withBoatCruiseAndVictoriaFalls: 9000, // Total cost including boat cruise + Victoria Falls
+      },
       packages: {
-        victoriaFallsAndBoatCruise: 2500, // Combined package for local delegates
-        dinnerGala: 2500,
+        dinnerGala: 2500, // Still an add-on
       },
     },
     international: {
+      basePrices: {
+        withoutPackages: 650,
+        withAccommodation: 800, // Total cost with accommodation
+        withAccommodationAndBoatCruiseAndVictoriaFalls: 950, // Total cost with everything
+      },
       packages: {
-        accommodation: 150,
-        victoriaFallsAndBoatCruise: 150, // Combined package for international delegates
-        dinnerGala: 110,
+        dinnerGala: 110, // Still an add-on
       },
     },
   };
 
-  // Calculate total price including all add-on packages
+  // Calculate total price using new total cost structure
   const calculateTotalPrice = (
     basePrice: string,
     currency: string,
@@ -256,25 +265,41 @@ function RegistrationDialog({
     victoriaFallsPackage: boolean = false,
     boatCruisePackage: boolean = false,
   ) => {
-    const base = parseFloat(basePrice.replace(",", ""));
-    let total = base;
-
     const delegateType = formData.delegateType as keyof typeof PRICING_CONFIG;
     const config = PRICING_CONFIG[delegateType];
-    
-    if (config) {
-      // Add package costs based on delegate type
-      if (includeDinnerGala) {
-        total += config.packages.dinnerGala;
+
+    if (!config) {
+      return parseFloat(basePrice.replace(",", ""));
+    }
+
+    let total = 0;
+
+    if (delegateType === "international") {
+      // For international delegates
+      if (accommodationPackage && (victoriaFallsPackage || boatCruisePackage)) {
+        // With accommodation + boat cruise + Victoria Falls
+        total = config.basePrices.withAccommodationAndBoatCruiseAndVictoriaFalls;
+      } else if (accommodationPackage) {
+        // With accommodation only
+        total = config.basePrices.withAccommodation;
+      } else {
+        // Base price without packages
+        total = config.basePrices.withoutPackages;
       }
-      if (accommodationPackage && config.packages.accommodation) {
-        total += config.packages.accommodation;
-      }
-      
-      // For all delegates, Victoria Falls and Boat Cruise are now combined into one package
+    } else {
+      // For local delegates (private/public)
       if (victoriaFallsPackage || boatCruisePackage) {
-        total += config.packages.victoriaFallsAndBoatCruise;
+        // With boat cruise + Victoria Falls (total cost)
+        total = config.basePrices.withBoatCruiseAndVictoriaFalls;
+      } else {
+        // Base price without packages
+        total = config.basePrices.withoutPackages;
       }
+    }
+
+    // Add dinner gala as it's still an add-on
+    if (includeDinnerGala) {
+      total += config.packages.dinnerGala;
     }
 
     return total;
@@ -552,13 +577,13 @@ function RegistrationDialog({
         currency: selectedPricing?.currency || "ZMW",
         pricePaid: selectedPricing
           ? calculateTotalPrice(
-              selectedPricing.price,
-              selectedPricing.currency,
-              formData.dinnerGalaAttendance,
-              formData.accommodationPackage,
-              formData.victoriaFallsPackage,
-              formData.boatCruisePackage,
-            )
+            selectedPricing.price,
+            selectedPricing.currency,
+            formData.dinnerGalaAttendance,
+            formData.accommodationPackage,
+            formData.victoriaFallsPackage,
+            formData.boatCruisePackage,
+          )
           : 0,
         // Group payment specific fields
         groupSize: formData.groupSize || 1,
@@ -900,10 +925,10 @@ function RegistrationDialog({
                                   🏨 Accommodation Package
                                 </Label>
                                 <p className="text-xs text-blue-700 mt-1">
-                                  Premium hotel accommodation during the event
+                                  Accommodation during the event
                                 </p>
                                 <div className="mt-2 text-xs font-medium text-blue-800">
-                                  Additional cost: <span className="ml-1">USD 150</span>
+                                  Total : <span className="ml-1">USD 800</span>
                                 </div>
                               </div>
                             </div>
@@ -932,14 +957,16 @@ function RegistrationDialog({
                                 🌊🚤 Victoria Falls Adventure + Boat Cruise Package
                               </Label>
                               <p className="text-xs text-emerald-700 mt-1">
-                                Combined package: Victoria Falls tour with adventure activities and scenic Zambezi River boat cruise
+                                Combined package: Victoria Falls tour with adventure activities and Boat cruise
                               </p>
                               <div className="mt-2 text-xs font-medium text-emerald-800">
-                                Additional cost:
+                                Total:
                                 <span className="ml-1">
                                   {formData.delegateType === "international"
-                                    ? "USD 150"
-                                    : "ZMW 2,500"}
+                                    ? "USD 950"
+                                    : formData.delegateType === "private"
+                                      ? "ZMW 10,000"
+                                      : "ZMW 9,000"}
                                 </span>
                               </div>
                             </div>
@@ -972,7 +999,6 @@ function RegistrationDialog({
                           Join us for an exclusive dinner gala event
                         </p>
                         <div className="mt-2 text-xs font-medium text-amber-800">
-                          Additional cost:
                           <span className="ml-1">
                             {formData.delegateType === "international"
                               ? "USD 110"
@@ -1022,7 +1048,7 @@ function RegistrationDialog({
                                 🏨 Accommodation Package
                               </span>
                               <span className="font-bold text-sm text-blue-800 bg-blue-50 px-2 py-1 rounded shadow-sm">
-                                USD 150
+                                Total: USD 800
                               </span>
                             </div>
                           )}
@@ -1067,33 +1093,30 @@ function RegistrationDialog({
                             onClick={() =>
                               updateField("paymentMethod", "mobile")
                             }
-                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
-                              formData.paymentMethod === "mobile"
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "mobile"
                                 ? "bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg"
                                 : "bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5"
-                            }`}
+                              }`}
                           >
                             Mobile Money
                           </button>
                           <button
                             type="button"
                             onClick={() => updateField("paymentMethod", "bank")}
-                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
-                              formData.paymentMethod === "bank"
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "bank"
                                 ? "bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg"
                                 : "bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5"
-                            }`}
+                              }`}
                           >
                             Bank Transfer
                           </button>
                           <button
                             type="button"
                             onClick={() => updateField("paymentMethod", "cash")}
-                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
-                              formData.paymentMethod === "cash"
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "cash"
                                 ? "bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg"
                                 : "bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5"
-                            }`}
+                              }`}
                           >
                             Cash at Event
                           </button>
@@ -1111,11 +1134,10 @@ function RegistrationDialog({
                             onClick={() =>
                               updateField("paymentMethod", "group_payment")
                             }
-                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
-                              formData.paymentMethod === "group_payment"
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "group_payment"
                                 ? "bg-green-500 text-white border-green-500 shadow-lg"
                                 : "bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:text-green-700 hover:bg-green-50"
-                            }`}
+                              }`}
                           >
                             🏢 Group Payment
                             <div className="text-xs opacity-80 mt-0.5">
@@ -1127,11 +1149,10 @@ function RegistrationDialog({
                             onClick={() =>
                               updateField("paymentMethod", "org_paid")
                             }
-                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
-                              formData.paymentMethod === "org_paid"
+                            className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "org_paid"
                                 ? "bg-blue-500 text-white border-blue-500 shadow-lg"
                                 : "bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                            }`}
+                              }`}
                           >
                             ✅ Already Paid
                             <div className="text-xs opacity-80 mt-0.5">
@@ -1166,13 +1187,13 @@ function RegistrationDialog({
                                 const size = parseInt(e.target.value) || 1;
                                 const baseAmount = selectedPricing
                                   ? calculateTotalPrice(
-                                      selectedPricing.price,
-                                      selectedPricing.currency,
-                                      formData.dinnerGalaAttendance,
-                                      formData.accommodationPackage,
-                                      formData.victoriaFallsPackage,
-                                      formData.boatCruisePackage,
-                                    )
+                                    selectedPricing.price,
+                                    selectedPricing.currency,
+                                    formData.dinnerGalaAttendance,
+                                    formData.accommodationPackage,
+                                    formData.victoriaFallsPackage,
+                                    formData.boatCruisePackage,
+                                  )
                                   : 0;
                                 const amount = baseAmount * size;
                                 updateField("groupSize", size);
@@ -1453,75 +1474,75 @@ function RegistrationDialog({
                     (formData.paymentMethod === "bank" &&
                       formData.bankCurrency) ||
                     formData.paymentMethod === "group_payment") && (
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <Label className="text-sm font-medium text-gray-700">
-                          {formData.paymentMethod === "group_payment"
-                            ? "Group Payment Evidence (Optional)"
-                            : "Proof of Payment"}
-                        </Label>
-                        {evidenceFile && (
-                          <button
-                            type="button"
-                            onClick={() => setEvidenceFile(null)}
-                            className="text-sm text-red-600 hover:text-red-800"
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </div>
-
-                      {!evidenceFile ? (
-                        <div className="mt-1 flex justify-center px-2 pt-2 pb-2 border-2 border-dashed border-[#87CEEB]/40 rounded-lg bg-[#87CEEB]/5 hover:bg-[#87CEEB]/10 transition-colors">
-                          <div className="space-y-1 text-center">
-                            <Upload className="mx-auto h-5 w-5 text-[#87CEEB]" />
-                            <div className="text-xs text-gray-600">
-                              <label className="relative cursor-pointer bg-white rounded font-medium text-[#1C356B] hover:text-[#87CEEB] focus-within:outline-none">
-                                <span>Upload file</span>
-                                <input
-                                  id="file-upload"
-                                  name="file-upload"
-                                  type="file"
-                                  className="sr-only"
-                                  accept=".jpg,.jpeg,.png,.pdf"
-                                  onChange={handleFileChange}
-                                />
-                              </label>
-                            </div>
-                            <p className="text-xs text-[#1C356B]/70">
-                              JPG, PNG, PDF (5MB max)
-                            </p>
-                            {formData.paymentMethod === "group_payment" && (
-                              <p className="text-xs text-green-600 font-medium">
-                                Optional: Upload now or later from dashboard
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-1 p-2 border border-[#87CEEB]/20 rounded-lg bg-gradient-to-r from-[#87CEEB]/5 to-blue-50 shadow-sm">
-                          <div className="flex items-center">
-                            <FileText className="h-4 w-4 text-[#1C356B]" />
-                            <div className="ml-2 flex-1">
-                              <p className="text-xs font-medium text-[#1C356B] truncate">
-                                {evidenceFile.name}
-                              </p>
-                              <p className="text-xs text-[#1C356B]/70">
-                                {formatFileSize(evidenceFile.size)}
-                              </p>
-                            </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <Label className="text-sm font-medium text-gray-700">
+                            {formData.paymentMethod === "group_payment"
+                              ? "Group Payment Evidence (Optional)"
+                              : "Proof of Payment"}
+                          </Label>
+                          {evidenceFile && (
                             <button
                               type="button"
                               onClick={() => setEvidenceFile(null)}
-                              className="ml-2 p-1 text-gray-400 hover:text-gray-500"
+                              className="text-sm text-red-600 hover:text-red-800"
                             >
-                              <X className="h-3 w-3" />
+                              Remove
                             </button>
-                          </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )}
+
+                        {!evidenceFile ? (
+                          <div className="mt-1 flex justify-center px-2 pt-2 pb-2 border-2 border-dashed border-[#87CEEB]/40 rounded-lg bg-[#87CEEB]/5 hover:bg-[#87CEEB]/10 transition-colors">
+                            <div className="space-y-1 text-center">
+                              <Upload className="mx-auto h-5 w-5 text-[#87CEEB]" />
+                              <div className="text-xs text-gray-600">
+                                <label className="relative cursor-pointer bg-white rounded font-medium text-[#1C356B] hover:text-[#87CEEB] focus-within:outline-none">
+                                  <span>Upload file</span>
+                                  <input
+                                    id="file-upload"
+                                    name="file-upload"
+                                    type="file"
+                                    className="sr-only"
+                                    accept=".jpg,.jpeg,.png,.pdf"
+                                    onChange={handleFileChange}
+                                  />
+                                </label>
+                              </div>
+                              <p className="text-xs text-[#1C356B]/70">
+                                JPG, PNG, PDF (5MB max)
+                              </p>
+                              {formData.paymentMethod === "group_payment" && (
+                                <p className="text-xs text-green-600 font-medium">
+                                  Optional: Upload now or later from dashboard
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-1 p-2 border border-[#87CEEB]/20 rounded-lg bg-gradient-to-r from-[#87CEEB]/5 to-blue-50 shadow-sm">
+                            <div className="flex items-center">
+                              <FileText className="h-4 w-4 text-[#1C356B]" />
+                              <div className="ml-2 flex-1">
+                                <p className="text-xs font-medium text-[#1C356B] truncate">
+                                  {evidenceFile.name}
+                                </p>
+                                <p className="text-xs text-[#1C356B]/70">
+                                  {formatFileSize(evidenceFile.size)}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setEvidenceFile(null)}
+                                className="ml-2 p-1 text-gray-400 hover:text-gray-500"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                 </div>
               )}
             </div>
