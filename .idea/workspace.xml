@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="project clean up, live fixes">
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="contact form">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -56,7 +56,7 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "fixes/contact-us"
+    "git-widget-placeholder": "#24 on fixes/contact-us"
   }
 }]]></component>
   <component name="RunManager">
@@ -416,7 +416,23 @@
       <option name="project" value="LOCAL" />
       <updated>1759140354886</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="contact form">
+      <option name="closed" value="true" />
+      <created>1759144518038</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1759144518038</updated>
+    </task>
+    <task id="LOCAL-00044" summary="contact form">
+      <option name="closed" value="true" />
+      <created>1759144571483</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1759144571483</updated>
+    </task>
+    <option name="localTasksCounter" value="45" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -455,6 +471,7 @@
     <MESSAGE value="Sponsorship and registration dialogs and flow" />
     <MESSAGE value="testimonial change, modal resizing project clean up" />
     <MESSAGE value="project clean up, live fixes" />
-    <option name="LAST_COMMIT_MESSAGE" value="project clean up, live fixes" />
+    <MESSAGE value="contact form" />
+    <option name="LAST_COMMIT_MESSAGE" value="contact form" />
   </component>
 </project>
