@@ -6,18 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="project clean up, live fixes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/event-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/event-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/partnership-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/partnership-section.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/sponsorship-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/sponsorship-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/whatsapp-float/whatsapp-float.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/whatsapp-float/whatsapp-float.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/about.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/about.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/dashboard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/events.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/events.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/database-schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/database-schema.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,14 +51,14 @@
     <option name="showLibraryContents" value="true" />
     <option name="showVisibilityIcons" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;fixes/feedback1&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "fixes/contact-us"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration default="true" type="JetRunConfigurationType">
       <module name="Alliance-Procurement-And-Capacity-Building" />
@@ -412,7 +400,23 @@
       <option name="project" value="LOCAL" />
       <updated>1758879768517</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="project clean up, live fixes">
+      <option name="closed" value="true" />
+      <created>1759140349164</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1759140349164</updated>
+    </task>
+    <task id="LOCAL-00042" summary="project clean up, live fixes">
+      <option name="closed" value="true" />
+      <created>1759140354886</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1759140354886</updated>
+    </task>
+    <option name="localTasksCounter" value="43" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
