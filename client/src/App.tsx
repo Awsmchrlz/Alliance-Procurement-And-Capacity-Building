@@ -19,6 +19,46 @@ import AdminDashboard from "@/pages/admin-dashboard";
 
 import NotFound from "@/pages/not-found";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
+import { useEffect } from "react";
+
+// Contact component that redirects to home and scrolls to contact section
+function ContactRedirect() {
+  useEffect(() => {
+    // Function to scroll to the very bottom of the page
+    const scrollToBottom = () => {
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        // Get the full height of the document
+        const documentHeight = Math.max(
+          document.body.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.clientHeight,
+          document.documentElement.scrollHeight,
+          document.documentElement.offsetHeight
+        );
+
+        // Scroll to the absolute bottom
+        window.scrollTo({
+          top: documentHeight,
+          behavior: 'smooth'
+        });
+      });
+    };
+
+    // Wait for the page to fully load, then scroll
+    const timer = setTimeout(() => {
+      // Try multiple times to ensure we get to the bottom
+      scrollToBottom();
+
+      // Additional scroll after a delay to ensure we reach the footer
+      setTimeout(scrollToBottom, 800);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return <Home />;
+}
 
 function Router() {
   const { isAdmin } = useAuth();
@@ -27,6 +67,7 @@ function Router() {
     <Switch>
       {/* Public routes */}
       <Route path="/" component={Home} />
+      <Route path="/contact" component={ContactRedirect} />
       <Route path="/login">
         <AuthGuard requireAuth={false} redirectTo="/dashboard">
           <Login />
