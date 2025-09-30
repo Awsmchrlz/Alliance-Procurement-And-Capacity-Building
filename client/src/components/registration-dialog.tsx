@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
-import { Upload, FileText, Copy, X, CheckCircle, Info } from "lucide-react";
+import { Upload, FileText, Copy, X, CheckCircle, Info, Download } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Event } from "@shared/schema";
 import { useGeolocation } from "@/hooks/use-geolocation";
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { generateInvoice, formatRegistrationForInvoice } from "@/lib/invoice-generator";
 
 interface RegistrationDialogProps {
   open: boolean;
@@ -229,7 +230,7 @@ function RegistrationDialog({
     private: {
       basePrices: {
         withoutPackages: 7000,
-        withBoatCruiseAndVictoriaFalls: 10000, // Total cost including boat cruise + Victoria Falls
+        withBoatCruiseAndVictoriaFalls: 8200, // Total cost including boat cruise + Victoria Falls
       },
       packages: {
         dinnerGala: 2500, // Still an add-on
@@ -238,7 +239,7 @@ function RegistrationDialog({
     public: {
       basePrices: {
         withoutPackages: 6500,
-        withBoatCruiseAndVictoriaFalls: 9000, // Total cost including boat cruise + Victoria Falls
+        withBoatCruiseAndVictoriaFalls: 7700, // Total cost including boat cruise + Victoria Falls
       },
       packages: {
         dinnerGala: 2500, // Still an add-on
@@ -518,8 +519,18 @@ function RegistrationDialog({
           formData.paymentMethod === "group_payment")
       ) {
         try {
+          // Validate file before upload
+          if (!evidenceFile.name || evidenceFile.size === 0) {
+            throw new Error("Invalid file selected");
+          }
+
+          if (evidenceFile.size > 10 * 1024 * 1024) { // 10MB limit
+            throw new Error("File size too large (max 10MB)");
+          }
+
           const fileName = `evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
           const filePath = `${user.id}/${event.id}/${fileName}`;
+
           const { data, error } = await supabase.storage
             .from("payment-evidence")
             .upload(filePath, evidenceFile, {
@@ -528,11 +539,25 @@ function RegistrationDialog({
               contentType: evidenceFile.type || "application/octet-stream",
             });
 
-          if (error) throw error;
+          if (error) {
+            console.error("Supabase upload error:", error);
+            throw new Error(`Upload failed: ${error.message}`);
+          }
 
           evidenceUrl = filePath;
-        } catch (error) {
+        } catch (error: any) {
           console.error("File upload error:", error);
+
+          let errorMessage = "Failed to upload payment evidence. Please try again.";
+
+          if (error.message?.includes("size")) {
+            errorMessage = "File is too large. Please select a file smaller than 10MB.";
+          } else if (error.message?.includes("Invalid file")) {
+            errorMessage = "Invalid file selected. Please choose a valid file.";
+          } else if (error.message?.includes("network") || error.message?.includes("fetch")) {
+            errorMessage = "Network error. Please check your connection and try again.";
+          }
+
           // For group payments, don't block registration if file upload fails
           if (formData.paymentMethod === "group_payment") {
             toast({
@@ -544,10 +569,10 @@ function RegistrationDialog({
           } else {
             toast({
               title: "File upload failed",
-              description:
-                "Failed to upload payment evidence. Please try again.",
+              description: errorMessage,
               variant: "destructive",
             });
+            setIsSubmitting(false);
             return;
           }
         }
@@ -639,37 +664,56 @@ function RegistrationDialog({
     } catch (err: any) {
       console.error("Registration error:", err);
 
+      // Comprehensive error handling with specific messages
+      let errorTitle = "Registration Failed";
+      let errorDescription = "Registration failed. Please try again.";
+      let variant: "destructive" | "default" = "destructive";
+
       if (err.message?.includes("Already registered")) {
-        toast({
-          title: "Already Registered",
-          description:
-            "You are already registered for this event. Check your dashboard to view your registration details.",
-          variant: "destructive",
-        });
-      } else if (err.message?.includes("Event is full")) {
-        toast({
-          title: "Event Full",
-          description:
-            "Sorry, this event is now full. Please check other available events.",
-          variant: "destructive",
-        });
-      } else if (
-        err.message?.includes("Storage bucket") ||
-        err.message?.includes("bucket")
-      ) {
-        toast({
-          title: "Registration Completed",
-          description:
-            "File upload system temporarily unavailable. You can upload payment evidence later from your dashboard.",
-          variant: "default",
-        });
+        errorTitle = "Already Registered";
+        errorDescription = "You are already registered for this event. Check your dashboard to view your registration details.";
+      } else if (err.message?.includes("Event is full") || err.message?.includes("capacity")) {
+        errorTitle = "Event Full";
+        errorDescription = "Sorry, this event is now full. Please check other available events.";
+      } else if (err.message?.includes("Storage bucket") || err.message?.includes("bucket")) {
+        errorTitle = "Registration Completed";
+        errorDescription = "File upload system temporarily unavailable. You can upload payment evidence later from your dashboard.";
+        variant = "default";
+      } else if (err.message?.includes("network") || err.message?.includes("fetch") || err.name === "NetworkError") {
+        errorTitle = "Network Error";
+        errorDescription = "Network connection failed. Please check your internet connection and try again.";
+      } else if (err.message?.includes("timeout")) {
+        errorTitle = "Request Timeout";
+        errorDescription = "The request took too long. Please try again.";
+      } else if (err.message?.includes("validation") || err.message?.includes("required")) {
+        errorTitle = "Validation Error";
+        errorDescription = "Some required information is missing or invalid. Please check your details and try again.";
+      } else if (err.message?.includes("payment")) {
+        errorTitle = "Payment Error";
+        errorDescription = "There was an issue processing your payment information. Please try again.";
+      } else if (err.message?.includes("server") || err.status >= 500) {
+        errorTitle = "Server Error";
+        errorDescription = "Server is temporarily unavailable. Please try again in a few minutes.";
+      } else if (err.status === 401 || err.message?.includes("unauthorized")) {
+        errorTitle = "Authentication Error";
+        errorDescription = "Your session has expired. Please log in again.";
+        // Redirect to login after showing error
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+      } else if (err.status === 403 || err.message?.includes("forbidden")) {
+        errorTitle = "Access Denied";
+        errorDescription = "You don't have permission to register for this event.";
       } else {
-        toast({
-          title: "Registration Failed",
-          description: err.message || "Registration failed. Please try again.",
-          variant: "destructive",
-        });
+        // Generic error with more helpful message
+        errorDescription = err.message || "An unexpected error occurred. Please try again or contact support if the problem persists.";
       }
+
+      toast({
+        title: errorTitle,
+        description: errorDescription,
+        variant: variant,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -878,10 +922,10 @@ function RegistrationDialog({
                       value={formData.delegateType}
                       onValueChange={(value) => {
                         updateField("delegateType", value as any);
-                        // Clear accommodation package if switching to local delegate
-                        if (value !== "international") {
-                          updateField("accommodationPackage", false);
-                        }
+                        // Clear all packages when switching delegate types
+                        updateField("accommodationPackage", false);
+                        updateField("victoriaFallsPackage", false);
+                        updateField("boatCruisePackage", false);
                       }}
                     >
                       <SelectTrigger className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#87CEEB] focus:border-[#87CEEB] transition-all duration-200 hover:border-[#87CEEB]/50">
@@ -896,82 +940,120 @@ function RegistrationDialog({
                       </SelectContent>
                     </Select>
                   </div>
-
+                  <Label className="text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1 block">
+                    Optional
+                  </Label>
                   {/* Add-on Packages - Available for all delegate types */}
                   {formData.delegateType && (
                     <div className="mt-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">
-                        Optional Add-on Packages
-                      </h4>
                       <div className="space-y-3">
                         {/* Accommodation Package - Only for International Delegates */}
                         {formData.delegateType === "international" && (
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <div className="flex items-start space-x-3">
-                              <input
-                                type="checkbox"
-                                id="accommodationPackage"
-                                checked={formData.accommodationPackage}
-                                onChange={(e) =>
-                                  updateField("accommodationPackage", e.target.checked)
-                                }
-                                className="mt-1 w-4 h-4 text-blue-600 bg-white border-blue-300 rounded focus:ring-blue-500 focus:ring-2"
-                              />
-                              <div className="flex-1">
-                                <Label
-                                  htmlFor="accommodationPackage"
-                                  className="text-sm font-medium text-blue-800 cursor-pointer"
-                                >
-                                  🏨 Accommodation Package
-                                </Label>
-                                <p className="text-xs text-blue-700 mt-1">
-                                  Accommodation during the event
-                                </p>
-                                <div className="mt-2 text-xs font-medium text-blue-800">
-                                  Total : <span className="ml-1">USD 800</span>
+                          <div className="space-y-3">
+                        
+                            {/* Option 1: Accommodation Only */}
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="flex items-start space-x-3">
+                                <input
+                                  type="checkbox"
+                                  id="accommodationOnly"
+                                  checked={formData.accommodationPackage && !formData.victoriaFallsPackage && !formData.boatCruisePackage}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      // Select accommodation only, unselect excursions
+                                      updateField("accommodationPackage", true);
+                                      updateField("victoriaFallsPackage", false);
+                                      updateField("boatCruisePackage", false);
+                                    } else {
+                                      // Unselect accommodation
+                                      updateField("accommodationPackage", false);
+                                      updateField("victoriaFallsPackage", false);
+                                      updateField("boatCruisePackage", false);
+                                    }
+                                  }}
+                                  className="mt-1 w-4 h-4 text-blue-600 bg-white border-blue-300 rounded focus:ring-blue-500 focus:ring-2"
+                                />
+                                <div className="flex-1">
+                                  <Label
+                                    htmlFor="accommodationOnly"
+                                    className="text-sm font-medium text-blue-800 cursor-pointer"
+                                  >
+                                    USD 800 – Registration with accommodation
+                                  </Label>
+                            
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Option 2: Accommodation + Excursions */}
+                            <div className="p-3 bg-gradient-to-r from-emerald-50 to-cyan-50 border border-emerald-200 rounded-lg">
+                              <div className="flex items-start space-x-3">
+                                <input
+                                  type="checkbox"
+                                  id="accommodationWithExcursions"
+                                  checked={formData.accommodationPackage && (formData.victoriaFallsPackage || formData.boatCruisePackage)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      // Select full package, this automatically unselects accommodation-only
+                                      updateField("accommodationPackage", true);
+                                      updateField("victoriaFallsPackage", true);
+                                      updateField("boatCruisePackage", true);
+                                    } else {
+                                      // Unselect full package
+                                      updateField("accommodationPackage", false);
+                                      updateField("victoriaFallsPackage", false);
+                                      updateField("boatCruisePackage", false);
+                                    }
+                                  }}
+                                  className="mt-1 w-4 h-4 text-emerald-600 bg-white border-emerald-300 rounded focus:ring-emerald-500 focus:ring-2"
+                                />
+                                <div className="flex-1">
+                                  <Label
+                                    htmlFor="accommodationWithExcursions"
+                                    className="text-sm font-medium text-emerald-800 cursor-pointer"
+                                  >
+                                    USD 950 – Registration with accommodation + Excursions
+                                  </Label>
+                               
                                 </div>
                               </div>
                             </div>
                           </div>
                         )}
 
-                        {/* Victoria Falls + Boat Cruise Package - Combined for all delegate types */}
-                        <div className="p-3 bg-gradient-to-r from-emerald-50 to-cyan-50 border border-emerald-200 rounded-lg">
-                          <div className="flex items-start space-x-3">
-                            <input
-                              type="checkbox"
-                              id="victoriaFallsAndBoatCruise"
-                              checked={formData.victoriaFallsPackage || formData.boatCruisePackage}
-                              onChange={(e) => {
-                                const isChecked = e.target.checked;
-                                updateField("victoriaFallsPackage", isChecked);
-                                updateField("boatCruisePackage", isChecked);
-                              }}
-                              className="mt-1 w-4 h-4 text-emerald-600 bg-white border-emerald-300 rounded focus:ring-emerald-500 focus:ring-2"
-                            />
-                            <div className="flex-1">
-                              <Label
-                                htmlFor="victoriaFallsAndBoatCruise"
-                                className="text-sm font-medium text-emerald-800 cursor-pointer"
-                              >
-                                🌊🚤 Victoria Falls Adventure + Boat Cruise Package
-                              </Label>
-                              <p className="text-xs text-emerald-700 mt-1">
-                                Combined package: Victoria Falls tour with adventure activities and Boat cruise
-                              </p>
-                              <div className="mt-2 text-xs font-medium text-emerald-800">
-                                Total:
-                                <span className="ml-1">
-                                  {formData.delegateType === "international"
-                                    ? "USD 950"
-                                    : formData.delegateType === "private"
-                                      ? "ZMW 10,000"
-                                      : "ZMW 9,000"}
-                                </span>
+                        {/* Victoria Falls + Boat Cruise Package - For Local Delegates Only */}
+                        {formData.delegateType !== "international" && (
+                          <div className="p-3 bg-gradient-to-r from-emerald-50 to-cyan-50 border border-emerald-200 rounded-lg">
+                            <div className="flex items-start space-x-3">
+                              <input
+                                type="checkbox"
+                                id="victoriaFallsAndBoatCruise"
+                                checked={formData.victoriaFallsPackage || formData.boatCruisePackage}
+                                onChange={(e) => {
+                                  const isChecked = e.target.checked;
+                                  updateField("victoriaFallsPackage", isChecked);
+                                  updateField("boatCruisePackage", isChecked);
+                                }}
+                                className="mt-1 w-4 h-4 text-emerald-600 bg-white border-emerald-300 rounded focus:ring-emerald-500 focus:ring-2"
+                              />
+                              <div className="flex-1">
+                                <Label
+                                  htmlFor="victoriaFallsAndBoatCruise"
+                                  className="text-sm font-medium text-emerald-800 cursor-pointer"
+                                >
+                                  <p>
+                                    <span className="ml-1">
+                                      {formData.delegateType === "private"
+                                        ? "ZMW 1,200"
+                                        : "ZMW 1,200"}
+                                    </span> – Excursions (Touristic activities)
+                                  </p>
+                                </Label>
+
                               </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1015,54 +1097,11 @@ function RegistrationDialog({
               {currentStep === 3 && (
                 <div className="space-y-3">
                   <div className="p-3 bg-gradient-to-r from-[#87CEEB]/10 to-blue-50 border border-[#87CEEB]/20 rounded-lg">
-                    <h3 className="font-medium mb-2 text-sm text-[#1C356B]">
-                      Registration Fee
-                    </h3>
+
                     {selectedPricing && (
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-700">
-                            {selectedPricing.label}
-                          </span>
-                          <span className="font-bold text-sm text-[#1C356B] bg-white px-2 py-1 rounded shadow-sm">
-                            {selectedPricing.currency} {selectedPricing.price}
-                          </span>
-                        </div>
-                        {formData.dinnerGalaAttendance && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-amber-700">
-                              🍽️ Dinner Gala
-                            </span>
-                            <span className="font-bold text-sm text-amber-800 bg-amber-50 px-2 py-1 rounded shadow-sm">
-                              {selectedPricing.currency}{" "}
-                              {selectedPricing.currency === "USD"
-                                ? "110"
-                                : "2,500"}
-                            </span>
-                          </div>
-                        )}
-                        {formData.accommodationPackage &&
-                          selectedPricing.currency === "USD" && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-blue-700">
-                                🏨 Accommodation Package
-                              </span>
-                              <span className="font-bold text-sm text-blue-800 bg-blue-50 px-2 py-1 rounded shadow-sm">
-                                Total: USD 800
-                              </span>
-                            </div>
-                          )}
-                        {formData.victoriaFallsPackage &&
-                          selectedPricing.currency === "USD" && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-emerald-700">
-                                🦁 Victoria Falls Adventure
-                              </span>
-                              <span className="font-bold text-sm text-emerald-800 bg-emerald-50 px-2 py-1 rounded shadow-sm">
-                                USD 300
-                              </span>
-                            </div>
-                          )}
+
+
                         <div className="border-t pt-2 flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-900">
                             Total Amount
@@ -1094,8 +1133,8 @@ function RegistrationDialog({
                               updateField("paymentMethod", "mobile")
                             }
                             className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "mobile"
-                                ? "bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg"
-                                : "bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5"
+                              ? "bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5"
                               }`}
                           >
                             Mobile Money
@@ -1104,8 +1143,8 @@ function RegistrationDialog({
                             type="button"
                             onClick={() => updateField("paymentMethod", "bank")}
                             className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "bank"
-                                ? "bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg"
-                                : "bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5"
+                              ? "bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5"
                               }`}
                           >
                             Bank Transfer
@@ -1114,8 +1153,8 @@ function RegistrationDialog({
                             type="button"
                             onClick={() => updateField("paymentMethod", "cash")}
                             className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "cash"
-                                ? "bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg"
-                                : "bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5"
+                              ? "bg-[#87CEEB] text-white border-[#87CEEB] shadow-lg"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-[#87CEEB] hover:text-[#1C356B] hover:bg-[#87CEEB]/5"
                               }`}
                           >
                             Cash at Event
@@ -1135,8 +1174,8 @@ function RegistrationDialog({
                               updateField("paymentMethod", "group_payment")
                             }
                             className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "group_payment"
-                                ? "bg-green-500 text-white border-green-500 shadow-lg"
-                                : "bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:text-green-700 hover:bg-green-50"
+                              ? "bg-green-500 text-white border-green-500 shadow-lg"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:text-green-700 hover:bg-green-50"
                               }`}
                           >
                             🏢 Group Payment
@@ -1150,8 +1189,8 @@ function RegistrationDialog({
                               updateField("paymentMethod", "org_paid")
                             }
                             className={`relative px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${formData.paymentMethod === "org_paid"
-                                ? "bg-blue-500 text-white border-blue-500 shadow-lg"
-                                : "bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                              ? "bg-blue-500 text-white border-blue-500 shadow-lg"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:text-blue-700 hover:bg-blue-50"
                               }`}
                           >
                             ✅ Already Paid
@@ -1598,6 +1637,23 @@ function RegistrationDialog({
               event details.
             </p>
 
+            {/* Total Amount Display */}
+            {registrationData && selectedPricing && (
+              <div className="mb-6">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 shadow-lg">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-xl">💰</span>
+                    <h4 className="text-lg font-bold text-green-800">
+                      Total Amount
+                    </h4>
+                  </div>
+                  <div className="text-2xl font-bold text-green-900">
+                    {getTotalPriceDisplay(selectedPricing, formData.dinnerGalaAttendance)}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Registration Number Display */}
             <div className="mb-6">
               <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-xl p-6 shadow-lg">
@@ -1645,13 +1701,123 @@ function RegistrationDialog({
                   </span>
                 </div>
               </div>
-              <Button
-                type="button"
-                onClick={close}
-                className="w-full sm:w-auto bg-[#87CEEB] hover:bg-[#1C356B] text-black font-bold border-2 border-[#87CEEB] hover:border-[#1C356B] shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                Close
-              </Button>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {/* Download Receipt Button */}
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    // Comprehensive validation before attempting download
+                    if (!registrationData) {
+                      toast({
+                        title: "Download Failed",
+                        description: "Registration data is not available. Please try again later.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    if (!user) {
+                      toast({
+                        title: "Download Failed",
+                        description: "User information is not available. Please log in again.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    if (!event) {
+                      toast({
+                        title: "Download Failed",
+                        description: "Event information is not available.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    try {
+                      // Create registration data for invoice with safe fallbacks
+                      const invoiceData = {
+                        ...registrationData,
+                        firstName: user.firstName || "N/A",
+                        lastName: user.lastName || "N/A",
+                        email: user.email || "N/A",
+                        phoneNumber: user.phoneNumber || "N/A",
+                        organization: formData.organization || "N/A",
+                        position: formData.position || "N/A",
+                        country: formData.country || "N/A",
+                        delegateType: formData.delegateType || "private",
+                        accommodationPackage: Boolean(formData.accommodationPackage),
+                        victoriaFallsPackage: Boolean(formData.victoriaFallsPackage),
+                        boatCruisePackage: Boolean(formData.boatCruisePackage),
+                        dinnerGalaAttendance: Boolean(formData.dinnerGalaAttendance),
+                        event: {
+                          title: event.title || "Alliance Procurement Event",
+                          startDate: event.startDate || new Date().toISOString(),
+                          location: event.location || "To be announced",
+                          venue: event.venue || event.location || "To be announced"
+                        },
+                        registeredAt: registrationData.registeredAt || new Date().toISOString(),
+                        paymentStatus: formData.paymentMethod === "org_paid" ? "paid" : "pending",
+                        paymentMethod: formData.paymentMethod || "pending",
+                      };
+
+                      // Validate critical data before proceeding
+                      if (!invoiceData.firstName || !invoiceData.lastName || !invoiceData.email) {
+                        throw new Error("Missing required participant information");
+                      }
+
+                      if (!invoiceData.delegateType) {
+                        throw new Error("Missing delegate type information");
+                      }
+
+                      console.log('Raw invoice data before formatting:', invoiceData);
+                      const formattedData = formatRegistrationForInvoice(invoiceData);
+                      console.log('Formatted invoice data:', formattedData);
+                      await generateInvoice(formattedData);
+
+                      toast({
+                        title: "Receipt Downloaded",
+                        description: "Your registration receipt has been downloaded successfully.",
+                        variant: "default",
+                      });
+                    } catch (error: any) {
+                      console.error("Error generating receipt:", error);
+
+                      // Provide specific error messages based on error type
+                      let errorMessage = "Failed to generate receipt. Please try again.";
+
+                      if (error?.message?.includes("Missing required")) {
+                        errorMessage = "Some required information is missing. Please contact support.";
+                      } else if (error?.message?.includes("Invalid delegate type")) {
+                        errorMessage = "Invalid registration type detected. Please contact support.";
+                      } else if (error?.message?.includes("PDF")) {
+                        errorMessage = "PDF generation failed. Please check your browser settings and try again.";
+                      } else if (error?.name === "NetworkError") {
+                        errorMessage = "Network error. Please check your connection and try again.";
+                      }
+
+                      toast({
+                        title: "Download Failed",
+                        description: errorMessage,
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold border-2 border-green-600 hover:border-green-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Receipt
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={close}
+                  className="bg-[#87CEEB] hover:bg-[#1C356B] text-black font-bold border-2 border-[#87CEEB] hover:border-[#1C356B] shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         )}

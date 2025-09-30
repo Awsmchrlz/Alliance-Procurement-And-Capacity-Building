@@ -31,465 +31,377 @@ interface InvoiceData {
     basePrice: number;
     accommodationPrice?: number;
     victoriaFallsPrice?: number;
-    boatCruisePrice?: number;
     dinnerGalaPrice?: number;
     currency: string;
     totalAmount: number;
   };
 }
 
-export const generateInvoice = async (data: InvoiceData): Promise<void> => {
-  const doc = new jsPDF();
-
-  // Colors
-  const primaryColor = [28, 53, 107]; // #1C356B
-  const secondaryColor = [135, 206, 235]; // #87CEEB
-  const accentColor = [59, 130, 246]; // Blue accent
-  const darkGray = [64, 64, 64];
-  const lightGray = [128, 128, 128];
-  const successColor = [34, 197, 94]; // Green
-  const warningColor = [239, 68, 68]; // Red
-
-  // Page dimensions
-  const pageWidth = doc.internal.pageSize.width;
-  const pageHeight = doc.internal.pageSize.height;
-  const margin = 20;
-  const centerX = pageWidth / 2;
-
-  // Professional header with clean text design
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, 0, pageWidth, 45, 'F');
-
-  // Add subtle gradient effect
-  doc.setFillColor(135, 206, 235, 0.15);
-  doc.rect(0, 35, pageWidth, 10, 'F');
-
-  // Company name - centered and professional
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  const titleText = 'ALLIANCE PROCUREMENT & CAPACITY BUILDING LTD';
-  const titleWidth = doc.getTextWidth(titleText);
-  doc.text(titleText, centerX - titleWidth / 2, 18);
-
-  // Tagline - centered
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  const taglineText = 'SUPPLY CHAIN MATTERS';
-  const taglineWidth = doc.getTextWidth(taglineText);
-  doc.text(taglineText, centerX - taglineWidth / 2, 28);
-
-  // Subtitle - centered
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-
-  // Registration number box - prominent and centered
-  let yPos = 60;
-
-  // Registration number highlight box
-  doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
-  doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 25, 5, 5, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  const regText = `Registration Number: ${data.registrationNumber}`;
-  const regTextWidth = doc.getTextWidth(regText);
-  doc.text(regText, centerX - regTextWidth / 2, yPos + 12);
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  const dateText = `Generated: ${format(new Date(), 'MMMM dd, yyyy')}`;
-  const dateTextWidth = doc.getTextWidth(dateText);
-  doc.text(dateText, centerX - dateTextWidth / 2, yPos + 20);
-
-  yPos += 35;
-
-  // Event details section - better formatted
-  doc.setFillColor(248, 250, 252); // Light gray background
-  doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 45, 3, 3, 'F');
-
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 12, 3, 3, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('EVENT DETAILS', margin + 8, yPos + 8);
-
-  yPos += 20;
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.setFontSize(10);
-
-  // Event name
-  doc.setFont('helvetica', 'bold');
-  doc.text('Event:', margin + 8, yPos);
-  doc.setFont('helvetica', 'normal');
-  const eventTitle = data.event.title.length > 50 ? data.event.title.substring(0, 50) + '...' : data.event.title;
-  doc.text(eventTitle, margin + 30, yPos);
-
-  yPos += 8;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Date:', margin + 8, yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.text(format(new Date(data.event.date), 'EEEE, MMMM dd, yyyy'), margin + 30, yPos);
-
-  yPos += 8;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Venue:', margin + 8, yPos);
-  doc.setFont('helvetica', 'normal');
-  const venue = data.event.venue.length > 45 ? data.event.venue.substring(0, 45) + '...' : data.event.venue;
-  doc.text(venue, margin + 30, yPos);
-
-  yPos += 15;
-
-  // Participant details section - two column layout
-  yPos += 10;
-  const participantHeight = 55;
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(margin, yPos, pageWidth - 2 * margin, participantHeight, 3, 3, 'F');
-
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 12, 3, 3, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('PARTICIPANT DETAILS', margin + 8, yPos + 8);
-
-  yPos += 20;
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.setFontSize(10);
-
-  // Left column
-  const leftCol = margin + 8;
-  const rightCol = centerX + 5;
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Name:', leftCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${data.participant.firstName} ${data.participant.lastName}`, leftCol + 25, yPos);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Email:', rightCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  const email = data.participant.email.length > 25 ? data.participant.email.substring(0, 25) + '...' : data.participant.email;
-  doc.text(email, rightCol + 25, yPos);
-
-  yPos += 8;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Phone:', leftCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.text(data.participant.phoneNumber, leftCol + 25, yPos);
-
-  if (data.participant.country) {
-    doc.setFont('helvetica', 'bold');
-    doc.text('Country:', rightCol, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(data.participant.country, rightCol + 25, yPos);
-  }
-
-  if (data.participant.organization) {
-    yPos += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Organization:', leftCol, yPos);
-    doc.setFont('helvetica', 'normal');
-    const org = data.participant.organization.length > 35 ? data.participant.organization.substring(0, 35) + '...' : data.participant.organization;
-    doc.text(org, leftCol + 35, yPos);
-  }
-
-  if (data.participant.position) {
-    yPos += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Position:', leftCol, yPos);
-    doc.setFont('helvetica', 'normal');
-    const pos = data.participant.position.length > 35 ? data.participant.position.substring(0, 35) + '...' : data.participant.position;
-    doc.text(pos, leftCol + 30, yPos);
-  }
-
-  yPos += 15;
-
-  // Registration details section - compact
-  yPos += 10;
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 35, 3, 3, 'F');
-
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 12, 3, 3, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('REGISTRATION DETAILS', margin + 8, yPos + 8);
-
-  yPos += 20;
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.setFontSize(10);
-
-  const delegateTypeText = data.registration.delegateType === 'private_sector' ? 'Private Sector' :
-    data.registration.delegateType === 'public_sector' ? 'Public Sector' :
-      data.registration.delegateType === 'international' ? 'International Delegate' :
-        'Private Sector'; // Default fallback
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Delegate Type:', leftCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.text(delegateTypeText, leftCol + 35, yPos);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Registration Date:', rightCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.text(format(new Date(data.registration.registeredAt), 'dd/MM/yyyy'), rightCol + 45, yPos);
-
-  yPos += 8;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Payment Status:', leftCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(data.registration.paymentStatus === 'paid' ? successColor[0] : warningColor[0], data.registration.paymentStatus === 'paid' ? successColor[1] : warningColor[1], data.registration.paymentStatus === 'paid' ? successColor[2] : warningColor[2]);
-  doc.text(data.registration.paymentStatus.toUpperCase(), leftCol + 40, yPos);
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-
-  yPos += 15;
-
-  // Pricing breakdown section - professional table
-  yPos += 10;
-  const pricingHeight = 80;
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(margin, yPos, pageWidth - 2 * margin, pricingHeight, 3, 3, 'F');
-
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 12, 3, 3, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('PRICING BREAKDOWN', margin + 8, yPos + 8);
-
-  // Table header
-  yPos += 20;
-  doc.setFillColor(229, 231, 235);
-  doc.roundedRect(margin + 5, yPos - 5, pageWidth - 2 * margin - 10, 10, 2, 2, 'F');
-
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Description', margin + 8, yPos);
-  doc.text('Amount', pageWidth - margin - 35, yPos);
-
-  // Base registration
-  yPos += 12;
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text(`${delegateTypeText} Registration`, margin + 8, yPos);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`${data.pricing.currency} ${data.pricing.basePrice.toLocaleString()}`, pageWidth - margin - 35, yPos);
-
-  // Additional packages
-  if (data.registration.accommodationPackage && data.pricing.accommodationPrice) {
-    yPos += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.text('Accommodation Package', margin + 8, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${data.pricing.currency} ${data.pricing.accommodationPrice.toLocaleString()}`, pageWidth - margin - 35, yPos);
-  }
-
-  // Handle Victoria Falls and Boat Cruise packages based on delegate type
-  if (data.registration.delegateType === 'international') {
-    // International delegates have combined package
-    if ((data.registration.victoriaFallsPackage || data.registration.boatCruisePackage) && data.pricing.victoriaFallsPrice) {
-      yPos += 8;
-      doc.setFont('helvetica', 'normal');
-      doc.text('Victoria Falls Adventure + Boat Cruise Package', margin + 8, yPos);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${data.pricing.currency} ${data.pricing.victoriaFallsPrice.toLocaleString()}`, pageWidth - margin - 35, yPos);
-    }
-  } else {
-    // Local delegates have combined package
-    if ((data.registration.victoriaFallsPackage || data.registration.boatCruisePackage) && data.pricing.victoriaFallsPrice) {
-      yPos += 8;
-      doc.setFont('helvetica', 'normal');
-      doc.text('Victoria Falls Adventure + Boat Cruise Package', margin + 8, yPos);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${data.pricing.currency} ${data.pricing.victoriaFallsPrice.toLocaleString()}`, pageWidth - margin - 35, yPos);
-    }
-  }
-
-  if (data.registration.dinnerGalaAttendance && data.pricing.dinnerGalaPrice) {
-    yPos += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.text('Dinner Gala', margin + 8, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${data.pricing.currency} ${data.pricing.dinnerGalaPrice.toLocaleString()}`, pageWidth - margin - 35, yPos);
-  }
-
-  // Total line with highlight
-  yPos += 15;
-  doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
-  doc.roundedRect(margin + 5, yPos - 8, pageWidth - 2 * margin - 10, 15, 2, 2, 'F');
-
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 255, 255);
-  doc.text('TOTAL AMOUNT:', margin + 8, yPos);
-  doc.text(`${data.pricing.currency} ${data.pricing.totalAmount.toLocaleString()}`, pageWidth - margin - 45, yPos);
-
-  yPos += 20;
-
-  // Payment instructions (if pending)
-  if (data.registration.paymentStatus === 'pending') {
-    yPos += 10;
-    doc.setFillColor(254, 243, 199); // Warm yellow background
-    doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 25, 3, 3, 'F');
-
-    doc.setFillColor(217, 119, 6); // Orange header
-    doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 10, 3, 3, 'F');
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PAYMENT INSTRUCTIONS', margin + 8, yPos + 7);
-
-    yPos += 15;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(120, 53, 15);
-    doc.text('Please complete your payment and upload evidence in your dashboard.', margin + 8, yPos);
-    doc.text('Your registration will be confirmed once payment is verified.', margin + 8, yPos + 6);
-    yPos += 20;
-  }
-
-  // Footer - professional and centered
-  const footerY = pageHeight - 25;
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, footerY, pageWidth, 25, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  const footerTitle = 'Alliance Procurement and Capacity Building';
-  const footerTitleWidth = doc.getTextWidth(footerTitle);
-  doc.text(footerTitle, centerX - footerTitleWidth / 2, footerY + 10);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  const footerDate = `Generated on ${format(new Date(), 'MMMM dd, yyyy at HH:mm')}`;
-  const footerDateWidth = doc.getTextWidth(footerDate);
-  doc.text(footerDate, centerX - footerDateWidth / 2, footerY + 18);
-
-  // Download the PDF
-  const fileName = `Registration-Receipt-${data.registrationNumber}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-  doc.save(fileName);
-};
-
-// Pricing configuration for all delegate types
 const PRICING_CONFIG = {
   private_sector: {
-    basePrice: 7000,
-    currency: 'ZMW',
+    basePrices: {
+      withoutPackages: 7000,
+      withBoatCruiseAndVictoriaFalls: 8200,
+    },
     packages: {
-      victoriaFallsAndBoatCruise: 2500, // Combined package for local delegates
       dinnerGala: 2500,
     },
+    currency: 'ZMW',
   },
   public_sector: {
-    basePrice: 6500,
-    currency: 'ZMW',
+    basePrices: {
+      withoutPackages: 6500,
+      withBoatCruiseAndVictoriaFalls: 7700,
+    },
     packages: {
-      victoriaFallsAndBoatCruise: 2500, // Combined package for local delegates
       dinnerGala: 2500,
     },
+    currency: 'ZMW',
   },
   international: {
-    basePrice: 650,
-    currency: 'USD',
+    basePrices: {
+      withoutPackages: 650,
+      withAccommodation: 800,
+      withAccommodationAndBoatCruiseAndVictoriaFalls: 950,
+    },
     packages: {
-      accommodation: 150,
-      victoriaFallsAndBoatCruise: 150, // Combined package for international delegates
       dinnerGala: 110,
     },
+    currency: 'USD',
   },
+} as const;
+
+export const generateInvoice = async (data: InvoiceData): Promise<void> => {
+  try {
+    if (!data || !data.registrationNumber || !data.participant?.firstName || !data.event?.title) {
+      throw new Error('Missing required invoice data');
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    let y = 20;
+
+    // Header with company branding
+    doc.setFillColor(28, 53, 107);
+    doc.rect(0, 0, pageWidth, 30, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ALLIANCE PROCUREMENT & CAPACITY BUILDING LTD', pageWidth / 2, 12, { align: 'center' });
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('SUPPLY CHAIN MATTERS', pageWidth / 2, 19, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('REGISTRATION INVOICE', pageWidth / 2, 26, { align: 'center' });
+
+    y = 38;
+
+    // Invoice metadata
+    doc.setFillColor(248, 250, 252);
+    doc.rect(margin, y, pageWidth - 2 * margin, 16, 'F');
+    
+    doc.setTextColor(64, 64, 64);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Registration #: ${data.registrationNumber}`, margin + 4, y + 7);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Invoice Date: ${format(new Date(), 'dd MMM yyyy')}`, margin + 4, y + 12);
+    
+    // Payment status
+    const isPaid = data.registration.paymentStatus === 'paid';
+    doc.setTextColor(isPaid ? 34 : 239, isPaid ? 197 : 68, isPaid ? 94 : 68);
+    doc.setFont('helvetica', 'bold');
+    doc.text(data.registration.paymentStatus.toUpperCase(), pageWidth - margin - 4, y + 10, { align: 'right' });
+
+    y += 22;
+
+    // Event Details
+    doc.setFillColor(28, 53, 107);
+    doc.rect(margin, y, pageWidth - 2 * margin, 9, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EVENT DETAILS', margin + 4, y + 6);
+
+    y += 11;
+
+    doc.setFillColor(248, 250, 252);
+    doc.rect(margin, y, pageWidth - 2 * margin, 18, 'F');
+    
+    doc.setTextColor(64, 64, 64);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Event:', margin + 4, y + 6);
+    doc.setFont('helvetica', 'normal');
+    const eventTitle = data.event.title.length > 50 ? data.event.title.substring(0, 47) + '...' : data.event.title;
+    doc.text(eventTitle, margin + 18, y + 6);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date:', margin + 4, y + 11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(format(new Date(data.event.date), 'dd MMM yyyy'), margin + 18, y + 11);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Venue:', margin + 80, y + 11);
+    doc.setFont('helvetica', 'normal');
+    const venue = data.event.venue.length > 30 ? data.event.venue.substring(0, 27) + '...' : data.event.venue;
+    doc.text(venue, margin + 95, y + 11);
+
+    y += 24;
+
+    // Participant Details
+    doc.setFillColor(28, 53, 107);
+    doc.rect(margin, y, pageWidth - 2 * margin, 9, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PARTICIPANT DETAILS', margin + 4, y + 6);
+
+    y += 11;
+
+    doc.setFillColor(248, 250, 252);
+    doc.rect(margin, y, pageWidth - 2 * margin, 24, 'F');
+    
+    doc.setTextColor(64, 64, 64);
+    doc.setFontSize(8);
+    
+    const fullName = `${data.participant.firstName} ${data.participant.lastName}`;
+    doc.setFont('helvetica', 'bold');
+    doc.text(fullName, margin + 4, y + 6);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.participant.email, margin + 4, y + 11);
+    doc.text(`Phone: ${data.participant.phoneNumber}`, margin + 4, y + 16);
+
+    if (data.participant.organization) {
+      const org = data.participant.organization.length > 25 ? data.participant.organization.substring(0, 22) + '...' : data.participant.organization;
+      doc.text(org, margin + 90, y + 6);
+    }
+    if (data.participant.position) {
+      const pos = data.participant.position.length > 25 ? data.participant.position.substring(0, 22) + '...' : data.participant.position;
+      doc.text(pos, margin + 90, y + 11);
+    }
+    if (data.participant.country) {
+      doc.text(data.participant.country, margin + 90, y + 16);
+    }
+
+    y += 30;
+
+    // Registration Details
+    doc.setFillColor(28, 53, 107);
+    doc.rect(margin, y, pageWidth - 2 * margin, 9, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('REGISTRATION DETAILS', margin + 4, y + 6);
+
+    y += 11;
+
+    doc.setFillColor(248, 250, 252);
+    doc.rect(margin, y, pageWidth - 2 * margin, 12, 'F');
+    
+    doc.setTextColor(64, 64, 64);
+    doc.setFontSize(8);
+
+    const delegateTypes = {
+      private_sector: 'Private Sector',
+      public_sector: 'Public Sector',
+      international: 'International Delegate',
+    };
+    const delegateType = delegateTypes[data.registration.delegateType];
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Delegate Type:', margin + 4, y + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.text(delegateType, margin + 33, y + 7);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Registered:', margin + 90, y + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.text(format(new Date(data.registration.registeredAt), 'dd/MM/yyyy'), margin + 110, y + 7);
+
+    y += 18;
+
+    // Invoice Summary
+    doc.setFillColor(28, 53, 107);
+    doc.rect(margin, y, pageWidth - 2 * margin, 9, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE SUMMARY', margin + 4, y + 6);
+
+    y += 13;
+
+    doc.setTextColor(64, 64, 64);
+    doc.setFontSize(8);
+
+    // Line items
+    const addLine = (label: string, amount: number) => {
+      doc.setFont('helvetica', 'normal');
+      doc.text(label, margin + 4, y);
+      const amountText = `${data.pricing.currency} ${amount.toLocaleString()}`;
+      doc.setFont('helvetica', 'bold');
+      doc.text(amountText, pageWidth - margin - 4, y, { align: 'right' });
+      y += 6;
+    };
+
+    addLine(`${delegateType} Registration`, data.pricing.basePrice);
+
+    if (data.pricing.accommodationPrice) {
+      addLine('Accommodation Package', data.pricing.accommodationPrice);
+    }
+
+    if (data.pricing.victoriaFallsPrice) {
+      addLine('Excursions Package', data.pricing.victoriaFallsPrice);
+    }
+
+    if (data.pricing.dinnerGalaPrice) {
+      addLine('Dinner Gala', data.pricing.dinnerGalaPrice);
+    }
+
+    y += 2;
+
+    // Divider
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+
+    y += 7;
+
+    // Total
+    doc.setFillColor(240, 240, 240);
+    doc.rect(margin, y - 3, pageWidth - 2 * margin, 11, 'F');
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(64, 64, 64);
+    doc.text('TOTAL AMOUNT:', margin + 4, y + 4);
+
+    const totalText = `${data.pricing.currency} ${data.pricing.totalAmount.toLocaleString()}`;
+    doc.text(totalText, pageWidth - margin - 4, y + 4, { align: 'right' });
+
+    // Footer
+    const footerY = pageHeight - 18;
+    
+    doc.setFillColor(28, 53, 107);
+    doc.rect(0, footerY, pageWidth, 18, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Alliance Procurement and Capacity Building', pageWidth / 2, footerY + 7, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    const timestamp = format(new Date(), 'dd MMMM yyyy \'at\' HH:mm');
+    doc.text(`Generated on ${timestamp}`, pageWidth / 2, footerY + 12, { align: 'center' });
+
+    // Save PDF
+    const fileName = `Invoice-${data.registrationNumber}-${format(new Date(), 'yyyyMMdd')}.pdf`;
+    doc.save(fileName);
+
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to generate invoice');
+  }
 };
 
-// Helper function to format pricing data
 export const formatRegistrationForInvoice = (registration: any): InvoiceData => {
-  // Map delegate types to match pricing config
-  const delegateTypeMapping: { [key: string]: keyof typeof PRICING_CONFIG } = {
-    'private': 'private_sector',
-    'public': 'public_sector',
-    'international': 'international',
-    'private_sector': 'private_sector',
-    'public_sector': 'public_sector'
-  };
+  try {
+    if (!registration) throw new Error('Registration data is required');
+    if (!registration.delegateType) throw new Error('Delegate type is required');
 
-  const mappedDelegateType = delegateTypeMapping[registration.delegateType] || registration.delegateType;
-  const config = PRICING_CONFIG[mappedDelegateType as keyof typeof PRICING_CONFIG];
+    const delegateTypeMapping: Record<string, keyof typeof PRICING_CONFIG> = {
+      'private': 'private_sector',
+      'public': 'public_sector',
+      'international': 'international',
+      'private_sector': 'private_sector',
+      'public_sector': 'public_sector',
+    };
 
-  if (!config) {
-    throw new Error(`Invalid delegate type: ${registration.delegateType} (mapped to: ${mappedDelegateType})`);
-  }
+    const mappedDelegateType = delegateTypeMapping[registration.delegateType] || 'private_sector';
+    const config = PRICING_CONFIG[mappedDelegateType];
 
-  const { basePrice, currency, packages } = config;
-  let totalAmount = basePrice;
+    const { basePrices, packages, currency } = config;
+    let totalAmount = 0;
+    let basePrice = 0;
+    let accommodationPrice = 0;
+    let victoriaFallsPrice = 0;
+    const dinnerGalaPrice = registration.dinnerGalaAttendance ? packages.dinnerGala : 0;
 
-  // Calculate package prices
-  const accommodationPrice = registration.accommodationPackage && packages.accommodation ? packages.accommodation : 0;
-  const dinnerGalaPrice = registration.dinnerGalaAttendance ? packages.dinnerGala : 0;
-
-  let victoriaFallsPrice = 0;
-  let boatCruisePrice = 0;
-
-  // Handle different pricing logic for international vs local delegates
-  if (mappedDelegateType === 'international') {
-    // International delegates have combined Victoria Falls and Boat Cruise package
-    if (registration.victoriaFallsPackage || registration.boatCruisePackage) {
-      victoriaFallsPrice = packages.victoriaFallsAndBoatCruise;
-      boatCruisePrice = 0; // Don't double count
+    if (mappedDelegateType === 'international') {
+      if (registration.accommodationPackage && (registration.victoriaFallsPackage || registration.boatCruisePackage)) {
+        totalAmount = basePrices.withAccommodationAndBoatCruiseAndVictoriaFalls;
+        basePrice = basePrices.withoutPackages;
+        accommodationPrice = basePrices.withAccommodation - basePrices.withoutPackages;
+        victoriaFallsPrice = basePrices.withAccommodationAndBoatCruiseAndVictoriaFalls - basePrices.withAccommodation;
+      } else if (registration.accommodationPackage) {
+        totalAmount = basePrices.withAccommodation;
+        basePrice = basePrices.withoutPackages;
+        accommodationPrice = basePrices.withAccommodation - basePrices.withoutPackages;
+      } else {
+        totalAmount = basePrices.withoutPackages;
+        basePrice = basePrices.withoutPackages;
+      }
+    } else {
+      if (registration.victoriaFallsPackage || registration.boatCruisePackage) {
+        totalAmount = basePrices.withBoatCruiseAndVictoriaFalls;
+        basePrice = basePrices.withoutPackages;
+        victoriaFallsPrice = basePrices.withBoatCruiseAndVictoriaFalls - basePrices.withoutPackages;
+      } else {
+        totalAmount = basePrices.withoutPackages;
+        basePrice = basePrices.withoutPackages;
+      }
     }
-  } else {
-    // Local delegates have combined Victoria Falls + Boat Cruise package
-    if (registration.victoriaFallsPackage || registration.boatCruisePackage) {
-      victoriaFallsPrice = packages.victoriaFallsAndBoatCruise;
-      boatCruisePrice = 0; // Don't double count
-    }
+
+    totalAmount += dinnerGalaPrice;
+
+    return {
+      registrationNumber: registration.registrationNumber || `TEMP-${Date.now()}`,
+      event: {
+        title: registration.event?.title || 'Alliance Procurement and Capacity Building Event',
+        date: registration.event?.startDate || registration.event?.date || new Date().toISOString(),
+        venue: registration.event?.location || registration.event?.venue || 'To be announced',
+      },
+      participant: {
+        firstName: registration.firstName || 'N/A',
+        lastName: registration.lastName || 'N/A',
+        email: registration.email || 'N/A',
+        phoneNumber: registration.phoneNumber || 'N/A',
+        organization: registration.organization,
+        position: registration.position,
+        country: registration.country,
+      },
+      registration: {
+        delegateType: mappedDelegateType,
+        accommodationPackage: Boolean(registration.accommodationPackage),
+        victoriaFallsPackage: Boolean(registration.victoriaFallsPackage),
+        boatCruisePackage: Boolean(registration.boatCruisePackage),
+        dinnerGalaAttendance: Boolean(registration.dinnerGalaAttendance),
+        registeredAt: registration.registeredAt || new Date().toISOString(),
+        paymentStatus: registration.paymentStatus || 'pending',
+        paymentMethod: registration.paymentMethod,
+      },
+      pricing: {
+        basePrice,
+        accommodationPrice: accommodationPrice > 0 ? accommodationPrice : undefined,
+        victoriaFallsPrice: victoriaFallsPrice > 0 ? victoriaFallsPrice : undefined,
+        dinnerGalaPrice: dinnerGalaPrice > 0 ? dinnerGalaPrice : undefined,
+        currency,
+        totalAmount: Math.max(totalAmount, 0),
+      },
+    };
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to format registration data');
   }
-
-  // Add all selected packages to total
-  totalAmount += accommodationPrice + victoriaFallsPrice + boatCruisePrice + dinnerGalaPrice;
-
-  return {
-    registrationNumber: registration.registrationNumber || 'N/A',
-    event: {
-      title: registration.event?.title || 'Alliance Procurement and Capacity Building Event',
-      date: registration.event?.startDate || new Date().toISOString(),
-      venue: registration.event?.location || registration.event?.venue || 'To be announced',
-    },
-    participant: {
-      firstName: registration.firstName || 'N/A',
-      lastName: registration.lastName || 'N/A',
-      email: registration.email || 'N/A',
-      phoneNumber: registration.phoneNumber || 'N/A',
-      organization: registration.organization || 'N/A',
-      position: registration.position || 'N/A',
-      country: registration.country || 'N/A',
-    },
-    registration: {
-      delegateType: mappedDelegateType,
-      accommodationPackage: registration.accommodationPackage,
-      victoriaFallsPackage: registration.victoriaFallsPackage,
-      boatCruisePackage: registration.boatCruisePackage,
-      dinnerGalaAttendance: registration.dinnerGalaAttendance,
-      registeredAt: registration.registeredAt,
-      paymentStatus: registration.paymentStatus,
-      paymentMethod: registration.paymentMethod,
-    },
-    pricing: {
-      basePrice,
-      accommodationPrice: accommodationPrice > 0 ? accommodationPrice : undefined,
-      victoriaFallsPrice: victoriaFallsPrice > 0 ? victoriaFallsPrice : undefined,
-      boatCruisePrice: boatCruisePrice > 0 ? boatCruisePrice : undefined,
-      dinnerGalaPrice: dinnerGalaPrice > 0 ? dinnerGalaPrice : undefined,
-      currency,
-      totalAmount,
-    },
-  };
 };
