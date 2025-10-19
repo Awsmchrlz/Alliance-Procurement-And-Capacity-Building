@@ -4,8 +4,8 @@ kind: Kustomization
 
 namespace: apcb-staging
 
-bases:
-  - ../../
+resources:
+  - ../../apcb-deployment.yaml
 
 namePrefix: staging-
 

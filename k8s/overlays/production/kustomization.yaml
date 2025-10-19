@@ -4,8 +4,8 @@ kind: Kustomization
 
 namespace: apcb-system
 
-bases:
-  - ../../
+resources:
+  - ../../apcb-deployment.yaml
 
 namePrefix: prod-
 

@@ -60,12 +60,17 @@ A comprehensive event management and registration platform for the Alliance Proc
    RESEND_API_KEY=your_resend_api_key
    ```
 
-4. **Run the development server**
+4. **Validate your setup** (optional but recommended)
+   ```bash
+   ./validate-setup.sh
+   ```
+
+5. **Run the development server**
    ```bash
    npm run dev
    ```
 
-5. **Access the application**
+6. **Access the application**
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:3000
 
