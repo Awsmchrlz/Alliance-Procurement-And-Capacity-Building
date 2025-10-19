@@ -169,18 +169,30 @@ The project uses GitHub Actions for automated builds and deployments:
 
 ### Production Deployment
 
-1. **Set up environment variables** in your hosting platform
+#### Option 1: Docker
+```bash
+docker pull yourusername/apcb-platform:latest
+docker run -d -p 3000:3000 --env-file .env apcb-platform:latest
+```
 
-2. **Deploy using Docker**:
-   ```bash
-   docker pull yourusername/apcb-platform:latest
-   docker run -d -p 3000:3000 --env-file .env apcb-platform:latest
-   ```
+#### Option 2: Docker Compose
+```bash
+docker-compose -f docker-compose.yml up -d
+```
 
-3. **Or deploy using Docker Compose**:
-   ```bash
-   docker-compose -f docker-compose.yml up -d
-   ```
+#### Option 3: Kubernetes
+```bash
+# Quick deploy
+kubectl apply -f k8s/apcb-deployment.yaml
+
+# Or use the deployment script
+./k8s/deploy.sh production
+
+# Or use kustomize for environment-specific configs
+kubectl apply -k k8s/overlays/production/
+```
+
+See [k8s/README.md](k8s/README.md) for detailed Kubernetes deployment instructions.
 
 ### Supabase Configuration
 

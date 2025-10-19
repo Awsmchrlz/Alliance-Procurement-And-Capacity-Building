@@ -1,0 +1,27 @@
+# Staging overlay
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: apcb-staging
+
+bases:
+  - ../../
+
+namePrefix: staging-
+
+commonLabels:
+  environment: staging
+
+replicas:
+  - name: apcb-app
+    count: 1
+
+images:
+  - name: yourusername/apcb-platform
+    newTag: develop
+
+configMapGenerator:
+  - name: apcb-config
+    behavior: merge
+    literals:
+      - NODE_ENV=staging
