@@ -3,16 +3,11 @@ import { useForm } from "react-hook-form";
 import { supabase } from "@/lib/supabase";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Mail,
-  ArrowRight,
-  ArrowLeft,
-  Shield,
-  CheckCircle,
-} from "lucide-react";
+import { Mail, ArrowRight, ArrowLeft, Shield, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getPasswordResetUrl } from "@/lib/utils";
 
 const ForgotPasswordPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -31,21 +26,30 @@ const ForgotPasswordPage = () => {
   const onSubmit = async (data: any) => {
     try {
       setIsLoading(true);
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) throw error;
 
+      // Get the redirect URL - this will automatically detect production vs development
+      const redirectUrl = getPasswordResetUrl();
+      console.log('🔐 Password reset redirect URL:', redirectUrl);
+
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        console.error('❌ Password reset error:', error);
+        throw error;
+      }
+
+      console.log('✅ Password reset email sent successfully');
       setSentEmail(data.email);
       setEmailSent(true);
-      
+
       toast({
         title: "Reset email sent!",
         description: "Check your email for password reset instructions.",
       });
     } catch (err: any) {
+      console.error('❌ Password reset failed:', err);
       toast({
         title: "Error sending reset email",
         description: err.message ?? "Unable to send reset email",
@@ -65,7 +69,10 @@ const ForgotPasswordPage = () => {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <h1 className="text-2xl font-bold mb-2" style={{ color: "#1C356B" }}>
+              <h1
+                className="text-2xl font-bold mb-2"
+                style={{ color: "#1C356B" }}
+              >
                 Check Your Email
               </h1>
               <p className="text-gray-600">
@@ -84,7 +91,7 @@ const ForgotPasswordPage = () => {
                   <li>• Sign in with your new password</li>
                 </ul>
               </div>
-              
+
               <div className="text-sm text-gray-500 text-center">
                 Didn't receive the email? Check your spam folder or{" "}
                 <button
@@ -148,8 +155,10 @@ const ForgotPasswordPage = () => {
                 alt="Alliance Procurement & Capacity Building Logo"
                 className="w-full h-full object-contain rounded-lg"
                 onError={(e) => {
-                  e.currentTarget.className = "w-full h-full bg-white/10 rounded-lg flex items-center justify-center";
-                  e.currentTarget.innerHTML = '<span class="text-[#87CEEB] text-2xl font-bold">APCB</span>';
+                  e.currentTarget.className =
+                    "w-full h-full bg-white/10 rounded-lg flex items-center justify-center";
+                  e.currentTarget.innerHTML =
+                    '<span class="text-[#87CEEB] text-2xl font-bold">APCB</span>';
                 }}
               />
             </div>
@@ -158,7 +167,8 @@ const ForgotPasswordPage = () => {
             Reset Your <span style={{ color: "#87CEEB" }}>Password</span>
           </h2>
           <p className="text-xl text-white/90 mb-8 leading-relaxed">
-            Don't worry, it happens to the best of us. We'll help you get back to your account.
+            Don't worry, it happens to the best of us. We'll help you get back
+            to your account.
           </p>
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -204,7 +214,8 @@ const ForgotPasswordPage = () => {
               Forgot Password?
             </h1>
             <p className="text-gray-600">
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we'll send you a link to reset your
+              password.
             </p>
           </div>
 

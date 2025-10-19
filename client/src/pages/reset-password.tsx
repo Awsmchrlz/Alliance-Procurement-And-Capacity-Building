@@ -38,20 +38,34 @@ const ResetPasswordPage = () => {
     // Check if we have valid session from reset link
     const checkSession = async () => {
       try {
+        console.log('🔍 Checking password reset session...');
+        console.log('🔍 Current URL:', window.location.href);
+        console.log('🔍 Hash:', window.location.hash);
+        
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Session error:", error);
+          console.error("❌ Session error:", error);
           setIsValidToken(false);
         } else if (session) {
+          console.log("✅ Valid session found");
           setIsValidToken(true);
         } else {
+          console.log('🔍 No session, checking hash parameters...');
           // Check for hash parameters (password reset token)
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
           const accessToken = hashParams.get('access_token');
           const refreshToken = hashParams.get('refresh_token');
+          const type = hashParams.get('type');
+          
+          console.log('🔍 Hash params:', { 
+            hasAccessToken: !!accessToken, 
+            hasRefreshToken: !!refreshToken,
+            type 
+          });
           
           if (accessToken && refreshToken) {
+            console.log('🔄 Setting session from hash parameters...');
             // Set the session with the tokens from the URL
             const { error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken,
@@ -59,17 +73,19 @@ const ResetPasswordPage = () => {
             });
             
             if (sessionError) {
-              console.error("Session set error:", sessionError);
+              console.error("❌ Session set error:", sessionError);
               setIsValidToken(false);
             } else {
+              console.log("✅ Session set successfully");
               setIsValidToken(true);
             }
           } else {
+            console.log('❌ No valid tokens found in URL');
             setIsValidToken(false);
           }
         }
       } catch (error) {
-        console.error("Error checking session:", error);
+        console.error("❌ Error checking session:", error);
         setIsValidToken(false);
       } finally {
         setIsCheckingToken(false);

@@ -1,23 +1,32 @@
 # Multi-stage Dockerfile for Alliance Procurement and Capacity Building Application
+# Optimized for production deployment
 
-# Stage 1: Build Stage
-FROM node:18-alpine AS builder
-
-# Set working directory
+# Stage 1: Dependencies
+FROM node:18-alpine AS deps
 WORKDIR /app
 
-# Install system dependencies for building native modules
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    git
+# Install system dependencies
+RUN apk add --no-cache libc6-compat
 
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (including devDependencies for building)
-RUN npm ci --only=production=false --silent
+# Install dependencies
+RUN npm ci --only=production --silent && \
+    npm cache clean --force
+
+# Stage 2: Builder
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev)
+RUN npm ci --silent
 
 # Copy source code
 COPY . .
@@ -25,58 +34,53 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Stage 2: Production Stage
-FROM node:18-alpine AS production
-
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
-
-# Create app directory and user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S alliance -u 1001
-
+# Stage 3: Production
+FROM node:18-alpine AS runner
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init curl
 
-# Install only production dependencies
-RUN npm ci --only=production --silent && \
-    npm cache clean --force
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S apcb -u 1001 -G nodejs
+
+# Copy production dependencies from deps stage
+COPY --from=deps --chown=apcb:nodejs /app/node_modules ./node_modules
 
 # Copy built application from builder stage
-COPY --from=builder --chown=alliance:nodejs /app/dist ./dist
-COPY --from=builder --chown=alliance:nodejs /app/client ./client
+COPY --from=builder --chown=apcb:nodejs /app/dist ./dist
+COPY --from=builder --chown=apcb:nodejs /app/package*.json ./
 
-# Copy any additional files needed at runtime
-COPY --chown=alliance:nodejs drizzle.config.ts ./
-COPY --chown=alliance:nodejs tsconfig.json ./
+# Copy necessary config files
+COPY --chown=apcb:nodejs drizzle.config.ts ./
+COPY --chown=apcb:nodejs tsconfig.json ./
 
-# Create directories for uploads and logs
-RUN mkdir -p /app/uploads /app/logs && \
-    chown -R alliance:nodejs /app/uploads /app/logs
+# Create directories for runtime
+RUN mkdir -p /app/uploads /app/logs /tmp && \
+    chown -R apcb:nodejs /app/uploads /app/logs /tmp
 
 # Switch to non-root user
-USER alliance
+USER apcb
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOST=0.0.0.0
+# Environment variables
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOST=0.0.0.0
 
 # Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:3000/api/events || exit 1
 
-# Start the application with dumb-init for proper signal handling
+# Start application
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]
 
-# Labels for better maintainability
-LABEL maintainer="Alliance Procurement Team"
-LABEL version="2.0"
-LABEL description="Alliance Procurement and Capacity Building Application"
-LABEL org.opencontainers.image.source="https://github.com/yourusername/Alliance-Procurement-And-Capacity-Building-v2"
+# Metadata
+LABEL maintainer="APCB Team" \
+      version="2.0.0" \
+      description="Alliance Procurement and Capacity Building Platform" \
+      org.opencontainers.image.source="https://github.com/yourusername/apcb-platform"

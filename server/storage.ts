@@ -1784,4 +1784,147 @@ export const storage = {
       throw new Error(`Failed to update exhibition logo: ${error.message}`);
     }
   },
+
+  // Delete methods for admin
+  async deleteUser(userId: string): Promise<void> {
+    try {
+      console.log(`🗑️ Deleting user: ${userId}`);
+      
+      // First, delete user from public.users table
+      const { error: dbError } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", userId);
+
+      if (dbError) {
+        console.error("Error deleting user from database:", dbError.message);
+        throw new Error(`Failed to delete user from database: ${dbError.message}`);
+      }
+
+      // Then, delete user from Supabase Auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+      if (authError) {
+        console.error("Error deleting user from auth:", authError.message);
+        throw new Error(`Failed to delete user from auth: ${authError.message}`);
+      }
+
+      console.log(`✅ User ${userId} deleted successfully`);
+    } catch (error: any) {
+      console.error("Error in deleteUser:", error.message);
+      throw new Error(`Failed to delete user: ${error.message}`);
+    }
+  },
+
+  async deleteSponsorship(id: string): Promise<void> {
+    try {
+      console.log(`🗑️ Deleting sponsorship: ${id}`);
+      
+      // Get sponsorship to check for payment evidence
+      const { data: sponsorshipData, error: fetchError } = await supabase
+        .from("sponsorships")
+        .select("payment_evidence, logo_url")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching sponsorship:", fetchError.message);
+        throw new Error(`Failed to fetch sponsorship: ${fetchError.message}`);
+      }
+
+      // Delete payment evidence file if exists
+      if (sponsorshipData.payment_evidence) {
+        const { error: storageError } = await supabase.storage
+          .from("payment-evidence")
+          .remove([sponsorshipData.payment_evidence]);
+        
+        if (storageError) {
+          console.warn("Warning: Failed to delete payment evidence:", storageError.message);
+        }
+      }
+
+      // Delete logo file if exists
+      if (sponsorshipData.logo_url) {
+        const { error: logoError } = await supabase.storage
+          .from("payment-evidence")
+          .remove([sponsorshipData.logo_url]);
+        
+        if (logoError) {
+          console.warn("Warning: Failed to delete logo:", logoError.message);
+        }
+      }
+
+      // Delete sponsorship record
+      const { error: deleteError } = await supabase
+        .from("sponsorships")
+        .delete()
+        .eq("id", id);
+
+      if (deleteError) {
+        console.error("Error deleting sponsorship:", deleteError.message);
+        throw new Error(`Failed to delete sponsorship: ${deleteError.message}`);
+      }
+
+      console.log(`✅ Sponsorship ${id} deleted successfully`);
+    } catch (error: any) {
+      console.error("Error in deleteSponsorship:", error.message);
+      throw new Error(`Failed to delete sponsorship: ${error.message}`);
+    }
+  },
+
+  async deleteExhibition(id: string): Promise<void> {
+    try {
+      console.log(`🗑️ Deleting exhibition: ${id}`);
+      
+      // Get exhibition to check for payment evidence
+      const { data: exhibitionData, error: fetchError } = await supabase
+        .from("exhibitions")
+        .select("payment_evidence, logo_url")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching exhibition:", fetchError.message);
+        throw new Error(`Failed to fetch exhibition: ${fetchError.message}`);
+      }
+
+      // Delete payment evidence file if exists
+      if (exhibitionData.payment_evidence) {
+        const { error: storageError } = await supabase.storage
+          .from("payment-evidence")
+          .remove([exhibitionData.payment_evidence]);
+        
+        if (storageError) {
+          console.warn("Warning: Failed to delete payment evidence:", storageError.message);
+        }
+      }
+
+      // Delete logo file if exists
+      if (exhibitionData.logo_url) {
+        const { error: logoError } = await supabase.storage
+          .from("payment-evidence")
+          .remove([exhibitionData.logo_url]);
+        
+        if (logoError) {
+          console.warn("Warning: Failed to delete logo:", logoError.message);
+        }
+      }
+
+      // Delete exhibition record
+      const { error: deleteError } = await supabase
+        .from("exhibitions")
+        .delete()
+        .eq("id", id);
+
+      if (deleteError) {
+        console.error("Error deleting exhibition:", deleteError.message);
+        throw new Error(`Failed to delete exhibition: ${deleteError.message}`);
+      }
+
+      console.log(`✅ Exhibition ${id} deleted successfully`);
+    } catch (error: any) {
+      console.error("Error in deleteExhibition:", error.message);
+      throw new Error(`Failed to delete exhibition: ${error.message}`);
+    }
+  },
 };

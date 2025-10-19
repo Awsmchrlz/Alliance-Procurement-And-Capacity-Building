@@ -35,6 +35,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -95,6 +96,7 @@ import {
   Check,
   Info,
   Edit,
+  Trash2,
 } from "lucide-react";
 
 // Type definitions
@@ -276,6 +278,8 @@ export default function AdminDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>("ordinary_user");
 
   // Email functionality
   const [emailSubject, setEmailSubject] = useState("");
@@ -586,8 +590,10 @@ export default function AdminDashboard() {
       }
 
       // Set user role from metadata
-      const userRole = currentUser.user_metadata?.role || "ordinary_user";
-      console.log("Current user role:", userRole);
+      const currentUserRole = currentUser.user_metadata?.role || "ordinary_user";
+      setUser(currentUser);
+      setUserRole(currentUserRole);
+      console.log("Current user role:", currentUserRole);
       console.log("Current user metadata:", currentUser.user_metadata);
 
       // Fetch events (public endpoint)
@@ -603,9 +609,9 @@ export default function AdminDashboard() {
 
       // Only fetch admin data if user has admin role
       if (
-        userRole === "super_admin" ||
-        userRole === "finance_person" ||
-        userRole === "event_manager"
+        currentUserRole === "super_admin" ||
+        currentUserRole === "finance_person" ||
+        currentUserRole === "event_manager"
       ) {
         // Fetch users
         try {
@@ -825,6 +831,109 @@ export default function AdminDashboard() {
       });
     }
   };
+
+  // Delete handlers (Super Admin only)
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiRequest("DELETE", `/api/admin/users/${userId}`);
+
+      toast({
+        title: "User Deleted",
+        description: `User "${userName}" has been permanently deleted`,
+      });
+
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteRegistration = async (registrationId: string, registrationNumber: string) => {
+    if (!confirm(`Are you sure you want to permanently delete registration "${registrationNumber}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiRequest("DELETE", `/api/admin/registrations/${registrationId}`);
+
+      toast({
+        title: "Registration Deleted",
+        description: `Registration "${registrationNumber}" has been permanently deleted`,
+      });
+
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error deleting registration:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete registration",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSponsorship = async (sponsorshipId: string, companyName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete sponsorship from "${companyName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiRequest("DELETE", `/api/admin/sponsorships/${sponsorshipId}`);
+
+      toast({
+        title: "Sponsorship Deleted",
+        description: `Sponsorship from "${companyName}" has been permanently deleted`,
+      });
+
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error deleting sponsorship:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete sponsorship",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteExhibition = async (exhibitionId: string, companyName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete exhibition from "${companyName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiRequest("DELETE", `/api/admin/exhibitions/${exhibitionId}`);
+
+      toast({
+        title: "Exhibition Deleted",
+        description: `Exhibition from "${companyName}" has been permanently deleted`,
+      });
+
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error deleting exhibition:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete exhibition",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // User role checks
+  const isSuperAdmin = userRole === "super_admin";
+  const canUpdatePaymentStatus = userRole === "super_admin" || userRole === "finance_person";
+  const canManageUsers = userRole === "super_admin" || userRole === "event_manager";
+  const canRegisterUsers = userRole === "super_admin" || userRole === "event_manager";
 
   // Calculate analytics
   const totalRevenue = registrations
@@ -2094,6 +2203,19 @@ export default function AdminDashboard() {
                                             Make Ordinary User
                                           </DropdownMenuItem>
                                         )}
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleDeleteUser(
+                                              userData.id,
+                                              `${userData.firstName} ${userData.lastName}`,
+                                            )
+                                          }
+                                          className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                                        >
+                                          <Trash2 className="w-4 h-4 mr-2" />
+                                          Delete User
+                                        </DropdownMenuItem>
                                       </>
                                     )}
                                 </DropdownMenuContent>
@@ -2882,6 +3004,23 @@ export default function AdminDashboard() {
                                       <Shield className="w-4 h-4 mr-2" />
                                       Payment actions restricted
                                     </DropdownMenuItem>
+                                  )}
+                                  {isSuperAdmin && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onSelect={() =>
+                                          handleDeleteRegistration(
+                                            registration.id,
+                                            registration.registrationNumber || "N/A",
+                                          )
+                                        }
+                                        className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete Registration
+                                      </DropdownMenuItem>
+                                    </>
                                   )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -3677,6 +3816,23 @@ export default function AdminDashboard() {
                                       Deactivate
                                     </DropdownMenuItem>
                                   )}
+                                  {userRole === "super_admin" && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleDeleteSponsorship(
+                                            sponsorship.id,
+                                            sponsorship.companyName,
+                                          )
+                                        }
+                                        className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Permanently
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -3895,6 +4051,23 @@ export default function AdminDashboard() {
                                       <XCircle className="mr-2 h-4 w-4" />
                                       Deactivate
                                     </DropdownMenuItem>
+                                  )}
+                                  {userRole === "super_admin" && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleDeleteExhibition(
+                                            exhibition.id,
+                                            exhibition.companyName,
+                                          )
+                                        }
+                                        className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Permanently
+                                      </DropdownMenuItem>
+                                    </>
                                   )}
                                 </DropdownMenuContent>
                               </DropdownMenu>

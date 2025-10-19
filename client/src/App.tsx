@@ -16,6 +16,7 @@ import Services from "@/pages/services";
 import About from "@/pages/about";
 import Events from "@/pages/events";
 import AdminDashboard from "@/pages/admin-dashboard";
+import URLDebugComponent from "@/components/url-debug";
 
 import NotFound from "@/pages/not-found";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
@@ -34,13 +35,13 @@ function ContactRedirect() {
           document.body.offsetHeight,
           document.documentElement.clientHeight,
           document.documentElement.scrollHeight,
-          document.documentElement.offsetHeight
+          document.documentElement.offsetHeight,
         );
 
         // Scroll to the absolute bottom
         window.scrollTo({
           top: documentHeight,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       });
     };
@@ -111,6 +112,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <URLDebugComponent />
           <WhatsAppFloat
             phoneNumber="+260 571354125"
             message="Hello! I'd like to know more about Alliance Procurement and Capacity Building services."
