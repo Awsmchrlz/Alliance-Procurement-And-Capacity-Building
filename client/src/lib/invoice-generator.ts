@@ -332,7 +332,7 @@ export const formatRegistrationForInvoice = (registration: any): InvoiceData => 
     const mappedDelegateType = delegateTypeMapping[registration.delegateType] || 'private_sector';
     const config = PRICING_CONFIG[mappedDelegateType];
 
-    const { basePrices, packages, currency } = config;
+    const { packages, currency } = config;
     let totalAmount = 0;
     let basePrice = 0;
     let accommodationPrice = 0;
@@ -340,27 +340,33 @@ export const formatRegistrationForInvoice = (registration: any): InvoiceData => 
     const dinnerGalaPrice = registration.dinnerGalaAttendance ? packages.dinnerGala : 0;
 
     if (mappedDelegateType === 'international') {
+      // International delegates have different pricing structure
+      const intlPrices = config.basePrices as typeof PRICING_CONFIG.international.basePrices;
+
       if (registration.accommodationPackage && (registration.victoriaFallsPackage || registration.boatCruisePackage)) {
-        totalAmount = basePrices.withAccommodationAndBoatCruiseAndVictoriaFalls;
-        basePrice = basePrices.withoutPackages;
-        accommodationPrice = basePrices.withAccommodation - basePrices.withoutPackages;
-        victoriaFallsPrice = basePrices.withAccommodationAndBoatCruiseAndVictoriaFalls - basePrices.withAccommodation;
+        totalAmount = intlPrices.withAccommodationAndBoatCruiseAndVictoriaFalls;
+        basePrice = intlPrices.withoutPackages;
+        accommodationPrice = intlPrices.withAccommodation - intlPrices.withoutPackages;
+        victoriaFallsPrice = intlPrices.withAccommodationAndBoatCruiseAndVictoriaFalls - intlPrices.withAccommodation;
       } else if (registration.accommodationPackage) {
-        totalAmount = basePrices.withAccommodation;
-        basePrice = basePrices.withoutPackages;
-        accommodationPrice = basePrices.withAccommodation - basePrices.withoutPackages;
+        totalAmount = intlPrices.withAccommodation;
+        basePrice = intlPrices.withoutPackages;
+        accommodationPrice = intlPrices.withAccommodation - intlPrices.withoutPackages;
       } else {
-        totalAmount = basePrices.withoutPackages;
-        basePrice = basePrices.withoutPackages;
+        totalAmount = intlPrices.withoutPackages;
+        basePrice = intlPrices.withoutPackages;
       }
     } else {
+      // Private and public sector have same pricing structure
+      const localPrices = config.basePrices as typeof PRICING_CONFIG.private_sector.basePrices;
+
       if (registration.victoriaFallsPackage || registration.boatCruisePackage) {
-        totalAmount = basePrices.withBoatCruiseAndVictoriaFalls;
-        basePrice = basePrices.withoutPackages;
-        victoriaFallsPrice = basePrices.withBoatCruiseAndVictoriaFalls - basePrices.withoutPackages;
+        totalAmount = localPrices.withBoatCruiseAndVictoriaFalls;
+        basePrice = localPrices.withoutPackages;
+        victoriaFallsPrice = localPrices.withBoatCruiseAndVictoriaFalls - localPrices.withoutPackages;
       } else {
-        totalAmount = basePrices.withoutPackages;
-        basePrice = basePrices.withoutPackages;
+        totalAmount = localPrices.withoutPackages;
+        basePrice = localPrices.withoutPackages;
       }
     }
 

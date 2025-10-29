@@ -1,7 +1,6 @@
 import { Header } from "@/components/header";
 import { Navigation } from "@/components/navigation";
 import { HeroSection } from "@/components/hero-section";
-import { UpcomingEventsSection } from "@/components/upcoming-events";
 import { PartnershipSection } from "@/components/partnership-section";
 import { PartnersShowcase } from "@/components/partners-showcase";
 import { SponsorshipsShowcase } from "@/components/sponsorships-showcase";
@@ -18,7 +17,6 @@ export default function Home() {
       <Header />
       <Navigation />
       <HeroSection />
-      <UpcomingEventsSection />
       <PartnershipSection />
       <AboutSection />
       <ServicesSection />

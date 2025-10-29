@@ -4,15 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="registration dialog and invoice fixes">
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_25_09_2025,_9_26 pm_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_25_09_2025__9_26pm__Changes_.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_26_09_2025,_11_39 am_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_26_09_2025__11_39am__Changes_.xml" beforeDir="false" />
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="regen">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/lib/utils.ts" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/lib/utils.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/forgot-password.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/forgot-password.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,7 +56,8 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;fixes/contact-us&quot;
+    &quot;git-widget-placeholder&quot;: &quot;#27 on fixes/contact-us&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;
   }
 }</component>
   <component name="TaskManager">
@@ -73,22 +67,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1757290716460</updated>
-    </task>
-    <task id="LOCAL-00001" summary="clean up">
-      <option name="closed" value="true" />
-      <created>1757290845300</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1757290845300</updated>
-    </task>
-    <task id="LOCAL-00002" summary="please work">
-      <option name="closed" value="true" />
-      <created>1757318279016</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1757318279016</updated>
     </task>
     <task id="LOCAL-00003" summary="going live">
       <option name="closed" value="true" />
@@ -450,7 +428,39 @@
       <option name="project" value="LOCAL" />
       <updated>1759244345081</updated>
     </task>
-    <option name="localTasksCounter" value="48" />
+    <task id="LOCAL-00048" summary="regen">
+      <option name="closed" value="true" />
+      <created>1760910973676</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1760910973676</updated>
+    </task>
+    <task id="LOCAL-00049" summary="regen">
+      <option name="closed" value="true" />
+      <created>1760911000669</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1760911000669</updated>
+    </task>
+    <task id="LOCAL-00050" summary="regen">
+      <option name="closed" value="true" />
+      <created>1760911525549</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1760911525550</updated>
+    </task>
+    <task id="LOCAL-00051" summary="regen">
+      <option name="closed" value="true" />
+      <created>1760912052566</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1760912052566</updated>
+    </task>
+    <option name="localTasksCounter" value="52" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -491,6 +501,7 @@
     <MESSAGE value="project clean up, live fixes" />
     <MESSAGE value="contact form" />
     <MESSAGE value="registration dialog and invoice fixes" />
-    <option name="LAST_COMMIT_MESSAGE" value="registration dialog and invoice fixes" />
+    <MESSAGE value="regen" />
+    <option name="LAST_COMMIT_MESSAGE" value="regen" />
   </component>
 </project>

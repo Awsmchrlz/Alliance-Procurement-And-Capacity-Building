@@ -278,7 +278,7 @@ export default function AdminDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [localUser, setLocalUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>("ordinary_user");
 
   // Email functionality
@@ -591,7 +591,7 @@ export default function AdminDashboard() {
 
       // Set user role from metadata
       const currentUserRole = currentUser.user_metadata?.role || "ordinary_user";
-      setUser(currentUser);
+      setLocalUser(currentUser);
       setUserRole(currentUserRole);
       console.log("Current user role:", currentUserRole);
       console.log("Current user metadata:", currentUser.user_metadata);
@@ -929,11 +929,8 @@ export default function AdminDashboard() {
     }
   };
 
-  // User role checks
-  const isSuperAdmin = userRole === "super_admin";
-  const canUpdatePaymentStatus = userRole === "super_admin" || userRole === "finance_person";
-  const canManageUsers = userRole === "super_admin" || userRole === "event_manager";
-  const canRegisterUsers = userRole === "super_admin" || userRole === "event_manager";
+  // User role checks (using useAuth hook values)
+  // Note: isSuperAdmin, canUpdatePaymentStatus, canManageUsers, canRegisterUsers are already defined from useAuth hook above
 
   // Calculate analytics
   const totalRevenue = registrations

@@ -30,6 +30,7 @@ export const users = pgTable("users", {
   gender: text("gender"),
   role: text("role").notNull().default("ordinary_user"), // super_admin, finance_person, event_manager, ordinary_user
   createdAt: timestamp("created_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"), // Soft delete timestamp
 });
 
 export const events = pgTable("events", {
@@ -87,6 +88,7 @@ export const eventRegistrations = pgTable("event_registrations", {
   }),
   groupPaymentCurrency: text("group_payment_currency"), // ZMW, USD
   organizationReference: text("organization_reference"), // Reference for group/org payments
+  deletedAt: timestamp("deleted_at"), // Soft delete timestamp
 });
 
 export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
@@ -124,6 +126,7 @@ export const sponsorships = pgTable("sponsorships", {
   notes: text("notes"),
   submittedAt: timestamp("submitted_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"), // Soft delete timestamp
 });
 
 export const exhibitions = pgTable("exhibitions", {
@@ -155,6 +158,7 @@ export const exhibitions = pgTable("exhibitions", {
   logo_url: text("logo_url"),
   submittedAt: timestamp("submitted_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"), // Soft delete timestamp
 });
 
 export const insertUserSchema = createInsertSchema(users)

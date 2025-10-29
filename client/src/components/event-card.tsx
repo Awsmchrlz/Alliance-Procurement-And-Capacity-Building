@@ -278,7 +278,7 @@ export function EventCard({
                   View Details
                 </Button>
                 <p className="text-gray-400 text-xs mt-1">
-                  Registration available for main event only
+                  This event has already passed
                 </p>
               </div>
             )}

@@ -200,7 +200,7 @@ const EventsPage = () => {
 
         <div className="relative container mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-6xl font-bold text-white mb-6">
-            Upcoming <span className="text-[#87CEEB]">Event</span>
+            Our <span className="text-[#87CEEB]">Events</span>
           </h1>
           {isAuthenticated && (
             <div className="flex items-center justify-center gap-3 mb-3">
@@ -227,7 +227,7 @@ const EventsPage = () => {
       </section>
 
       {/* Events Grid */}
-      <section className="py-4 bg-gray-50">
+      <section className="py-8 bg-gray-50">
         <div className="container mx-auto px-4">
           {eventsArray.length === 0 ? (
             <div className="text-center py-16">
@@ -240,8 +240,20 @@ const EventsPage = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {eventsArray.map((event: Event) => {
+            <>
+              {/* Upcoming Events Section */}
+              {eventsArray.filter((e: Event) => getEventStatus(e) === "upcoming" || getEventStatus(e) === "ongoing").length > 0 && (
+                <div className="mb-16">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Sparkles className="w-6 h-6 text-[#1C356B]" />
+                    <h2 className="text-3xl font-bold text-gray-900">
+                      Upcoming Events
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {eventsArray
+                      .filter((e: Event) => getEventStatus(e) === "upcoming" || getEventStatus(e) === "ongoing")
+                      .map((event: Event) => {
                 const status = getEventStatus(event);
                 const isRegistered = isUserRegistered(event.id);
 
@@ -347,7 +359,123 @@ const EventsPage = () => {
                   </Card>
                 );
               })}
-            </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Previous Events Section */}
+              {eventsArray.filter((e: Event) => getEventStatus(e) === "past").length > 0 && (
+                <div>
+                  <div className="flex items-center gap-3 mb-6">
+                    <Clock className="w-6 h-6 text-gray-600" />
+                    <h2 className="text-3xl font-bold text-gray-900">
+                      Previous Events
+                    </h2>
+                    <Badge variant="outline" className="ml-2">
+                      {eventsArray.filter((e: Event) => getEventStatus(e) === "past").length} Event{eventsArray.filter((e: Event) => getEventStatus(e) === "past").length > 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+                  <p className="text-gray-600 mb-6">
+                    Explore our past events and see what we've accomplished together
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {eventsArray
+                      .filter((e: Event) => getEventStatus(e) === "past")
+                      .sort((a: Event, b: Event) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+                      .map((event: Event) => {
+                const status = getEventStatus(event);
+                const isRegistered = isUserRegistered(event.id);
+
+                return (
+                  <Card
+                    key={event.id}
+                    className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md overflow-hidden opacity-90 hover:opacity-100"
+                  >
+                    <div className="relative">
+                      {event.imageUrl && (
+                        <div className="h-48 bg-gradient-to-br from-gray-600 to-gray-800 relative overflow-hidden">
+                          <img
+                            src={event.imageUrl}
+                            alt={event.title}
+                            className="w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-105 transition-all duration-300 grayscale group-hover:grayscale-0"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        </div>
+                      )}
+
+                      <div className="absolute top-4 right-4">
+                        {getStatusBadge(status)}
+                      </div>
+
+                      {isRegistered && (
+                        <div className="absolute top-4 left-4">
+                          <Badge className="bg-emerald-500 text-white">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Attended
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-xl font-bold text-gray-800 group-hover:text-[#1C356B] transition-colors">
+                        {event.title}
+                      </CardTitle>
+                      {event.description && (
+                        <CardDescription className="text-gray-600 line-clamp-2">
+                          {event.description}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 text-sm text-gray-600">
+                          <Calendar className="w-4 h-4 text-gray-500" />
+                          <span>
+                            {format(new Date(event.startDate), "MMM d, yyyy")}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3 text-sm text-gray-600">
+                          <Clock className="w-4 h-4 text-gray-500" />
+                          <span>
+                            {format(new Date(event.startDate), "h:mm a")}
+                          </span>
+                        </div>
+
+                        {event.location && (
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <MapPin className="w-4 h-4 text-gray-500" />
+                            <span className="line-clamp-1">
+                              {event.location}
+                            </span>
+                          </div>
+                        )}
+
+                        {event.maxAttendees && (
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <Users className="w-4 h-4 text-gray-500" />
+                            <span>Max {event.maxAttendees} participants</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-4 border-t border-gray-100">
+                        <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 font-medium py-4 px-4 rounded-lg flex items-center justify-center gap-2">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Event Completed</span>
+                        </div>
+                      </div>
+
+                    </CardContent>
+                  </Card>
+                );
+              })}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

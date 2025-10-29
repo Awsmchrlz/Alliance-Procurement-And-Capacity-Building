@@ -276,25 +276,36 @@ function RegistrationDialog({
     let total = 0;
 
     if (delegateType === "international") {
-      // For international delegates
+      // For international delegates - type narrow to international pricing
+      const intlPrices = config.basePrices as { 
+        withoutPackages: number; 
+        withAccommodation: number; 
+        withAccommodationAndBoatCruiseAndVictoriaFalls: number; 
+      };
+      
       if (accommodationPackage && (victoriaFallsPackage || boatCruisePackage)) {
         // With accommodation + boat cruise + Victoria Falls
-        total = config.basePrices.withAccommodationAndBoatCruiseAndVictoriaFalls;
+        total = intlPrices.withAccommodationAndBoatCruiseAndVictoriaFalls;
       } else if (accommodationPackage) {
         // With accommodation only
-        total = config.basePrices.withAccommodation;
+        total = intlPrices.withAccommodation;
       } else {
         // Base price without packages
-        total = config.basePrices.withoutPackages;
+        total = intlPrices.withoutPackages;
       }
     } else {
-      // For local delegates (private/public)
+      // For local delegates (private/public) - type narrow to local pricing
+      const localPrices = config.basePrices as { 
+        withoutPackages: number; 
+        withBoatCruiseAndVictoriaFalls: number; 
+      };
+      
       if (victoriaFallsPackage || boatCruisePackage) {
         // With boat cruise + Victoria Falls (total cost)
-        total = config.basePrices.withBoatCruiseAndVictoriaFalls;
+        total = localPrices.withBoatCruiseAndVictoriaFalls;
       } else {
         // Base price without packages
-        total = config.basePrices.withoutPackages;
+        total = localPrices.withoutPackages;
       }
     }
 

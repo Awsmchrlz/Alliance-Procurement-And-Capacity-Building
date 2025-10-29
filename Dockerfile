@@ -1,86 +1,40 @@
-# Multi-stage Dockerfile for Alliance Procurement and Capacity Building Application
-# Optimized for production deployment
+FROM node:20-alpine
 
-# Stage 1: Dependencies
-FROM node:18-alpine AS deps
+# Install security updates and build dependencies
+RUN apk update && apk upgrade && \
+    apk add --no-cache dumb-init python3 make g++
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S apcb -u 1001
+
 WORKDIR /app
-
-# Install system dependencies
-RUN apk add --no-cache libc6-compat
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production --silent && \
-    npm cache clean --force
+# Install ALL dependencies (including optional ones for Alpine)
+RUN npm ci --include=optional && npm cache clean --force
 
-# Stage 2: Builder
-FROM node:18-alpine AS builder
-WORKDIR /app
-
-# Install build dependencies
-RUN apk add --no-cache python3 make g++
-
-# Copy package files
-COPY package*.json ./
-
-# Install all dependencies (including dev)
-RUN npm ci --silent
-
-# Copy source code
+# Copy source code and migrations
 COPY . .
 
 # Build the application
 RUN npm run build
 
-# Stage 3: Production
-FROM node:18-alpine AS runner
-WORKDIR /app
+# Ensure migrations are included
+RUN ls -la db/migrations/ || echo "No migrations folder"
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init curl
+# Change ownership to non-root user
+RUN chown -R apcb:nodejs /app
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S apcb -u 1001 -G nodejs
-
-# Copy production dependencies from deps stage
-COPY --from=deps --chown=apcb:nodejs /app/node_modules ./node_modules
-
-# Copy built application from builder stage
-COPY --from=builder --chown=apcb:nodejs /app/dist ./dist
-COPY --from=builder --chown=apcb:nodejs /app/package*.json ./
-
-# Copy necessary config files
-COPY --chown=apcb:nodejs drizzle.config.ts ./
-COPY --chown=apcb:nodejs tsconfig.json ./
-
-# Create directories for runtime
-RUN mkdir -p /app/uploads /app/logs /tmp && \
-    chown -R apcb:nodejs /app/uploads /app/logs /tmp
+# Expose port
+EXPOSE 5001
 
 # Switch to non-root user
 USER apcb
 
-# Environment variables
-ENV NODE_ENV=production \
-    PORT=3000 \
-    HOST=0.0.0.0
-
-# Expose port
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:3000/api/events || exit 1
-
-# Start application
+# Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/index.js"]
 
-# Metadata
-LABEL maintainer="APCB Team" \
-      version="2.0.0" \
-      description="Alliance Procurement and Capacity Building Platform" \
-      org.opencontainers.image.source="https://github.com/yourusername/apcb-platform"
+# Start the application (migrations run automatically in server/index.ts)
+CMD ["node", "dist/index.js"]
