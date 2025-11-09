@@ -18,7 +18,7 @@ export function Footer() {
     { href: "#about", label: "About Us" },
     { href: "#services", label: "Our Services" },
     { href: "#events", label: "Training Events" },
-    { href: "#", label: "Resources" },
+    { href: "/documents", label: "Documents" },
   ];
 
   const servicesLinks = [

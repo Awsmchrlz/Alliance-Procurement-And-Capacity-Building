@@ -773,6 +773,7 @@ export const storage = {
         dinnerGalaAttendance: data.dinner_gala_attendance,
         accommodationPackage: data.accommodation_package,
         victoriaFallsPackage: data.victoria_falls_package,
+        boatCruisePackage: data.boat_cruise_package,
         groupSize: data.group_size,
         groupPaymentAmount: data.group_payment_amount,
         groupPaymentCurrency: data.group_payment_currency,
@@ -829,6 +830,7 @@ export const storage = {
         dinnerGalaAttendance: r.dinner_gala_attendance,
         accommodationPackage: r.accommodation_package,
         victoriaFallsPackage: r.victoria_falls_package,
+        boatCruisePackage: r.boat_cruise_package,
         groupSize: r.group_size,
         groupPaymentAmount: r.group_payment_amount,
         groupPaymentCurrency: r.group_payment_currency,
@@ -884,6 +886,7 @@ export const storage = {
         dinnerGalaAttendance: r.dinner_gala_attendance,
         accommodationPackage: r.accommodation_package,
         victoriaFallsPackage: r.victoria_falls_package,
+        boatCruisePackage: r.boat_cruise_package,
         groupSize: r.group_size,
         groupPaymentAmount: r.group_payment_amount,
         groupPaymentCurrency: r.group_payment_currency,
@@ -926,6 +929,7 @@ export const storage = {
         dinnerGalaAttendance: r.dinner_gala_attendance,
         accommodationPackage: r.accommodation_package,
         victoriaFallsPackage: r.victoria_falls_package,
+        boatCruisePackage: r.boat_cruise_package,
         groupSize: r.group_size,
         groupPaymentAmount: r.group_payment_amount,
         groupPaymentCurrency: r.group_payment_currency,
@@ -1001,7 +1005,6 @@ export const storage = {
         eventId: data.event_id,
         userId: data.user_id,
         paymentStatus: data.payment_status,
-
         country: data.country,
         organization: data.organization,
         position: data.position,
@@ -1015,8 +1018,8 @@ export const storage = {
         dinnerGalaAttendance: data.dinner_gala_attendance,
         accommodationPackage: data.accommodation_package,
         victoriaFallsPackage: data.victoria_falls_package,
+        boatCruisePackage: data.boat_cruise_package,
         registeredAt: data.registered_at,
-        // Group payment fields
         groupSize: data.group_size,
         groupPaymentAmount: data.group_payment_amount,
         groupPaymentCurrency: data.group_payment_currency,
@@ -1068,7 +1071,6 @@ export const storage = {
         eventId: data.event_id,
         userId: data.user_id,
         paymentStatus: data.payment_status,
-
         country: data.country,
         organization: data.organization,
         position: data.position,
@@ -1084,6 +1086,7 @@ export const storage = {
         dinnerGalaAttendance: data.dinner_gala_attendance,
         accommodationPackage: data.accommodation_package,
         victoriaFallsPackage: data.victoria_falls_package,
+        boatCruisePackage: data.boat_cruise_package,
         groupSize: data.group_size,
         groupPaymentAmount: data.group_payment_amount,
         groupPaymentCurrency: data.group_payment_currency,
@@ -1925,6 +1928,126 @@ export const storage = {
     } catch (error: any) {
       console.error("Error in deleteExhibition:", error.message);
       throw new Error(`Failed to delete exhibition: ${error.message}`);
+    }
+  },
+
+  // Document management methods
+  async getAllDocuments() {
+    try {
+      const { data, error } = await supabase
+        .from("documents")
+        .select("*, users!documents_uploaded_by_fkey(first_name, last_name)")
+        .is("deleted_at", null)
+        .order("uploaded_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching documents:", error.message);
+        throw new Error(`Failed to fetch documents: ${error.message}`);
+      }
+
+      return data.map((doc: any) => ({
+        id: doc.id,
+        title: doc.title,
+        description: doc.description,
+        fileUrl: doc.file_url,
+        fileName: doc.file_name,
+        fileSize: doc.file_size,
+        fileType: doc.file_type,
+        uploadedBy: doc.uploaded_by,
+        uploadedAt: doc.uploaded_at,
+        uploaderName: doc.users ? `${doc.users.first_name} ${doc.users.last_name}` : null,
+      }));
+    } catch (error: any) {
+      console.error("Error in getAllDocuments:", error.message);
+      throw new Error(`Failed to fetch documents: ${error.message}`);
+    }
+  },
+
+  async getDocument(id: string) {
+    try {
+      const { data, error } = await supabase
+        .from("documents")
+        .select("*")
+        .eq("id", id)
+        .is("deleted_at", null)
+        .single();
+
+      if (error) {
+        console.error("Error fetching document:", error.message);
+        return null;
+      }
+
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        fileUrl: data.file_url,
+        fileName: data.file_name,
+        fileSize: data.file_size,
+        fileType: data.file_type,
+        uploadedBy: data.uploaded_by,
+        uploadedAt: data.uploaded_at,
+      };
+    } catch (error: any) {
+      console.error("Error in getDocument:", error.message);
+      return null;
+    }
+  },
+
+  async createDocument(document: any) {
+    try {
+      const { data, error } = await supabase
+        .from("documents")
+        .insert({
+          title: document.title,
+          description: document.description,
+          file_url: document.fileUrl,
+          file_name: document.fileName,
+          file_size: document.fileSize,
+          file_type: document.fileType,
+          uploaded_by: document.uploadedBy,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating document:", error.message);
+        throw new Error(`Failed to create document: ${error.message}`);
+      }
+
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        fileUrl: data.file_url,
+        fileName: data.file_name,
+        fileSize: data.file_size,
+        fileType: data.file_type,
+        uploadedBy: data.uploaded_by,
+        uploadedAt: data.uploaded_at,
+      };
+    } catch (error: any) {
+      console.error("Error in createDocument:", error.message);
+      throw new Error(`Failed to create document: ${error.message}`);
+    }
+  },
+
+  async softDeleteDocument(id: string) {
+    try {
+      const { error } = await supabase
+        .from("documents")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error soft deleting document:", error.message);
+        throw new Error(`Failed to delete document: ${error.message}`);
+      }
+
+      console.log(`✅ Document ${id} soft deleted successfully`);
+    } catch (error: any) {
+      console.error("Error in softDeleteDocument:", error.message);
+      throw new Error(`Failed to delete document: ${error.message}`);
     }
   },
 };

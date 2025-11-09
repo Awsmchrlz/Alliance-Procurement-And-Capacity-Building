@@ -5,39 +5,23 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: apcb-platform:latest
-    container_name: apcb-app
-    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "5001:5001"
     environment:
       - NODE_ENV=production
-      - PORT=3000
-      - HOST=0.0.0.0
-      # Add your environment variables here or use env_file
+      - PORT=5001
+      - DATABASE_URL=${DATABASE_URL}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-    env_file:
-      - .env
-    volumes:
-      - uploads:/app/uploads
-      - logs:/app/logs
-    networks:
-      - apcb-network
+      - BREVO_API_KEY=${BREVO_API_KEY}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/events"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5001/api/events', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
-volumes:
-  uploads:
-    driver: local
-  logs:
-    driver: local
-
-networks:
-  apcb-network:
-    driver: bridge

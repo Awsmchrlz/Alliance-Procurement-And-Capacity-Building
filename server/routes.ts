@@ -717,6 +717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dinnerGalaAttendance: false,
           accommodationPackage: false,
           victoriaFallsPackage: false,
+          boatCruisePackage: false,
         });
 
         console.log(`✅ Admin registered user ${userId} for event ${eventId}`);
@@ -2510,6 +2511,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Failed to delete exhibition", 
           details: error.message 
         });
+      }
+    }
+  );
+
+  // Document routes
+  // Public: Get all documents
+  app.get("/api/documents", async (_req, res) => {
+    try {
+      const documents = await storage.getAllDocuments();
+      res.json(documents);
+    } catch (error: any) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents", details: error.message });
+    }
+  });
+
+  // Admin: Get all documents (including soft-deleted)
+  app.get(
+    "/api/admin/documents",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.EventManager]),
+    async (_req, res) => {
+      try {
+        const documents = await storage.getAllDocuments();
+        res.json(documents);
+      } catch (error: any) {
+        console.error("Error fetching documents:", error);
+        res.status(500).json({ message: "Failed to fetch documents", details: error.message });
+      }
+    }
+  );
+
+  // Admin: Upload document
+  app.post(
+    "/api/admin/documents",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.EventManager]),
+    async (req: any, res) => {
+      try {
+        const { title, description, fileUrl, fileName, fileSize, fileType } = req.body;
+
+        if (!title || !fileUrl || !fileName) {
+          return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        const document = await storage.createDocument({
+          title,
+          description: description || null,
+          fileUrl,
+          fileName,
+          fileSize: fileSize || null,
+          fileType: fileType || null,
+          uploadedBy: req.supabaseUser.id,
+        });
+
+        console.log(`✅ Document uploaded: ${title} by ${req.supabaseUser.email}`);
+        res.status(201).json({
+          message: "Document uploaded successfully",
+          document,
+        });
+      } catch (error: any) {
+        console.error("Error uploading document:", error);
+        res.status(500).json({ message: "Failed to upload document", details: error.message });
+      }
+    }
+  );
+
+  // Admin: Delete document (soft delete)
+  app.delete(
+    "/api/admin/documents/:documentId",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.EventManager]),
+    async (req: any, res) => {
+      try {
+        const { documentId } = req.params;
+
+        const document = await storage.getDocument(documentId);
+        if (!document) {
+          return res.status(404).json({ message: "Document not found" });
+        }
+
+        await storage.softDeleteDocument(documentId);
+
+        console.log(`✅ Document deleted: ${document.title} by ${req.supabaseUser.email}`);
+        res.json({
+          message: "Document deleted successfully",
+          deletedDocument: {
+            id: document.id,
+            title: document.title,
+          },
+        });
+      } catch (error: any) {
+        console.error("Error deleting document:", error);
+        res.status(500).json({ message: "Failed to delete document", details: error.message });
       }
     }
   );

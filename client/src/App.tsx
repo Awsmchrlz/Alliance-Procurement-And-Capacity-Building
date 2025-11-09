@@ -17,6 +17,7 @@ import About from "@/pages/about";
 import Events from "@/pages/events";
 import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
+import Documents from "@/pages/documents";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
 import { useEffect } from "react";
 
@@ -86,6 +87,7 @@ function Router() {
       <Route path="/services" component={Services} />
       <Route path="/about" component={About} />
       <Route path="/events" component={Events} />
+      <Route path="/documents" component={Documents} />
 
       {/* Protected routes */}
       <Route path="/dashboard">

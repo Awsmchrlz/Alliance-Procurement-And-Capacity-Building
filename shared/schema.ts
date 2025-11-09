@@ -283,16 +283,43 @@ export const insertEvidenceHistorySchema = z.object({
   filePath: z.string(),
 });
 
+export const documents = pgTable("documents", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  fileUrl: text("file_url").notNull(),
+  fileName: text("file_name").notNull(),
+  fileSize: integer("file_size"), // in bytes
+  fileType: text("file_type"), // pdf, doc, docx, etc
+  uploadedBy: varchar("uploaded_by")
+    .notNull()
+    .references(() => users.id),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"), // Soft delete
+});
+
+export const insertDocumentSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional().nullable(),
+  fileUrl: z.string().url("Invalid file URL"),
+  fileName: z.string().min(1, "File name is required"),
+  fileSize: z.number().optional().nullable(),
+  fileType: z.string().optional().nullable(),
+  uploadedBy: z.string().uuid(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-export type UserResponse = Omit<User, "password">;
+export type UserResponse = Omit<User, "password" | "deletedAt">;
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof events.$inferSelect;
 export type InsertEventRegistration = z.infer<
   typeof insertEventRegistrationSchema
 >;
-export type EventRegistration = typeof eventRegistrations.$inferSelect;
+export type EventRegistration = Omit<typeof eventRegistrations.$inferSelect, "deletedAt">;
 export type InsertNewsletterSubscription = z.infer<
   typeof insertNewsletterSubscriptionSchema
 >;
@@ -302,3 +329,5 @@ export type InsertSponsorship = z.infer<typeof insertSponsorshipSchema>;
 export type Sponsorship = typeof sponsorships.$inferSelect;
 export type InsertExhibition = z.infer<typeof insertExhibitionSchema>;
 export type Exhibition = typeof exhibitions.$inferSelect;
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type Document = typeof documents.$inferSelect;
