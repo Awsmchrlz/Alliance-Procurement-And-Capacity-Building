@@ -112,6 +112,7 @@ interface User {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  title?: string | null;
   gender?: string | null;
   role: RoleValue;
   createdAt: string;
@@ -120,11 +121,15 @@ interface User {
 interface Event {
   id: string;
   title: string;
-  description?: string | null;
+  description: string | null;
   startDate: string;
   endDate: string;
   location: string;
-  createdAt: string;
+  price: string;
+  currentAttendees: number;
+  maxAttendees: number;
+  featured: boolean;
+  createdAt?: string;
 }
 
 interface EventRegistration {
@@ -132,15 +137,23 @@ interface EventRegistration {
   userId: string;
   eventId: string;
   registrationNumber: string;
-  country: string;
-  organization: string;
-  position: string;
+  country: string | null;
+  organization: string | null;
+  position: string | null;
+  gender?: string | null;
   hasPaid: boolean;
   paymentStatus: string;
+  paymentEvidence?: string | null;
+  paymentMethod?: string | null;
+  currency?: string | null;
+  pricePaid?: string | null;
+  delegateType?: string | null;
   registeredAt: string;
   dinnerGalaAttendance?: boolean;
   accommodationPackage?: boolean;
   victoriaFallsPackage?: boolean;
+  event?: Event;
+  user?: User;
 }
 
 interface Sponsorship {
@@ -198,54 +211,6 @@ import { AdminDocumentsPanel } from "@/components/admin-documents-panel";
 import { useAuth } from "@/hooks/use-auth";
 
 import { apiRequest } from "@/lib/queryClient";
-
-// Real data interfaces
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  location: string;
-  price: string;
-  currentAttendees: number;
-  maxAttendees: number;
-  featured: boolean;
-}
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  title: string | null;
-  role: string;
-  createdAt: string;
-}
-
-interface Registration {
-  id: string;
-  registrationNumber: string;
-  userId: string;
-  eventId: string;
-  paymentStatus: string;
-  paymentEvidence: string | null;
-  paymentMethod: string | null;
-  currency: string | null;
-  pricePaid: string | null;
-  delegateType: string | null;
-
-  gender: string | null;
-  country: string | null;
-  organization: string | null;
-
-  position: string | null;
-  hasPaid: boolean;
-  registeredAt: string;
-  event?: Event;
-  user?: User;
-}
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -547,7 +512,7 @@ export default function AdminDashboard() {
         events.filter(
           (event) =>
             event.title.toLowerCase().includes(term) ||
-            event.description.toLowerCase().includes(term) ||
+            (event.description && event.description.toLowerCase().includes(term)) ||
             event.location.toLowerCase().includes(term),
         ),
       );

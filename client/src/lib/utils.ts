@@ -59,8 +59,7 @@ export function getBaseUrl(): string {
   // Most production deployments use standard ports (80/443)
   // Only include port if it's explicitly not standard and we're sure it's needed
   const isStandardPort =
-    (productionProtocol === "https:" && (port === "443" || !port)) ||
-    (productionProtocol === "http:" && (port === "80" || !port));
+    (port === "443" || !port) || (port === "80" || !port);
 
   if (
     port &&

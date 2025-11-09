@@ -1766,7 +1766,6 @@ function RegistrationDialog({
                           title: event.title || "Alliance Procurement Event",
                           startDate: event.startDate || new Date().toISOString(),
                           location: event.location || "To be announced",
-                          venue: event.venue || event.location || "To be announced"
                         },
                         registeredAt: registrationData.registeredAt || new Date().toISOString(),
                         paymentStatus: formData.paymentMethod === "org_paid" ? "paid" : "pending",
