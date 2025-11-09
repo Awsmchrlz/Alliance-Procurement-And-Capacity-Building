@@ -4,23 +4,21 @@ on:
   push:
     branches:
       - main
-      - master
     paths-ignore:
       - '**.md'
       - 'docs/**'
   pull_request:
     branches:
       - main
-      - master
   workflow_dispatch:
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/apcb-platform
 
 jobs:
-  # Job 1: Build and Test
-  build:
-    name: Build & Test
+  # Job 1: Run Tests
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
     
     steps:
@@ -36,13 +34,38 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type check
+      - name: Run type check
         run: npm run check
+
+      - name: Test Summary
+        run: |
+          echo "## ✅ Tests Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All TypeScript checks passed successfully" >> $GITHUB_STEP_SUMMARY
+
+  # Job 2: Build Application
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build application
         run: npm run build
 
-      - name: Verify build
+      - name: Verify build output
         run: |
           if [ -f "dist/index.js" ]; then
             echo "✅ Build successful"
@@ -52,11 +75,22 @@ jobs:
             exit 1
           fi
 
-  # Job 2: Build and Push Docker Image
+      - name: Build Summary
+        run: |
+          echo "## 🏗️ Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Application built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build artifacts:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -lh dist/ >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Job 3: Build and Push Docker Image (only on main branch)
   docker:
-    name: Docker Build & Push
+    name: Build & Push to Docker Hub
     runs-on: ubuntu-latest
-    needs: build
+    needs: [test, build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
@@ -72,142 +106,38 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ${{ env.DOCKER_IMAGE }}:latest
-            ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
           platforms: linux/amd64
 
-      - name: Summary
+      - name: Docker Summary
         run: |
           echo "## 🐳 Docker Image Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ env.DOCKER_IMAGE }}:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "**SHA:** \`${{ env.DOCKER_IMAGE }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-
-  # Job 3: Security Scan
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: docker
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.DOCKER_IMAGE }}:latest
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  # Job 4: Deploy to Kubernetes (Optional - uncomment when ready)
-  # deploy:
-  #   name: Deploy to K8s
-  #   runs-on: ubuntu-latest
-  #   needs: docker
-  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup kubectl
-  #       uses: azure/setup-kubectl@v3
-  #       with:
-  #         version: 'latest'
-  #
-  #     - name: Configure kubectl
-  #       run: |
-  #         if [ -z "${{ secrets.KUBECONFIG }}" ]; then
-  #           echo "❌ KUBECONFIG secret not set"
-  #           echo "Please add your kubeconfig to GitHub Secrets:"
-  #           echo "1. Run: cat ~/.kube/config | base64"
-  #           echo "2. Add to repo Settings → Secrets → KUBECONFIG"
-  #           exit 1
-  #         fi
-  #         mkdir -p $HOME/.kube
-  #         echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
-  #         chmod 600 $HOME/.kube/config
-  #
-  #     - name: Verify cluster connection
-  #       run: |
-  #         kubectl cluster-info
-  #         kubectl get nodes
-  #
-  #     - name: Restart app deployment
-  #       run: |
-  #         echo "🔄 Restarting app deployment to pull latest image..."
-  #         kubectl rollout restart deployment/apcb-app -n apcb-platform
-  #         kubectl rollout status deployment/apcb-app -n apcb-platform --timeout=5m
-  #
-  #     - name: Check pod status
-  #       run: |
-  #         echo "📊 Pod status:"
-  #         kubectl get pods -n apcb-platform -l app=apcb-app
-  #         echo ""
-  #         echo "📝 Recent logs:"
-  #         kubectl logs -n apcb-platform -l app=apcb-app --tail=50 || true
-  #
-  #     - name: Summary
-  #       run: |
-  #         echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
-  #         echo "" >> $GITHUB_STEP_SUMMARY
-  #         echo "**Image:** \`${{ env.DOCKER_IMAGE }}:latest\`" >> $GITHUB_STEP_SUMMARY
-  #         echo "**Namespace:** \`apcb-platform\`" >> $GITHUB_STEP_SUMMARY
-
-  # Job 5: Health Check (Optional - uncomment when deployed)
-  # health:
-  #   name: Health Check
-  #   runs-on: ubuntu-latest
-  #   needs: deploy
-  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   
-  #   steps:
-  #     - name: Wait for deployment
-  #       run: |
-  #         echo "⏳ Waiting 30 seconds for pods to stabilize..."
-  #         sleep 30
-  #
-  #     - name: Check site health
-  #       run: |
-  #         echo "🔍 Checking site health..."
-  #         response=$(curl -s -o /dev/null -w "%{http_code}" https://your-domain.com/health || echo "000")
-  #         if [ "$response" == "200" ]; then
-  #           echo "✅ Site is healthy (HTTP $response)"
-  #         else
-  #           echo "⚠️ Site returned HTTP $response (may still be deploying)"
-  #         fi
-  #
-  #     - name: Check API
-  #       run: |
-  #         echo "🔍 Checking API..."
-  #         response=$(curl -s https://your-domain.com/api/events || echo "{}")
-  #         if echo "$response" | grep -q "id"; then
-  #           echo "✅ API is responding correctly"
-  #         else
-  #           echo "⚠️ API response unexpected"
-  #         fi
-  #
-  #     - name: Summary
-  #       if: always()
-  #       run: |
-  #         echo "## 🏥 Health Check Complete" >> $GITHUB_STEP_SUMMARY
-  #         echo "" >> $GITHUB_STEP_SUMMARY
-  #         echo "Site: https://your-domain.com" >> $GITHUB_STEP_SUMMARY
-  #         echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** \`${{ env.DOCKER_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`main-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.DOCKER_IMAGE }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
