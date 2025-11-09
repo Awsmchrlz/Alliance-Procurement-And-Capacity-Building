@@ -717,6 +717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dinnerGalaAttendance: false,
           accommodationPackage: false,
           victoriaFallsPackage: false,
+          boatCruisePackage: false,
         });
 
         console.log(`✅ Admin registered user ${userId} for event ${eventId}`);
@@ -2358,6 +2359,254 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     },
+  );
+
+  // Delete endpoints for admin (Super Admin only)
+  
+  // Delete user (super admin only)
+  app.delete(
+    "/api/admin/users/:userId",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req: any, res) => {
+      try {
+        const { userId } = req.params;
+
+        // Prevent deleting yourself
+        if (userId === req.supabaseUser.id) {
+          return res.status(400).json({ 
+            message: "Cannot delete your own account" 
+          });
+        }
+
+        // Check if user exists
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Delete the user
+        await storage.deleteUser(userId);
+
+        console.log(`✅ User ${userId} (${user.email}) deleted by ${req.supabaseUser.email}`);
+        res.json({ 
+          message: "User deleted successfully",
+          deletedUser: {
+            id: user.id,
+            email: user.email,
+            name: `${user.firstName} ${user.lastName}`
+          }
+        });
+      } catch (error: any) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ 
+          message: "Failed to delete user", 
+          details: error.message 
+        });
+      }
+    }
+  );
+
+  // Delete registration (super admin only)
+  app.delete(
+    "/api/admin/registrations/:registrationId",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req: any, res) => {
+      try {
+        const { registrationId } = req.params;
+
+        const registration = await storage.getEventRegistration(registrationId);
+        if (!registration) {
+          return res.status(404).json({ message: "Registration not found" });
+        }
+
+        await storage.deleteEventRegistration(registrationId);
+
+        console.log(`✅ Registration ${registrationId} deleted by ${req.supabaseUser.email}`);
+        res.json({ 
+          message: "Registration deleted successfully",
+          deletedRegistration: {
+            id: registration.id,
+            registrationNumber: registration.registrationNumber
+          }
+        });
+      } catch (error: any) {
+        console.error("Error deleting registration:", error);
+        res.status(500).json({ 
+          message: "Failed to delete registration", 
+          details: error.message 
+        });
+      }
+    }
+  );
+
+  // Delete sponsorship (super admin only)
+  app.delete(
+    "/api/admin/sponsorships/:id",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+
+        // Check if sponsorship exists
+        const sponsorships = await storage.getAllSponsorships();
+        const sponsorship = sponsorships.find((s: any) => s.id === id);
+        
+        if (!sponsorship) {
+          return res.status(404).json({ message: "Sponsorship not found" });
+        }
+
+        await storage.deleteSponsorship(id);
+
+        console.log(`✅ Sponsorship ${id} (${sponsorship.companyName}) deleted by ${req.supabaseUser.email}`);
+        res.json({ 
+          message: "Sponsorship deleted successfully",
+          deletedSponsorship: {
+            id: sponsorship.id,
+            companyName: sponsorship.companyName
+          }
+        });
+      } catch (error: any) {
+        console.error("Error deleting sponsorship:", error);
+        res.status(500).json({ 
+          message: "Failed to delete sponsorship", 
+          details: error.message 
+        });
+      }
+    }
+  );
+
+  // Delete exhibition (super admin only)
+  app.delete(
+    "/api/admin/exhibitions/:id",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+
+        // Check if exhibition exists
+        const exhibitions = await storage.getAllExhibitions();
+        const exhibition = exhibitions.find((e: any) => e.id === id);
+        
+        if (!exhibition) {
+          return res.status(404).json({ message: "Exhibition not found" });
+        }
+
+        await storage.deleteExhibition(id);
+
+        console.log(`✅ Exhibition ${id} (${exhibition.companyName}) deleted by ${req.supabaseUser.email}`);
+        res.json({ 
+          message: "Exhibition deleted successfully",
+          deletedExhibition: {
+            id: exhibition.id,
+            companyName: exhibition.companyName
+          }
+        });
+      } catch (error: any) {
+        console.error("Error deleting exhibition:", error);
+        res.status(500).json({ 
+          message: "Failed to delete exhibition", 
+          details: error.message 
+        });
+      }
+    }
+  );
+
+  // Document routes
+  // Public: Get all documents
+  app.get("/api/documents", async (_req, res) => {
+    try {
+      const documents = await storage.getAllDocuments();
+      res.json(documents);
+    } catch (error: any) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents", details: error.message });
+    }
+  });
+
+  // Admin: Get all documents (including soft-deleted)
+  app.get(
+    "/api/admin/documents",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.EventManager]),
+    async (_req, res) => {
+      try {
+        const documents = await storage.getAllDocuments();
+        res.json(documents);
+      } catch (error: any) {
+        console.error("Error fetching documents:", error);
+        res.status(500).json({ message: "Failed to fetch documents", details: error.message });
+      }
+    }
+  );
+
+  // Admin: Upload document
+  app.post(
+    "/api/admin/documents",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.EventManager]),
+    async (req: any, res) => {
+      try {
+        const { title, description, fileUrl, fileName, fileSize, fileType } = req.body;
+
+        if (!title || !fileUrl || !fileName) {
+          return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        const document = await storage.createDocument({
+          title,
+          description: description || null,
+          fileUrl,
+          fileName,
+          fileSize: fileSize || null,
+          fileType: fileType || null,
+          uploadedBy: req.supabaseUser.id,
+        });
+
+        console.log(`✅ Document uploaded: ${title} by ${req.supabaseUser.email}`);
+        res.status(201).json({
+          message: "Document uploaded successfully",
+          document,
+        });
+      } catch (error: any) {
+        console.error("Error uploading document:", error);
+        res.status(500).json({ message: "Failed to upload document", details: error.message });
+      }
+    }
+  );
+
+  // Admin: Delete document (soft delete)
+  app.delete(
+    "/api/admin/documents/:documentId",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.EventManager]),
+    async (req: any, res) => {
+      try {
+        const { documentId } = req.params;
+
+        const document = await storage.getDocument(documentId);
+        if (!document) {
+          return res.status(404).json({ message: "Document not found" });
+        }
+
+        await storage.softDeleteDocument(documentId);
+
+        console.log(`✅ Document deleted: ${document.title} by ${req.supabaseUser.email}`);
+        res.json({
+          message: "Document deleted successfully",
+          deletedDocument: {
+            id: document.id,
+            title: document.title,
+          },
+        });
+      } catch (error: any) {
+        console.error("Error deleting document:", error);
+        res.status(500).json({ message: "Failed to delete document", details: error.message });
+      }
+    }
   );
 
   const httpServer = createServer(app);

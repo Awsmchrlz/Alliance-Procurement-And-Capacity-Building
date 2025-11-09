@@ -16,8 +16,8 @@ import Services from "@/pages/services";
 import About from "@/pages/about";
 import Events from "@/pages/events";
 import AdminDashboard from "@/pages/admin-dashboard";
-
 import NotFound from "@/pages/not-found";
+import Documents from "@/pages/documents";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
 import { useEffect } from "react";
 
@@ -34,13 +34,13 @@ function ContactRedirect() {
           document.body.offsetHeight,
           document.documentElement.clientHeight,
           document.documentElement.scrollHeight,
-          document.documentElement.offsetHeight
+          document.documentElement.offsetHeight,
         );
 
         // Scroll to the absolute bottom
         window.scrollTo({
           top: documentHeight,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       });
     };
@@ -87,6 +87,7 @@ function Router() {
       <Route path="/services" component={Services} />
       <Route path="/about" component={About} />
       <Route path="/events" component={Events} />
+      <Route path="/documents" component={Documents} />
 
       {/* Protected routes */}
       <Route path="/dashboard">

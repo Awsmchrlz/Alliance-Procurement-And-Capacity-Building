@@ -773,6 +773,7 @@ export const storage = {
         dinnerGalaAttendance: data.dinner_gala_attendance,
         accommodationPackage: data.accommodation_package,
         victoriaFallsPackage: data.victoria_falls_package,
+        boatCruisePackage: data.boat_cruise_package,
         groupSize: data.group_size,
         groupPaymentAmount: data.group_payment_amount,
         groupPaymentCurrency: data.group_payment_currency,
@@ -829,6 +830,7 @@ export const storage = {
         dinnerGalaAttendance: r.dinner_gala_attendance,
         accommodationPackage: r.accommodation_package,
         victoriaFallsPackage: r.victoria_falls_package,
+        boatCruisePackage: r.boat_cruise_package,
         groupSize: r.group_size,
         groupPaymentAmount: r.group_payment_amount,
         groupPaymentCurrency: r.group_payment_currency,
@@ -884,6 +886,7 @@ export const storage = {
         dinnerGalaAttendance: r.dinner_gala_attendance,
         accommodationPackage: r.accommodation_package,
         victoriaFallsPackage: r.victoria_falls_package,
+        boatCruisePackage: r.boat_cruise_package,
         groupSize: r.group_size,
         groupPaymentAmount: r.group_payment_amount,
         groupPaymentCurrency: r.group_payment_currency,
@@ -926,6 +929,7 @@ export const storage = {
         dinnerGalaAttendance: r.dinner_gala_attendance,
         accommodationPackage: r.accommodation_package,
         victoriaFallsPackage: r.victoria_falls_package,
+        boatCruisePackage: r.boat_cruise_package,
         groupSize: r.group_size,
         groupPaymentAmount: r.group_payment_amount,
         groupPaymentCurrency: r.group_payment_currency,
@@ -1001,7 +1005,6 @@ export const storage = {
         eventId: data.event_id,
         userId: data.user_id,
         paymentStatus: data.payment_status,
-
         country: data.country,
         organization: data.organization,
         position: data.position,
@@ -1015,8 +1018,8 @@ export const storage = {
         dinnerGalaAttendance: data.dinner_gala_attendance,
         accommodationPackage: data.accommodation_package,
         victoriaFallsPackage: data.victoria_falls_package,
+        boatCruisePackage: data.boat_cruise_package,
         registeredAt: data.registered_at,
-        // Group payment fields
         groupSize: data.group_size,
         groupPaymentAmount: data.group_payment_amount,
         groupPaymentCurrency: data.group_payment_currency,
@@ -1068,7 +1071,6 @@ export const storage = {
         eventId: data.event_id,
         userId: data.user_id,
         paymentStatus: data.payment_status,
-
         country: data.country,
         organization: data.organization,
         position: data.position,
@@ -1084,6 +1086,7 @@ export const storage = {
         dinnerGalaAttendance: data.dinner_gala_attendance,
         accommodationPackage: data.accommodation_package,
         victoriaFallsPackage: data.victoria_falls_package,
+        boatCruisePackage: data.boat_cruise_package,
         groupSize: data.group_size,
         groupPaymentAmount: data.group_payment_amount,
         groupPaymentCurrency: data.group_payment_currency,
@@ -1782,6 +1785,269 @@ export const storage = {
     } catch (error: any) {
       console.error("Error in updateExhibitionLogo:", error.message);
       throw new Error(`Failed to update exhibition logo: ${error.message}`);
+    }
+  },
+
+  // Delete methods for admin
+  async deleteUser(userId: string): Promise<void> {
+    try {
+      console.log(`🗑️ Deleting user: ${userId}`);
+      
+      // First, delete user from public.users table
+      const { error: dbError } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", userId);
+
+      if (dbError) {
+        console.error("Error deleting user from database:", dbError.message);
+        throw new Error(`Failed to delete user from database: ${dbError.message}`);
+      }
+
+      // Then, delete user from Supabase Auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+      if (authError) {
+        console.error("Error deleting user from auth:", authError.message);
+        throw new Error(`Failed to delete user from auth: ${authError.message}`);
+      }
+
+      console.log(`✅ User ${userId} deleted successfully`);
+    } catch (error: any) {
+      console.error("Error in deleteUser:", error.message);
+      throw new Error(`Failed to delete user: ${error.message}`);
+    }
+  },
+
+  async deleteSponsorship(id: string): Promise<void> {
+    try {
+      console.log(`🗑️ Deleting sponsorship: ${id}`);
+      
+      // Get sponsorship to check for payment evidence
+      const { data: sponsorshipData, error: fetchError } = await supabase
+        .from("sponsorships")
+        .select("payment_evidence, logo_url")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching sponsorship:", fetchError.message);
+        throw new Error(`Failed to fetch sponsorship: ${fetchError.message}`);
+      }
+
+      // Delete payment evidence file if exists
+      if (sponsorshipData.payment_evidence) {
+        const { error: storageError } = await supabase.storage
+          .from("payment-evidence")
+          .remove([sponsorshipData.payment_evidence]);
+        
+        if (storageError) {
+          console.warn("Warning: Failed to delete payment evidence:", storageError.message);
+        }
+      }
+
+      // Delete logo file if exists
+      if (sponsorshipData.logo_url) {
+        const { error: logoError } = await supabase.storage
+          .from("payment-evidence")
+          .remove([sponsorshipData.logo_url]);
+        
+        if (logoError) {
+          console.warn("Warning: Failed to delete logo:", logoError.message);
+        }
+      }
+
+      // Delete sponsorship record
+      const { error: deleteError } = await supabase
+        .from("sponsorships")
+        .delete()
+        .eq("id", id);
+
+      if (deleteError) {
+        console.error("Error deleting sponsorship:", deleteError.message);
+        throw new Error(`Failed to delete sponsorship: ${deleteError.message}`);
+      }
+
+      console.log(`✅ Sponsorship ${id} deleted successfully`);
+    } catch (error: any) {
+      console.error("Error in deleteSponsorship:", error.message);
+      throw new Error(`Failed to delete sponsorship: ${error.message}`);
+    }
+  },
+
+  async deleteExhibition(id: string): Promise<void> {
+    try {
+      console.log(`🗑️ Deleting exhibition: ${id}`);
+      
+      // Get exhibition to check for payment evidence
+      const { data: exhibitionData, error: fetchError } = await supabase
+        .from("exhibitions")
+        .select("payment_evidence, logo_url")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching exhibition:", fetchError.message);
+        throw new Error(`Failed to fetch exhibition: ${fetchError.message}`);
+      }
+
+      // Delete payment evidence file if exists
+      if (exhibitionData.payment_evidence) {
+        const { error: storageError } = await supabase.storage
+          .from("payment-evidence")
+          .remove([exhibitionData.payment_evidence]);
+        
+        if (storageError) {
+          console.warn("Warning: Failed to delete payment evidence:", storageError.message);
+        }
+      }
+
+      // Delete logo file if exists
+      if (exhibitionData.logo_url) {
+        const { error: logoError } = await supabase.storage
+          .from("payment-evidence")
+          .remove([exhibitionData.logo_url]);
+        
+        if (logoError) {
+          console.warn("Warning: Failed to delete logo:", logoError.message);
+        }
+      }
+
+      // Delete exhibition record
+      const { error: deleteError } = await supabase
+        .from("exhibitions")
+        .delete()
+        .eq("id", id);
+
+      if (deleteError) {
+        console.error("Error deleting exhibition:", deleteError.message);
+        throw new Error(`Failed to delete exhibition: ${deleteError.message}`);
+      }
+
+      console.log(`✅ Exhibition ${id} deleted successfully`);
+    } catch (error: any) {
+      console.error("Error in deleteExhibition:", error.message);
+      throw new Error(`Failed to delete exhibition: ${error.message}`);
+    }
+  },
+
+  // Document management methods
+  async getAllDocuments() {
+    try {
+      const { data, error } = await supabase
+        .from("documents")
+        .select("*, users!documents_uploaded_by_fkey(first_name, last_name)")
+        .is("deleted_at", null)
+        .order("uploaded_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching documents:", error.message);
+        throw new Error(`Failed to fetch documents: ${error.message}`);
+      }
+
+      return data.map((doc: any) => ({
+        id: doc.id,
+        title: doc.title,
+        description: doc.description,
+        fileUrl: doc.file_url,
+        fileName: doc.file_name,
+        fileSize: doc.file_size,
+        fileType: doc.file_type,
+        uploadedBy: doc.uploaded_by,
+        uploadedAt: doc.uploaded_at,
+        uploaderName: doc.users ? `${doc.users.first_name} ${doc.users.last_name}` : null,
+      }));
+    } catch (error: any) {
+      console.error("Error in getAllDocuments:", error.message);
+      throw new Error(`Failed to fetch documents: ${error.message}`);
+    }
+  },
+
+  async getDocument(id: string) {
+    try {
+      const { data, error } = await supabase
+        .from("documents")
+        .select("*")
+        .eq("id", id)
+        .is("deleted_at", null)
+        .single();
+
+      if (error) {
+        console.error("Error fetching document:", error.message);
+        return null;
+      }
+
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        fileUrl: data.file_url,
+        fileName: data.file_name,
+        fileSize: data.file_size,
+        fileType: data.file_type,
+        uploadedBy: data.uploaded_by,
+        uploadedAt: data.uploaded_at,
+      };
+    } catch (error: any) {
+      console.error("Error in getDocument:", error.message);
+      return null;
+    }
+  },
+
+  async createDocument(document: any) {
+    try {
+      const { data, error } = await supabase
+        .from("documents")
+        .insert({
+          title: document.title,
+          description: document.description,
+          file_url: document.fileUrl,
+          file_name: document.fileName,
+          file_size: document.fileSize,
+          file_type: document.fileType,
+          uploaded_by: document.uploadedBy,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating document:", error.message);
+        throw new Error(`Failed to create document: ${error.message}`);
+      }
+
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        fileUrl: data.file_url,
+        fileName: data.file_name,
+        fileSize: data.file_size,
+        fileType: data.file_type,
+        uploadedBy: data.uploaded_by,
+        uploadedAt: data.uploaded_at,
+      };
+    } catch (error: any) {
+      console.error("Error in createDocument:", error.message);
+      throw new Error(`Failed to create document: ${error.message}`);
+    }
+  },
+
+  async softDeleteDocument(id: string) {
+    try {
+      const { error } = await supabase
+        .from("documents")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error soft deleting document:", error.message);
+        throw new Error(`Failed to delete document: ${error.message}`);
+      }
+
+      console.log(`✅ Document ${id} soft deleted successfully`);
+    } catch (error: any) {
+      console.error("Error in softDeleteDocument:", error.message);
+      throw new Error(`Failed to delete document: ${error.message}`);
     }
   },
 };

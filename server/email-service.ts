@@ -44,11 +44,11 @@ class EmailService {
 
   constructor() {
     this.apiKey =
-      process.env.BREVO_API_KEY;
+      process.env.BREVO_API_KEY || "";
     this.senderEmail =
-      process.env.BREVO_SENDER_EMAIL;
+      process.env.BREVO_SENDER_EMAIL || "noreply@example.com";
     this.senderName =
-      process.env.BREVO_SENDER_NAME;
+      process.env.BREVO_SENDER_NAME || "Alliance Procurement";
 
     if (!this.apiKey) {
       throw new Error("BREVO_API_KEY environment variable is required");

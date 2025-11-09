@@ -1,0 +1,64 @@
+# ServiceMonitor for Prometheus (if using Prometheus Operator)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: apcb-metrics
+  namespace: apcb-system
+  labels:
+    app: apcb
+    component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: apcb
+      component: service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+
+---
+# PrometheusRule for alerts
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: apcb-alerts
+  namespace: apcb-system
+  labels:
+    app: apcb
+    component: alerts
+spec:
+  groups:
+    - name: apcb.rules
+      interval: 30s
+      rules:
+        - alert: APCBHighErrorRate
+          expr: |
+            rate(http_requests_total{job="apcb-service",status=~"5.."}[5m]) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High error rate detected"
+            description: "Error rate is {{ $value }} errors per second"
+        
+        - alert: APCBPodDown
+          expr: |
+            kube_deployment_status_replicas_available{deployment="apcb-app"} < 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "APCB application is down"
+            description: "No pods available for apcb-app deployment"
+        
+        - alert: APCBHighMemoryUsage
+          expr: |
+            container_memory_usage_bytes{pod=~"apcb-app-.*"} / container_spec_memory_limit_bytes{pod=~"apcb-app-.*"} > 0.9
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage"
+            description: "Memory usage is above 90%"

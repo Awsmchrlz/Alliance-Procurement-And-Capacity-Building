@@ -107,7 +107,7 @@ export function TestimonialsSection() {
     }, 300);
   };
 
-  const goToTestimonial = (index) => {
+  const goToTestimonial = (index: number) => {
     if (isAnimating || index === currentIndex) return;
     setIsAnimating(true);
     setTimeout(() => {
@@ -116,7 +116,7 @@ export function TestimonialsSection() {
     }, 300);
   };
 
-  const renderStars = (rating) => {
+  const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}

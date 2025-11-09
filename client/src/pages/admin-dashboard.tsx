@@ -35,6 +35,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -95,6 +96,7 @@ import {
   Check,
   Info,
   Edit,
+  Trash2,
 } from "lucide-react";
 
 // Type definitions
@@ -110,6 +112,7 @@ interface User {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  title?: string | null;
   gender?: string | null;
   role: RoleValue;
   createdAt: string;
@@ -118,11 +121,17 @@ interface User {
 interface Event {
   id: string;
   title: string;
-  description?: string | null;
+  description: string | null;
   startDate: string;
   endDate: string;
-  location: string;
-  createdAt: string;
+  location: string | null;
+  price: string;
+  currentAttendees: number | null;
+  maxAttendees: number | null;
+  imageUrl: string | null;
+  tags: string[] | null;
+  featured: boolean | null;
+  createdAt: Date | null;
 }
 
 interface EventRegistration {
@@ -130,15 +139,23 @@ interface EventRegistration {
   userId: string;
   eventId: string;
   registrationNumber: string;
-  country: string;
-  organization: string;
-  position: string;
+  country: string | null;
+  organization: string | null;
+  position: string | null;
+  gender?: string | null;
   hasPaid: boolean;
   paymentStatus: string;
+  paymentEvidence?: string | null;
+  paymentMethod?: string | null;
+  currency?: string | null;
+  pricePaid?: string | null;
+  delegateType?: string | null;
   registeredAt: string;
   dinnerGalaAttendance?: boolean;
   accommodationPackage?: boolean;
   victoriaFallsPackage?: boolean;
+  event?: Event;
+  user?: User;
 }
 
 interface Sponsorship {
@@ -192,57 +209,10 @@ interface Exhibition {
 import { EvidenceViewer } from "@/components/evidence-viewer";
 import { SponsorshipDialog } from "@/components/sponsorship-dialog";
 import { ExhibitionDialog } from "@/components/exhibition-dialog";
+import { AdminDocumentsPanel } from "@/components/admin-documents-panel";
 import { useAuth } from "@/hooks/use-auth";
 
 import { apiRequest } from "@/lib/queryClient";
-
-// Real data interfaces
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  location: string;
-  price: string;
-  currentAttendees: number;
-  maxAttendees: number;
-  featured: boolean;
-}
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  title: string | null;
-  role: string;
-  createdAt: string;
-}
-
-interface Registration {
-  id: string;
-  registrationNumber: string;
-  userId: string;
-  eventId: string;
-  paymentStatus: string;
-  paymentEvidence: string | null;
-  paymentMethod: string | null;
-  currency: string | null;
-  pricePaid: string | null;
-  delegateType: string | null;
-
-  gender: string | null;
-  country: string | null;
-  organization: string | null;
-
-  position: string | null;
-  hasPaid: boolean;
-  registeredAt: string;
-  event?: Event;
-  user?: User;
-}
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -276,6 +246,8 @@ export default function AdminDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [localUser, setLocalUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>("ordinary_user");
 
   // Email functionality
   const [emailSubject, setEmailSubject] = useState("");
@@ -542,8 +514,8 @@ export default function AdminDashboard() {
         events.filter(
           (event) =>
             event.title.toLowerCase().includes(term) ||
-            event.description.toLowerCase().includes(term) ||
-            event.location.toLowerCase().includes(term),
+            (event.description && event.description.toLowerCase().includes(term)) ||
+            (event.location && event.location.toLowerCase().includes(term)),
         ),
       );
 
@@ -586,8 +558,10 @@ export default function AdminDashboard() {
       }
 
       // Set user role from metadata
-      const userRole = currentUser.user_metadata?.role || "ordinary_user";
-      console.log("Current user role:", userRole);
+      const currentUserRole = currentUser.user_metadata?.role || "ordinary_user";
+      setLocalUser(currentUser);
+      setUserRole(currentUserRole);
+      console.log("Current user role:", currentUserRole);
       console.log("Current user metadata:", currentUser.user_metadata);
 
       // Fetch events (public endpoint)
@@ -603,9 +577,9 @@ export default function AdminDashboard() {
 
       // Only fetch admin data if user has admin role
       if (
-        userRole === "super_admin" ||
-        userRole === "finance_person" ||
-        userRole === "event_manager"
+        currentUserRole === "super_admin" ||
+        currentUserRole === "finance_person" ||
+        currentUserRole === "event_manager"
       ) {
         // Fetch users
         try {
@@ -825,6 +799,106 @@ export default function AdminDashboard() {
       });
     }
   };
+
+  // Delete handlers (Super Admin only)
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiRequest("DELETE", `/api/admin/users/${userId}`);
+
+      toast({
+        title: "User Deleted",
+        description: `User "${userName}" has been permanently deleted`,
+      });
+
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteRegistration = async (registrationId: string, registrationNumber: string) => {
+    if (!confirm(`Are you sure you want to permanently delete registration "${registrationNumber}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiRequest("DELETE", `/api/admin/registrations/${registrationId}`);
+
+      toast({
+        title: "Registration Deleted",
+        description: `Registration "${registrationNumber}" has been permanently deleted`,
+      });
+
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error deleting registration:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete registration",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSponsorship = async (sponsorshipId: string, companyName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete sponsorship from "${companyName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiRequest("DELETE", `/api/admin/sponsorships/${sponsorshipId}`);
+
+      toast({
+        title: "Sponsorship Deleted",
+        description: `Sponsorship from "${companyName}" has been permanently deleted`,
+      });
+
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error deleting sponsorship:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete sponsorship",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteExhibition = async (exhibitionId: string, companyName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete exhibition from "${companyName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiRequest("DELETE", `/api/admin/exhibitions/${exhibitionId}`);
+
+      toast({
+        title: "Exhibition Deleted",
+        description: `Exhibition from "${companyName}" has been permanently deleted`,
+      });
+
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error deleting exhibition:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete exhibition",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // User role checks (using useAuth hook values)
+  // Note: isSuperAdmin, canUpdatePaymentStatus, canManageUsers, canRegisterUsers are already defined from useAuth hook above
 
   // Calculate analytics
   const totalRevenue = registrations
@@ -1619,7 +1693,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="overview" className="space-y-6">
           <div className="bg-white rounded-xl border border-slate-200/60 p-1 shadow-sm overflow-x-auto">
             <TabsList
-              className={`grid w-full ${canManageUsers && canManageEvents && isSuperAdmin ? "grid-cols-7" : canManageUsers && canManageEvents ? "grid-cols-6" : canManageUsers || canManageEvents ? "grid-cols-5" : "grid-cols-4"} bg-transparent gap-1 min-w-[800px] sm:min-w-0`}
+              className={`grid w-full ${canManageUsers && canManageEvents && isSuperAdmin ? "grid-cols-8" : canManageUsers && canManageEvents ? "grid-cols-7" : canManageUsers || canManageEvents ? "grid-cols-6" : "grid-cols-5"} bg-transparent gap-1 min-w-[800px] sm:min-w-0`}
             >
               {/* Overview - All admin roles can see */}
               <TabsTrigger
@@ -1677,6 +1751,15 @@ export default function AdminDashboard() {
               >
                 <Store className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 <span className="hidden xs:inline">Exhibits</span>
+              </TabsTrigger>
+
+              {/* Documents - All admin roles can see */}
+              <TabsTrigger
+                value="documents"
+                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+              >
+                <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Documents</span>
               </TabsTrigger>
 
               {/* Emails - Only super_admin can send emails */}
@@ -2094,6 +2177,19 @@ export default function AdminDashboard() {
                                             Make Ordinary User
                                           </DropdownMenuItem>
                                         )}
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleDeleteUser(
+                                              userData.id,
+                                              `${userData.firstName} ${userData.lastName}`,
+                                            )
+                                          }
+                                          className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                                        >
+                                          <Trash2 className="w-4 h-4 mr-2" />
+                                          Delete User
+                                        </DropdownMenuItem>
                                       </>
                                     )}
                                 </DropdownMenuContent>
@@ -2882,6 +2978,23 @@ export default function AdminDashboard() {
                                       <Shield className="w-4 h-4 mr-2" />
                                       Payment actions restricted
                                     </DropdownMenuItem>
+                                  )}
+                                  {isSuperAdmin && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onSelect={() =>
+                                          handleDeleteRegistration(
+                                            registration.id,
+                                            registration.registrationNumber || "N/A",
+                                          )
+                                        }
+                                        className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete Registration
+                                      </DropdownMenuItem>
+                                    </>
                                   )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -3677,6 +3790,23 @@ export default function AdminDashboard() {
                                       Deactivate
                                     </DropdownMenuItem>
                                   )}
+                                  {userRole === "super_admin" && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleDeleteSponsorship(
+                                            sponsorship.id,
+                                            sponsorship.companyName,
+                                          )
+                                        }
+                                        className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Permanently
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -3896,6 +4026,23 @@ export default function AdminDashboard() {
                                       Deactivate
                                     </DropdownMenuItem>
                                   )}
+                                  {userRole === "super_admin" && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleDeleteExhibition(
+                                            exhibition.id,
+                                            exhibition.companyName,
+                                          )
+                                        }
+                                        className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Permanently
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -3907,6 +4054,11 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents">
+            <AdminDocumentsPanel />
           </TabsContent>
         </Tabs>
 
@@ -4802,7 +4954,7 @@ export default function AdminDashboard() {
             <SponsorshipDialog
               open={showCreateSponsorshipDialog}
               onOpenChange={setShowCreateSponsorshipDialog}
-              event={events[0]} // Use first available event
+              event={{...events[0], description: events[0].description || ""} as any}
               onSuccess={() => {
                 setShowCreateSponsorshipDialog(false);
                 refreshData();
@@ -4817,7 +4969,7 @@ export default function AdminDashboard() {
             <ExhibitionDialog
               open={showCreateExhibitionDialog}
               onOpenChange={setShowCreateExhibitionDialog}
-              event={events[0]} // Use first available event
+              event={{...events[0], description: events[0].description || ""} as any}
               onSuccess={() => {
                 setShowCreateExhibitionDialog(false);
                 refreshData();

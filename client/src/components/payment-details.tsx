@@ -51,10 +51,9 @@ const PaymentDetails = () => {
     }
   };
 
-  const bankDetails = bankAccounts[activeTab];
-
   const [activeTab, setActiveTab] = useState<'SME Account (ZMK)' | 'Call Account (USD)'>('SME Account (ZMK)');
   const currentAccount = bankAccounts[activeTab];
+  const bankDetails = bankAccounts[activeTab];
 
   const mobileMoney = {
     title: 'Airtel Money',

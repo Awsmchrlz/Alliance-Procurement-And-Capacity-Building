@@ -137,3 +137,46 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Build outputs
+dist/
+build/
+out/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database
+*.sql.bak
+supabase/.branches/
+supabase/.temp/
+
+# Docker
+docker-compose.override.yml
+
+# Uploads
+uploads/
+
+# Documentation (keep only essential)
+CHANGES_SUMMARY.md
+DEPLOYMENT_GUIDE.md
+DEPLOYMENT.md
+PRICING_UPDATE_SUMMARY.md
+PROJECT_STATUS.md
+SUPABASE_AUTH_CONFIG.md
+URL_FIX_README.md
+
+# Kubernetes secrets (never commit actual secrets!)
+k8s/secrets.yaml
+k8s/**/secrets.yaml

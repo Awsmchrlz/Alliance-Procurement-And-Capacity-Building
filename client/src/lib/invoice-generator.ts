@@ -86,16 +86,16 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
     // Header with company branding
     doc.setFillColor(28, 53, 107);
     doc.rect(0, 0, pageWidth, 30, 'F');
-    
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('ALLIANCE PROCUREMENT & CAPACITY BUILDING LTD', pageWidth / 2, 12, { align: 'center' });
-    
+
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.text('SUPPLY CHAIN MATTERS', pageWidth / 2, 19, { align: 'center' });
-    
+
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('REGISTRATION INVOICE', pageWidth / 2, 26, { align: 'center' });
@@ -105,15 +105,15 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
     // Invoice metadata
     doc.setFillColor(248, 250, 252);
     doc.rect(margin, y, pageWidth - 2 * margin, 16, 'F');
-    
+
     doc.setTextColor(64, 64, 64);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.text(`Registration #: ${data.registrationNumber}`, margin + 4, y + 7);
-    
+
     doc.setFont('helvetica', 'normal');
     doc.text(`Invoice Date: ${format(new Date(), 'dd MMM yyyy')}`, margin + 4, y + 12);
-    
+
     // Payment status
     const isPaid = data.registration.paymentStatus === 'paid';
     doc.setTextColor(isPaid ? 34 : 239, isPaid ? 197 : 68, isPaid ? 94 : 68);
@@ -125,7 +125,7 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
     // Event Details
     doc.setFillColor(28, 53, 107);
     doc.rect(margin, y, pageWidth - 2 * margin, 9, 'F');
-    
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -135,7 +135,7 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
 
     doc.setFillColor(248, 250, 252);
     doc.rect(margin, y, pageWidth - 2 * margin, 18, 'F');
-    
+
     doc.setTextColor(64, 64, 64);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
@@ -160,7 +160,7 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
     // Participant Details
     doc.setFillColor(28, 53, 107);
     doc.rect(margin, y, pageWidth - 2 * margin, 9, 'F');
-    
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -170,10 +170,10 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
 
     doc.setFillColor(248, 250, 252);
     doc.rect(margin, y, pageWidth - 2 * margin, 24, 'F');
-    
+
     doc.setTextColor(64, 64, 64);
     doc.setFontSize(8);
-    
+
     const fullName = `${data.participant.firstName} ${data.participant.lastName}`;
     doc.setFont('helvetica', 'bold');
     doc.text(fullName, margin + 4, y + 6);
@@ -199,7 +199,7 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
     // Registration Details
     doc.setFillColor(28, 53, 107);
     doc.rect(margin, y, pageWidth - 2 * margin, 9, 'F');
-    
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -209,7 +209,7 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
 
     doc.setFillColor(248, 250, 252);
     doc.rect(margin, y, pageWidth - 2 * margin, 12, 'F');
-    
+
     doc.setTextColor(64, 64, 64);
     doc.setFontSize(8);
 
@@ -235,7 +235,7 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
     // Invoice Summary
     doc.setFillColor(28, 53, 107);
     doc.rect(margin, y, pageWidth - 2 * margin, 9, 'F');
-    
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -293,7 +293,7 @@ export const generateInvoice = async (data: InvoiceData): Promise<void> => {
 
     // Footer
     const footerY = pageHeight - 18;
-    
+
     doc.setFillColor(28, 53, 107);
     doc.rect(0, footerY, pageWidth, 18, 'F');
 
@@ -332,7 +332,7 @@ export const formatRegistrationForInvoice = (registration: any): InvoiceData => 
     const mappedDelegateType = delegateTypeMapping[registration.delegateType] || 'private_sector';
     const config = PRICING_CONFIG[mappedDelegateType];
 
-    const { basePrices, packages, currency } = config;
+    const { packages, currency } = config;
     let totalAmount = 0;
     let basePrice = 0;
     let accommodationPrice = 0;
@@ -340,27 +340,33 @@ export const formatRegistrationForInvoice = (registration: any): InvoiceData => 
     const dinnerGalaPrice = registration.dinnerGalaAttendance ? packages.dinnerGala : 0;
 
     if (mappedDelegateType === 'international') {
+      // International delegates have different pricing structure
+      const intlPrices = config.basePrices as typeof PRICING_CONFIG.international.basePrices;
+
       if (registration.accommodationPackage && (registration.victoriaFallsPackage || registration.boatCruisePackage)) {
-        totalAmount = basePrices.withAccommodationAndBoatCruiseAndVictoriaFalls;
-        basePrice = basePrices.withoutPackages;
-        accommodationPrice = basePrices.withAccommodation - basePrices.withoutPackages;
-        victoriaFallsPrice = basePrices.withAccommodationAndBoatCruiseAndVictoriaFalls - basePrices.withAccommodation;
+        totalAmount = intlPrices.withAccommodationAndBoatCruiseAndVictoriaFalls;
+        basePrice = intlPrices.withoutPackages;
+        accommodationPrice = intlPrices.withAccommodation - intlPrices.withoutPackages;
+        victoriaFallsPrice = intlPrices.withAccommodationAndBoatCruiseAndVictoriaFalls - intlPrices.withAccommodation;
       } else if (registration.accommodationPackage) {
-        totalAmount = basePrices.withAccommodation;
-        basePrice = basePrices.withoutPackages;
-        accommodationPrice = basePrices.withAccommodation - basePrices.withoutPackages;
+        totalAmount = intlPrices.withAccommodation;
+        basePrice = intlPrices.withoutPackages;
+        accommodationPrice = intlPrices.withAccommodation - intlPrices.withoutPackages;
       } else {
-        totalAmount = basePrices.withoutPackages;
-        basePrice = basePrices.withoutPackages;
+        totalAmount = intlPrices.withoutPackages;
+        basePrice = intlPrices.withoutPackages;
       }
     } else {
+      // Private and public sector have same pricing structure
+      const localPrices = config.basePrices as typeof PRICING_CONFIG.private_sector.basePrices;
+
       if (registration.victoriaFallsPackage || registration.boatCruisePackage) {
-        totalAmount = basePrices.withBoatCruiseAndVictoriaFalls;
-        basePrice = basePrices.withoutPackages;
-        victoriaFallsPrice = basePrices.withBoatCruiseAndVictoriaFalls - basePrices.withoutPackages;
+        totalAmount = localPrices.withBoatCruiseAndVictoriaFalls;
+        basePrice = localPrices.withoutPackages;
+        victoriaFallsPrice = localPrices.withBoatCruiseAndVictoriaFalls - localPrices.withoutPackages;
       } else {
-        totalAmount = basePrices.withoutPackages;
-        basePrice = basePrices.withoutPackages;
+        totalAmount = localPrices.withoutPackages;
+        basePrice = localPrices.withoutPackages;
       }
     }
 
