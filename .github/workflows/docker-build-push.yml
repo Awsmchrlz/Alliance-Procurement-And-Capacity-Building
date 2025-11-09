@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/apcb-platform
+  DOCKER_IMAGE: awsmchlz/alliance-procurement-and-capacity-building
 
 jobs:
   # Job 1: Run Tests
