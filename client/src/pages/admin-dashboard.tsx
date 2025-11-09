@@ -194,6 +194,7 @@ interface Exhibition {
 import { EvidenceViewer } from "@/components/evidence-viewer";
 import { SponsorshipDialog } from "@/components/sponsorship-dialog";
 import { ExhibitionDialog } from "@/components/exhibition-dialog";
+import { AdminDocumentsPanel } from "@/components/admin-documents-panel";
 import { useAuth } from "@/hooks/use-auth";
 
 import { apiRequest } from "@/lib/queryClient";
@@ -1725,7 +1726,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="overview" className="space-y-6">
           <div className="bg-white rounded-xl border border-slate-200/60 p-1 shadow-sm overflow-x-auto">
             <TabsList
-              className={`grid w-full ${canManageUsers && canManageEvents && isSuperAdmin ? "grid-cols-7" : canManageUsers && canManageEvents ? "grid-cols-6" : canManageUsers || canManageEvents ? "grid-cols-5" : "grid-cols-4"} bg-transparent gap-1 min-w-[800px] sm:min-w-0`}
+              className={`grid w-full ${canManageUsers && canManageEvents && isSuperAdmin ? "grid-cols-8" : canManageUsers && canManageEvents ? "grid-cols-7" : canManageUsers || canManageEvents ? "grid-cols-6" : "grid-cols-5"} bg-transparent gap-1 min-w-[800px] sm:min-w-0`}
             >
               {/* Overview - All admin roles can see */}
               <TabsTrigger
@@ -1783,6 +1784,15 @@ export default function AdminDashboard() {
               >
                 <Store className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 <span className="hidden xs:inline">Exhibits</span>
+              </TabsTrigger>
+
+              {/* Documents - All admin roles can see */}
+              <TabsTrigger
+                value="documents"
+                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+              >
+                <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Documents</span>
               </TabsTrigger>
 
               {/* Emails - Only super_admin can send emails */}
@@ -4077,6 +4087,11 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents">
+            <AdminDocumentsPanel />
           </TabsContent>
         </Tabs>
 
