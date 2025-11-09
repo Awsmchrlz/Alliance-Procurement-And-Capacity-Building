@@ -124,12 +124,14 @@ interface Event {
   description: string | null;
   startDate: string;
   endDate: string;
-  location: string;
+  location: string | null;
   price: string;
-  currentAttendees: number;
-  maxAttendees: number;
-  featured: boolean;
-  createdAt?: string;
+  currentAttendees: number | null;
+  maxAttendees: number | null;
+  imageUrl: string | null;
+  tags: string[] | null;
+  featured: boolean | null;
+  createdAt: Date | null;
 }
 
 interface EventRegistration {
@@ -513,7 +515,7 @@ export default function AdminDashboard() {
           (event) =>
             event.title.toLowerCase().includes(term) ||
             (event.description && event.description.toLowerCase().includes(term)) ||
-            event.location.toLowerCase().includes(term),
+            (event.location && event.location.toLowerCase().includes(term)),
         ),
       );
 
@@ -4952,7 +4954,7 @@ export default function AdminDashboard() {
             <SponsorshipDialog
               open={showCreateSponsorshipDialog}
               onOpenChange={setShowCreateSponsorshipDialog}
-              event={events[0]} // Use first available event
+              event={{...events[0], description: events[0].description || ""} as any}
               onSuccess={() => {
                 setShowCreateSponsorshipDialog(false);
                 refreshData();
@@ -4967,7 +4969,7 @@ export default function AdminDashboard() {
             <ExhibitionDialog
               open={showCreateExhibitionDialog}
               onOpenChange={setShowCreateExhibitionDialog}
-              event={events[0]} // Use first available event
+              event={{...events[0], description: events[0].description || ""} as any}
               onSuccess={() => {
                 setShowCreateExhibitionDialog(false);
                 refreshData();
