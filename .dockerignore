@@ -3,62 +3,93 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
 
-# Build outputs
+# Build outputs (will be built in container)
 dist/
 .next/
 out/
+build/
 
-# Environment files
+# Environment files (use runtime env vars)
 .env
-.env.local
-.env.*.local
-.env.bak
+.env.*
+!.env.example
 
-# IDE
+# IDE and editor files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.editorconfig
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Git
 .git/
 .gitignore
+.gitattributes
 .github/
 
 # Documentation
 *.md
+!README.md
 docs/
 
 # Test files
 *.test.ts
 *.test.tsx
+*.test.js
+*.test.jsx
 *.spec.ts
 *.spec.tsx
+*.spec.js
+*.spec.jsx
 __tests__/
+__mocks__/
 coverage/
+.nyc_output/
 
 # Temporary files
 tmp/
 temp/
 *.tmp
+*.temp
 
 # Logs
 logs/
 *.log
 
-# Docker
-Dockerfile
+# Docker files
+Dockerfile*
 .dockerignore
-docker-compose.yml
+docker-compose*.yml
 
 # Kubernetes
 k8s/
 
-# Supabase
+# Supabase (not needed in container)
 supabase/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Development tools
+.eslintrc*
+.prettierrc*
+.prettierignore
+tsconfig.json
+vite.config.ts
+postcss.config.js
+tailwind.config.ts
+
+# Misc
+*.iml
+.htaccess
