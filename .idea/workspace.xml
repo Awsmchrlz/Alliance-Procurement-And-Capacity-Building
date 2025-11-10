@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="regen">
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="md removal">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -56,7 +56,7 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;#27 on fixes/contact-us&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;
   }
 }</component>
@@ -67,78 +67,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1757290716460</updated>
-    </task>
-    <task id="LOCAL-00005" summary="post prod fixes">
-      <option name="closed" value="true" />
-      <created>1757651652008</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1757651652008</updated>
-    </task>
-    <task id="LOCAL-00006" summary="post prod fixes">
-      <option name="closed" value="true" />
-      <created>1757840773438</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1757840773438</updated>
-    </task>
-    <task id="LOCAL-00007" summary="prod environment clean up">
-      <option name="closed" value="true" />
-      <created>1757841232967</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1757841232967</updated>
-    </task>
-    <task id="LOCAL-00008" summary="prod environment clean up">
-      <option name="closed" value="true" />
-      <created>1757847205489</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1757847205489</updated>
-    </task>
-    <task id="LOCAL-00009" summary="prod environment clean up">
-      <option name="closed" value="true" />
-      <created>1757847231376</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1757847231376</updated>
-    </task>
-    <task id="LOCAL-00010" summary="location modal and image clean up">
-      <option name="closed" value="true" />
-      <created>1757921363337</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1757921363337</updated>
-    </task>
-    <task id="LOCAL-00011" summary="location modal and image clean up">
-      <option name="closed" value="true" />
-      <created>1757922061084</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1757922061084</updated>
-    </task>
-    <task id="LOCAL-00012" summary="location modal and image clean up">
-      <option name="closed" value="true" />
-      <created>1757922491416</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1757922491416</updated>
-    </task>
-    <task id="LOCAL-00013" summary="footer clean up">
-      <option name="closed" value="true" />
-      <created>1757922520900</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL-00013" />
-      <option name="project" value="LOCAL" />
-      <updated>1757922520900</updated>
     </task>
     <task id="LOCAL-00014" summary="SEO and few other changes">
       <option name="closed" value="true" />
@@ -460,7 +388,79 @@
       <option name="project" value="LOCAL" />
       <updated>1761729893291</updated>
     </task>
-    <option name="localTasksCounter" value="54" />
+    <task id="LOCAL-00054" summary="regen">
+      <option name="closed" value="true" />
+      <created>1762700505096</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1762700505108</updated>
+    </task>
+    <task id="LOCAL-00055" summary="regen">
+      <option name="closed" value="true" />
+      <created>1762701137392</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1762701137393</updated>
+    </task>
+    <task id="LOCAL-00056" summary="regen">
+      <option name="closed" value="true" />
+      <created>1762701148583</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1762701148583</updated>
+    </task>
+    <task id="LOCAL-00057" summary="regen">
+      <option name="closed" value="true" />
+      <created>1762704363916</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1762704363920</updated>
+    </task>
+    <task id="LOCAL-00058" summary="test fix">
+      <option name="closed" value="true" />
+      <created>1762705104469</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1762705104474</updated>
+    </task>
+    <task id="LOCAL-00059" summary="dockerhub fixes">
+      <option name="closed" value="true" />
+      <created>1762706278890</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1762706278893</updated>
+    </task>
+    <task id="LOCAL-00060" summary="md removal">
+      <option name="closed" value="true" />
+      <created>1762707902303</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1762707902303</updated>
+    </task>
+    <task id="LOCAL-00061" summary="md removal">
+      <option name="closed" value="true" />
+      <created>1762710556766</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1762710556766</updated>
+    </task>
+    <task id="LOCAL-00062" summary="md removal">
+      <option name="closed" value="true" />
+      <created>1762712515085</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1762712515085</updated>
+    </task>
+    <option name="localTasksCounter" value="63" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -502,6 +502,9 @@
     <MESSAGE value="contact form" />
     <MESSAGE value="registration dialog and invoice fixes" />
     <MESSAGE value="regen" />
-    <option name="LAST_COMMIT_MESSAGE" value="regen" />
+    <MESSAGE value="test fix" />
+    <MESSAGE value="dockerhub fixes" />
+    <MESSAGE value="md removal" />
+    <option name="LAST_COMMIT_MESSAGE" value="md removal" />
   </component>
 </project>

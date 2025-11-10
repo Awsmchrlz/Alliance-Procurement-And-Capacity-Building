@@ -80,14 +80,10 @@ supabase/
 .travis.yml
 .circleci/
 
-# Development tools
+# Development tools (keep build configs)
 .eslintrc*
 .prettierrc*
 .prettierignore
-tsconfig.json
-vite.config.ts
-postcss.config.js
-tailwind.config.ts
 
 # Misc
 *.iml
