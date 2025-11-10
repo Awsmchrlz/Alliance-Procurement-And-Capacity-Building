@@ -45,6 +45,7 @@ COPY --from=builder --chown=apcb:nodejs /app/db ./db
 
 # Set environment
 ENV NODE_ENV=production
+ENV PORT=5001
 
 # Expose port
 EXPOSE 5001
