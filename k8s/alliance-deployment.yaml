@@ -1,56 +1,36 @@
-# Production-Ready Alliance Procurement & Capacity Building Deployment
-# Deploy with: kubectl apply -f alliance-deployment.yaml
+# Alliance Procurement & Capacity Building - Kubernetes Deployment
+# Deploy: kubectl apply -f k8s/alliance-deployment.yaml
+# Update secrets before deploying!
 
 ---
-# Namespace
 apiVersion: v1
 kind: Namespace
 metadata:
   name: alliance
-  labels:
-    name: alliance
 
 ---
-# Secrets - UPDATE THESE VALUES BEFORE DEPLOYING
 apiVersion: v1
 kind: Secret
 metadata:
-  name: app-secrets
+  name: alliance-secrets
   namespace: alliance
 type: Opaque
 stringData:
-  # Database Configuration
+  # UPDATE THESE VALUES BEFORE DEPLOYING
   DATABASE_URL: "postgresql://user:password@host:5432/database"
-  
-  # Supabase Configuration
   SUPABASE_URL: "https://your-project.supabase.co"
   SUPABASE_SERVICE_ROLE_KEY: "your-service-role-key"
   SUPABASE_ANON_KEY: "your-anon-key"
-  
-  # Email Service (Brevo)
   BREVO_API_KEY: "your-brevo-api-key"
-  BREVO_SENDER_EMAIL: "noreply@allianceprocurementandcapacitybuilding.org"
-  BREVO_SENDER_NAME: "Alliance Procurement"
-  
-  # Session Secret - Secure random string
-  SESSION_SECRET: "NJ31WY/dMLgSNPWJqQ0PbG+WBQLvC4LWgwqVjQAxTik="
-  
-  # Application URLs
-  FRONTEND_URL: "https://allianceprocurementandcapacitybuilding.org"
-  
-  # Admin Configuration
+  SESSION_SECRET: "your-random-secret-min-32-chars"
   ADMIN_EMAIL: "chisalecharles23@gmail.com"
 
 ---
-# Application Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: alliance-app
   namespace: alliance
-  labels:
-    app: alliance
-    component: web
 spec:
   replicas: 2
   strategy:
@@ -61,99 +41,74 @@ spec:
   selector:
     matchLabels:
       app: alliance
-      component: web
   template:
     metadata:
       labels:
         app: alliance
-        component: web
     spec:
-      # Security: Run as non-root user
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
         fsGroup: 1001
       
       containers:
-        - name: alliance-app
+        - name: app
           image: awsmchrlz/alliance-procurement-and-capacity-building:latest
           imagePullPolicy: Always
           
           ports:
-            - name: http
-              containerPort: 5005
-              protocol: TCP
+            - containerPort: 5005
+              name: http
           
           env:
-            # Application Configuration
             - name: NODE_ENV
               value: "production"
             - name: PORT
               value: "5005"
+            - name: FRONTEND_URL
+              value: "https://allianceprocurementandcapacitybuilding.org"
+            - name: BREVO_SENDER_EMAIL
+              value: "noreply@allianceprocurementandcapacitybuilding.org"
+            - name: BREVO_SENDER_NAME
+              value: "Alliance Procurement"
             
-            # Database
+            # Secrets
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
+                  name: alliance-secrets
                   key: DATABASE_URL
-            
-            # Supabase
             - name: SUPABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
+                  name: alliance-secrets
                   key: SUPABASE_URL
             - name: SUPABASE_SERVICE_ROLE_KEY
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
+                  name: alliance-secrets
                   key: SUPABASE_SERVICE_ROLE_KEY
             - name: SUPABASE_ANON_KEY
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
+                  name: alliance-secrets
                   key: SUPABASE_ANON_KEY
-            
-            # Email Service
             - name: BREVO_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
+                  name: alliance-secrets
                   key: BREVO_API_KEY
-            - name: BREVO_SENDER_EMAIL
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: BREVO_SENDER_EMAIL
-            - name: BREVO_SENDER_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: BREVO_SENDER_NAME
-            
-            # Session & Security
             - name: SESSION_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
+                  name: alliance-secrets
                   key: SESSION_SECRET
-            
-            # URLs
-            - name: FRONTEND_URL
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: FRONTEND_URL
-            
-            # Admin
             - name: ADMIN_EMAIL
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
+                  name: alliance-secrets
                   key: ADMIN_EMAIL
           
-          # Resource limits
           resources:
             requests:
               memory: "256Mi"
@@ -162,7 +117,6 @@ spec:
               memory: "1Gi"
               cpu: "1000m"
           
-          # Health checks
           livenessProbe:
             httpGet:
               path: /api/events
@@ -180,75 +134,40 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
-          
-          # Graceful shutdown
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "sleep 15"]
-      
-      restartPolicy: Always
 
 ---
-# Application Service
 apiVersion: v1
 kind: Service
 metadata:
   name: alliance-service
   namespace: alliance
-  labels:
-    app: alliance
-    component: web
 spec:
   type: ClusterIP
   selector:
     app: alliance
-    component: web
   ports:
-    - name: http
-      port: 80
+    - port: 80
       targetPort: 5005
       protocol: TCP
   sessionAffinity: ClientIP
-  sessionAffinityConfig:
-    clientIP:
-      timeoutSeconds: 10800
 
 ---
-# Ingress for external access
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: alliance-ingress
   namespace: alliance
   annotations:
-    # SSL handled by Cloudflare
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
-    
-    # Proxy settings
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
-    
-    # Security headers
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      more_set_headers "X-Frame-Options: SAMEORIGIN";
-      more_set_headers "X-Content-Type-Options: nosniff";
-      more_set_headers "X-XSS-Protection: 1; mode=block";
-      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
-    
-    # Rate limiting
-    nginx.ingress.kubernetes.io/limit-rps: "100"
-    
-    # Cloudflare compatibility
     nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
 spec:
   ingressClassName: nginx
-  
   rules:
-    # Main domain
     - host: allianceprocurementandcapacitybuilding.org
       http:
         paths:
@@ -260,7 +179,6 @@ spec:
                 port:
                   number: 80
     
-    # WWW subdomain
     - host: www.allianceprocurementandcapacitybuilding.org
       http:
         paths:
@@ -272,7 +190,6 @@ spec:
                 port:
                   number: 80
     
-    # .org.zm domain
     - host: allianceprocurementandcapacitybuilding.org.zm
       http:
         paths:
@@ -284,7 +201,6 @@ spec:
                 port:
                   number: 80
     
-    # WWW .org.zm subdomain
     - host: www.allianceprocurementandcapacitybuilding.org.zm
       http:
         paths:
