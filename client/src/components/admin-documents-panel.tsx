@@ -94,9 +94,16 @@ export function AdminDocumentsPanel() {
       
       const { data: uploadResult, error: uploadError } = await supabase.storage
         .from(bucketName)
-        .upload(filePath, uploadData.file);
+        .upload(filePath, uploadData.file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: uploadData.file.type || 'application/octet-stream',
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        throw uploadError;
+      }
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
@@ -124,9 +131,21 @@ export function AdminDocumentsPanel() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/documents"] });
     } catch (error: any) {
       console.error("Upload error:", error);
+      
+      let errorMessage = error.message || "Failed to upload document";
+      
+      // Provide helpful error messages
+      if (error.message?.includes('mime type') || error.message?.includes('MIME')) {
+        errorMessage = "File type not supported by storage bucket. Please configure the Supabase bucket to allow this file type, or contact an administrator.";
+      } else if (error.message?.includes('Bucket not found')) {
+        errorMessage = "Storage bucket not configured. Please check SUPABASE_BUCKET_SETUP.md for configuration instructions.";
+      } else if (error.message?.includes('size')) {
+        errorMessage = "File is too large. Maximum size is 10MB.";
+      }
+      
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload document",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
