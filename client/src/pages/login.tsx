@@ -55,41 +55,33 @@ const LoginPage = () => {
     try {
       setIsLoading(true);
 
-      // First, find the user by email or phone using our backend
-      const findUserResponse = await fetch('/api/auth/find-user', {
+      // Use backend login endpoint
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           identifier: data.identifier,
+          password: data.password,
         }),
       });
 
-      let userEmail = data.identifier;
-
-      // If identifier is not an email, get the email from backend
-      if (!data.identifier.includes('@')) {
-        if (findUserResponse.ok) {
-          const userData = await findUserResponse.json();
-          userEmail = userData.email;
-        } else {
-          throw new Error('User not found');
-        }
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
       }
 
-      // Use Supabase signInWithPassword directly
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: userEmail,
-        password: data.password,
+      const { user, token } = await response.json();
+
+      // Store the token and user session
+      await supabase.auth.setSession({
+        access_token: token,
+        refresh_token: token,
       });
 
-      if (authError || !authData.user) {
-        throw new Error(authError?.message || 'Login failed');
-      }
-
-      // Check user role from Supabase user metadata and redirect accordingly
-      const userRole = authData.user.user_metadata?.role || "ordinary_user";
+      // Check user role and redirect accordingly
+      const userRole = user.role || "ordinary_user";
 
       if (userRole === "super_admin" || userRole === "finance_person") {
         toast({
@@ -105,6 +97,7 @@ const LoginPage = () => {
         navigate("/events?from=auth");
       }
     } catch (err: any) {
+      console.error('Login error:', err);
       toast({
         title: "Sign in failed",
         description: err.message ?? "Unable to sign in",
