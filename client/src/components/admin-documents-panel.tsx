@@ -306,10 +306,13 @@ export function AdminDocumentsPanel() {
 
             <div className="space-y-2">
               <Label htmlFor="file">File * (Max 10MB)</Label>
+              <div className="text-xs text-gray-500 mb-2">
+                Supported: PDF, Word, Excel, PowerPoint, Text, Images
+              </div>
               <Input
                 id="file"
                 type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png"
                 onChange={handleFileSelect}
               />
               {uploadData.file && (
