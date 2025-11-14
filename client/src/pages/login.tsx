@@ -74,18 +74,17 @@ const LoginPage = () => {
 
       const { user, token } = await response.json();
 
-      // Set the session with proper user metadata
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: token,
-        refresh_token: token,
+      // Use Supabase to authenticate with the token
+      // This will properly set up the session with user metadata
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: data.password,
       });
 
-      if (sessionError) {
-        console.error('Session error:', sessionError);
+      if (authError) {
+        console.error('Supabase auth error:', authError);
+        throw new Error(authError.message);
       }
-
-      // Small delay to ensure session is set
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Check user role and redirect accordingly
       const userRole = user.role || "ordinary_user";
@@ -97,11 +96,11 @@ const LoginPage = () => {
           : "Ready to register for events?",
       });
 
-      // Force a page reload to ensure auth state is updated
+      // Navigate based on role
       if (userRole === "super_admin" || userRole === "finance_person") {
-        window.location.href = "/admin-dashboard";
+        navigate("/admin-dashboard");
       } else {
-        window.location.href = "/events?from=auth";
+        navigate("/events?from=auth");
       }
     } catch (err: any) {
       console.error('Login error:', err);
