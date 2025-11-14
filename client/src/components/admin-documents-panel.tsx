@@ -86,11 +86,13 @@ export function AdminDocumentsPanel() {
       setUploading(true);
 
       // Upload file to Supabase Storage
+      // Note: Using 'public_documents' bucket for admin-uploaded documents
+      // 'registrations' bucket is used for payment evidence
       const fileExt = uploadData.file.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `documents/${fileName}`;
 
-      const bucketName = import.meta.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
+      const bucketName = "public_documents";
       
       const { data: uploadResult, error: uploadError } = await supabase.storage
         .from(bucketName)
