@@ -9,21 +9,9 @@ metadata:
   name: alliance
 
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: alliance-secrets
-  namespace: alliance
-type: Opaque
-stringData:
-  # UPDATE THESE VALUES BEFORE DEPLOYING
-  DATABASE_URL: "postgresql://user:password@host:5432/database"
-  SUPABASE_URL: "https://your-project.supabase.co"
-  SUPABASE_SERVICE_ROLE_KEY: "your-service-role-key"
-  SUPABASE_ANON_KEY: "your-anon-key"
-  BREVO_API_KEY: "your-brevo-api-key"
-  SESSION_SECRET: "your-random-secret-min-32-chars"
-  ADMIN_EMAIL: "chisalecharles23@gmail.com"
+# NOTE: Secrets are managed separately via kubectl
+# Create secrets using: kubectl create secret generic alliance-secrets --from-env-file=.env -n alliance
+# Or use the provided script: ./k8s/create-secrets.sh
 
 ---
 apiVersion: apps/v1
@@ -68,9 +56,9 @@ spec:
             - name: FRONTEND_URL
               value: "https://allianceprocurementandcapacitybuilding.org"
             - name: BREVO_SENDER_EMAIL
-              value: "noreply@allianceprocurementandcapacitybuilding.org"
+              value: "globaltrainingalliance@gmail.com"
             - name: BREVO_SENDER_NAME
-              value: "Alliance Procurement"
+              value: "Alliance Procurement & Capacity Building"
             
             # Secrets
             - name: DATABASE_URL
