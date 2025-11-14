@@ -541,10 +541,9 @@ function RegistrationDialog({
 
           const fileName = `evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
           const filePath = `${user.id}/${event.id}/${fileName}`;
-          const bucketName = import.meta.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
 
-          const { data, error} = await supabase.storage
-            .from(bucketName)
+          const { data, error } = await supabase.storage
+            .from("payment-evidence")
             .upload(filePath, evidenceFile, {
               cacheControl: "3600",
               upsert: false,
@@ -1544,11 +1543,11 @@ function RegistrationDialog({
                         </div>
 
                         {!evidenceFile ? (
-                          <div className="mt-1 flex justify-center px-2 pt-2 pb-2 border-2 border-dashed border-[#87CEEB] rounded-lg bg-white hover:bg-[#87CEEB]/5 transition-colors">
+                          <div className="mt-1 flex justify-center px-2 pt-2 pb-2 border-2 border-dashed border-[#87CEEB]/40 rounded-lg bg-[#87CEEB]/5 hover:bg-[#87CEEB]/10 transition-colors">
                             <div className="space-y-1 text-center">
                               <Upload className="mx-auto h-5 w-5 text-[#87CEEB]" />
-                              <div className="text-xs text-gray-900">
-                                <label className="relative cursor-pointer bg-[#87CEEB]/10 px-3 py-1 rounded font-medium text-[#1C356B] hover:bg-[#87CEEB]/20 focus-within:outline-none">
+                              <div className="text-xs text-gray-600">
+                                <label className="relative cursor-pointer bg-white rounded font-medium text-[#1C356B] hover:text-[#87CEEB] focus-within:outline-none">
                                   <span>Upload file</span>
                                   <input
                                     id="file-upload"
@@ -1560,7 +1559,7 @@ function RegistrationDialog({
                                   />
                                 </label>
                               </div>
-                              <p className="text-xs text-gray-700 font-medium">
+                              <p className="text-xs text-[#1C356B]/70">
                                 JPG, PNG, PDF (5MB max)
                               </p>
                               {formData.paymentMethod === "group_payment" && (
