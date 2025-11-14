@@ -90,15 +90,17 @@ export function AdminDocumentsPanel() {
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `documents/${fileName}`;
 
+      const bucketName = import.meta.env.VITE_SUPABASE_EVIDENCE_BUCKET || "registrations";
+      
       const { data: uploadResult, error: uploadError } = await supabase.storage
-        .from("documents")
+        .from(bucketName)
         .upload(filePath, uploadData.file);
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from("documents")
+        .from(bucketName)
         .getPublicUrl(filePath);
 
       // Create document record
@@ -268,10 +270,10 @@ export function AdminDocumentsPanel() {
 
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] bg-white">
           <DialogHeader>
-            <DialogTitle>Upload Document</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-gray-900">Upload Document</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Upload a document that will be accessible to all users
             </DialogDescription>
           </DialogHeader>
