@@ -182,6 +182,7 @@ k8s/secrets.yaml
 k8s/**/secrets.yaml
 k8s/*-temp.yaml
 k8s/**/*-temp.yaml
+k8s/create-secrets.sh
 
 # Security incident documentation (keep for reference)
 # SECURITY_INCIDENT.md

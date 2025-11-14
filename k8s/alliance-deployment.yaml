@@ -17,11 +17,17 @@ data:
   BREVO_SENDER_NAME: "Alliance Procurement & Capacity Building"
   ADMIN_EMAIL: "chisalecharles23@gmail.com"
   VITE_SUPABASE_EVIDENCE_BUCKET: "registrations"
-  SUPABASE_URL: "https://huwkexajyeacooznhadq.supabase.co"
 
 ---
-# Secrets are in k8s/secrets.yaml (not committed to git)
-# Apply secrets first: kubectl apply -f k8s/secrets.yaml
+# Secret must be created separately using kubectl
+# kubectl create secret generic alliance-secrets \
+#   --from-literal=DATABASE_URL='postgresql://...' \
+#   --from-literal=SUPABASE_URL='https://...' \
+#   --from-literal=SUPABASE_SERVICE_ROLE_KEY='eyJ...' \
+#   --from-literal=SUPABASE_ANON_KEY='eyJ...' \
+#   --from-literal=BREVO_API_KEY='xkeysib-...' \
+#   --from-literal=SESSION_SECRET='your-secret' \
+#   -n alliance
 
 ---
 apiVersion: apps/v1
