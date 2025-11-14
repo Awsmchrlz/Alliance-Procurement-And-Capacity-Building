@@ -39,14 +39,29 @@ export default function DocumentsPage() {
     return <FileIcon className="h-5 w-5" />;
   };
 
-  const handleDownload = (fileUrl: string, fileName: string) => {
-    const link = document.createElement("a");
-    link.href = fileUrl;
-    link.download = fileName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (fileUrl: string, fileName: string) => {
+    try {
+      // First, try to fetch the file to check if it's accessible
+      const response = await fetch(fileUrl, { method: 'HEAD' });
+      
+      if (!response.ok) {
+        console.error('File not accessible:', response.status, response.statusText);
+        alert(`Unable to download file. The file may not be publicly accessible. Please contact an administrator.\n\nError: ${response.status} ${response.statusText}`);
+        return;
+      }
+      
+      // If accessible, proceed with download
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = fileName;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Unable to download file. Please check your internet connection or contact an administrator.');
+    }
   };
 
   if (isLoading) {
