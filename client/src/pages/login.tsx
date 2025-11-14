@@ -74,27 +74,34 @@ const LoginPage = () => {
 
       const { user, token } = await response.json();
 
-      // Store the token and user session
-      await supabase.auth.setSession({
+      // Set the session with proper user metadata
+      const { error: sessionError } = await supabase.auth.setSession({
         access_token: token,
         refresh_token: token,
       });
 
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
+
+      // Small delay to ensure session is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Check user role and redirect accordingly
       const userRole = user.role || "ordinary_user";
 
+      toast({
+        title: "Welcome back!",
+        description: userRole === "super_admin" || userRole === "finance_person" 
+          ? "Redirecting to admin dashboard..." 
+          : "Ready to register for events?",
+      });
+
+      // Force a page reload to ensure auth state is updated
       if (userRole === "super_admin" || userRole === "finance_person") {
-        toast({
-          title: "Welcome back!",
-          description: "Redirecting to admin dashboard...",
-        });
-        navigate("/admin-dashboard");
+        window.location.href = "/admin-dashboard";
       } else {
-        toast({
-          title: "Welcome back!",
-          description: "Ready to register for events?",
-        });
-        navigate("/events?from=auth");
+        window.location.href = "/events?from=auth";
       }
     } catch (err: any) {
       console.error('Login error:', err);
