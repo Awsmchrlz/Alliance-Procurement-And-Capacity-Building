@@ -191,9 +191,8 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
           const fileName = `exhibition_evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
           const filePath = `exhibitions/${event.id}/${fileName}`;
           
-          const bucketName = "registrations"; // Private bucket for payment evidence
           const { data, error } = await supabase.storage
-            .from(bucketName)
+            .from('payment-evidence')
             .upload(filePath, evidenceFile, {
               cacheControl: '3600',
               upsert: false,

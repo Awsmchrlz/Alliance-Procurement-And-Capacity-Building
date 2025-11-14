@@ -323,9 +323,8 @@ export function SponsorshipDialog({
         try {
           const fileName = `sponsorship_evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
           const filePath = `sponsorships/${event.id}/${fileName}`;
-          const bucketName = "registrations"; // Private bucket for payment evidence
           const { data, error } = await supabase.storage
-            .from(bucketName)
+            .from("payment-evidence")
             .upload(filePath, evidenceFile, {
               cacheControl: "3600",
               upsert: false,

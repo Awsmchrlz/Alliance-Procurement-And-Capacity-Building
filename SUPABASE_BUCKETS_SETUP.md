@@ -2,7 +2,7 @@
 
 ## Two Separate Buckets Required
 
-### 1. `registrations` Bucket (PRIVATE)
+### 1. `payment-evidence` Bucket (PRIVATE)
 **Purpose**: Store payment evidence from event registrations, sponsorships, and exhibitions
 
 **Configuration**:
@@ -17,7 +17,7 @@
 **How to create**:
 1. Go to: https://supabase.com/dashboard/project/huwkexajyeacooznhadq/storage/buckets
 2. Click "New bucket"
-3. Name: `registrations`
+3. Name: `payment-evidence`
 4. Public: ❌ UNCHECK (keep private)
 5. File size limit: 10485760
 6. Click "Create"
@@ -50,7 +50,7 @@
 
 | Bucket | Public? | Purpose | Access |
 |--------|---------|---------|--------|
-| `registrations` | ❌ Private | Payment evidence | Admins only |
+| `payment-evidence` | ❌ Private | Payment evidence | Admins only |
 | `public_documents` | ✅ Public | Admin documents | Everyone |
 
 ---
@@ -60,7 +60,7 @@
 ### Test Registration Evidence Upload:
 1. Register for an event
 2. Upload payment evidence
-3. Should upload to `registrations` bucket ✅
+3. Should upload to `payment-evidence` bucket ✅
 
 ### Test Public Documents:
 1. Go to Admin Dashboard → Documents
@@ -88,6 +88,6 @@
 - Verify URL format: `https://...supabase.co/storage/v1/object/public/public_documents/...`
 
 ### Payment evidence upload fails
-- Check `registrations` bucket exists
+- Check `payment-evidence` bucket exists
 - Can be private (doesn't need to be public)
 - Allowed MIME types should be empty
