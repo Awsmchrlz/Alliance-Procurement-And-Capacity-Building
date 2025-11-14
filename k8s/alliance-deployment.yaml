@@ -1,17 +1,27 @@
-# Alliance Procurement & Capacity Building - Kubernetes Deployment
-# Deploy: kubectl apply -f k8s/alliance-deployment.yaml
-# Update secrets before deploying!
-
----
 apiVersion: v1
 kind: Namespace
 metadata:
   name: alliance
 
 ---
-# NOTE: Secrets are managed separately via kubectl
-# Create secrets using: kubectl create secret generic alliance-secrets --from-env-file=.env -n alliance
-# Or use the provided script: ./k8s/create-secrets.sh
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alliance-config
+  namespace: alliance
+data:
+  NODE_ENV: "production"
+  PORT: "5005"
+  FRONTEND_URL: "https://allianceprocurementandcapacitybuilding.org"
+  BREVO_SENDER_EMAIL: "globaltrainingalliance@gmail.com"
+  BREVO_SENDER_NAME: "Alliance Procurement & Capacity Building"
+  ADMIN_EMAIL: "chisalecharles23@gmail.com"
+  VITE_SUPABASE_EVIDENCE_BUCKET: "registrations"
+  SUPABASE_URL: "https://huwkexajyeacooznhadq.supabase.co"
+
+---
+# Secrets are in k8s/secrets.yaml (not committed to git)
+# Apply secrets first: kubectl apply -f k8s/secrets.yaml
 
 ---
 apiVersion: apps/v1
@@ -34,69 +44,18 @@ spec:
       labels:
         app: alliance
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
-        fsGroup: 1001
-      
       containers:
         - name: app
           image: awsmchrlz/alliance-procurement-and-capacity-building:latest
           imagePullPolicy: Always
-          
           ports:
             - containerPort: 5005
               name: http
-          
-          env:
-            - name: NODE_ENV
-              value: "production"
-            - name: PORT
-              value: "5005"
-            - name: FRONTEND_URL
-              value: "https://allianceprocurementandcapacitybuilding.org"
-            - name: BREVO_SENDER_EMAIL
-              value: "globaltrainingalliance@gmail.com"
-            - name: BREVO_SENDER_NAME
-              value: "Alliance Procurement & Capacity Building"
-            
-            # Secrets
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: alliance-secrets
-                  key: DATABASE_URL
-            - name: SUPABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: alliance-secrets
-                  key: SUPABASE_URL
-            - name: SUPABASE_SERVICE_ROLE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: alliance-secrets
-                  key: SUPABASE_SERVICE_ROLE_KEY
-            - name: SUPABASE_ANON_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: alliance-secrets
-                  key: SUPABASE_ANON_KEY
-            - name: BREVO_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: alliance-secrets
-                  key: BREVO_API_KEY
-            - name: SESSION_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: alliance-secrets
-                  key: SESSION_SECRET
-            - name: ADMIN_EMAIL
-              valueFrom:
-                secretKeyRef:
-                  name: alliance-secrets
-                  key: ADMIN_EMAIL
-          
+          envFrom:
+            - configMapRef:
+                name: alliance-config
+            - secretRef:
+                name: alliance-secrets
           resources:
             requests:
               memory: "256Mi"
@@ -104,7 +63,6 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "1000m"
-          
           livenessProbe:
             httpGet:
               path: /api/events
@@ -113,7 +71,6 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 3
-          
           readinessProbe:
             httpGet:
               path: /api/events
@@ -166,7 +123,6 @@ spec:
                 name: alliance-service
                 port:
                   number: 80
-    
     - host: www.allianceprocurementandcapacitybuilding.org
       http:
         paths:
@@ -177,7 +133,6 @@ spec:
                 name: alliance-service
                 port:
                   number: 80
-    
     - host: allianceprocurementandcapacitybuilding.org.zm
       http:
         paths:
@@ -188,7 +143,6 @@ spec:
                 name: alliance-service
                 port:
                   number: 80
-    
     - host: www.allianceprocurementandcapacitybuilding.org.zm
       http:
         paths:
