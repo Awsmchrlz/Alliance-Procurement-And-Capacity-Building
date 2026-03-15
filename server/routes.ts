@@ -80,6 +80,11 @@ const requireRoles =
   };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Simple health check endpoint (no external dependencies)
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+  });
+
   // Add file upload middleware
   app.use(
     fileUpload({
