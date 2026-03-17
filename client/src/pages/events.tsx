@@ -91,6 +91,19 @@ const EventsPage = () => {
   // Handle auto-open when events are loaded
   useEffect(() => {
     if (autoOpenDialog && eventsArray.length > 0) {
+      // Find the featured event first
+      const featuredEvent = eventsArray.find((e: Event) => e.featured === true);
+      
+      if (featuredEvent) {
+        const timer = setTimeout(() => {
+          setSelectedEvent(featuredEvent);
+          setShowRegistrationDialog(true);
+          setAutoOpenDialog(false);
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+      
+      // Fallback to first upcoming event if no featured event
       const upcomingEvents = eventsArray.filter(
         (event: Event) => new Date(event.startDate) >= new Date(),
       );
