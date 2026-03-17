@@ -26,6 +26,7 @@ import {
   Sparkles,
   CheckCircle,
   AlertCircle,
+  Crown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Event } from "@shared/schema";
@@ -230,6 +231,13 @@ const EventsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {eventsArray
                       .filter((e: Event) => getEventStatus(e) === "upcoming" || getEventStatus(e) === "ongoing")
+                      .sort((a: Event, b: Event) => {
+                        // Featured events first
+                        if (a.featured && !b.featured) return -1;
+                        if (!a.featured && b.featured) return 1;
+                        // Then by date
+                        return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+                      })
                       .map((event: Event) => {
                 const status = getEventStatus(event);
                 const isRegistered = isUserRegistered(event.id);
@@ -237,7 +245,9 @@ const EventsPage = () => {
                 return (
                   <Card
                     key={event.id}
-                    className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden"
+                    className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden ${
+                      event.featured ? "md:col-span-2 lg:col-span-3 ring-4 ring-[#FDC123]/30" : ""
+                    }`}
                   >
                     <div className="relative">
                       {event.imageUrl && (
@@ -255,7 +265,16 @@ const EventsPage = () => {
                         {getStatusBadge(status)}
                       </div>
 
-                      {isRegistered && (
+                      {event.featured && (
+                        <div className="absolute top-4 left-4">
+                          <Badge className="bg-[#FDC123] text-white">
+                            <Crown className="w-3 h-3 mr-1" />
+                            Featured
+                          </Badge>
+                        </div>
+                      )}
+
+                      {isRegistered && !event.featured && (
                         <div className="absolute top-4 left-4">
                           <Badge className="bg-[#87CEEB] text-white">
                             <CheckCircle className="w-3 h-3 mr-1" />
@@ -266,18 +285,22 @@ const EventsPage = () => {
                     </div>
 
                     <CardHeader className="pb-4">
-                      <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-[#1C356B] transition-colors">
+                      <CardTitle className={`font-bold text-gray-900 group-hover:text-[#1C356B] transition-colors ${
+                        event.featured ? "text-3xl" : "text-xl"
+                      }`}>
                         {event.title}
                       </CardTitle>
                       {event.description && (
-                        <CardDescription className="text-gray-600 line-clamp-2">
+                        <CardDescription className={`text-gray-600 ${
+                          event.featured ? "text-lg line-clamp-3" : "line-clamp-2"
+                        }`}>
                           {event.description}
                         </CardDescription>
                       )}
                     </CardHeader>
 
                     <CardContent className="space-y-4">
-                      <div className="space-y-3">
+                      <div className={`space-y-3 ${event.featured ? "grid md:grid-cols-2 gap-4" : ""}`}>
                         <div className="flex items-center gap-3 text-sm text-gray-600">
                           <Calendar className="w-4 h-4 text-[#1C356B]" />
                           <span>
@@ -313,10 +336,14 @@ const EventsPage = () => {
                         {status === "upcoming" && !isRegistered ? (
                           <button
                             onClick={() => handleRegisterClick(event)}
-                            className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] active:bg-[#1a2f5a] text-white font-bold py-5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 min-h-[64px] text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+                            className={`w-full font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
+                              event.featured 
+                                ? "bg-[#FDC123] hover:bg-[#FDC123]/90 text-[#1C356B] py-6 px-6 text-xl min-h-[72px]"
+                                : "bg-[#1C356B] hover:bg-[#2d4a7a] active:bg-[#1a2f5a] text-white py-5 px-4 text-lg min-h-[64px]"
+                            }`}
                           >
-                            <span>Register for Event</span>
-                            <ArrowRight className="w-5 h-5" />
+                            <span>{event.featured ? "REGISTER HERE" : "Register for Event"}</span>
+                            <ArrowRight className={event.featured ? "w-6 h-6" : "w-5 h-5"} />
                           </button>
                         ) : isRegistered ? (
                           <div className="w-full bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold py-5 px-4 rounded-xl flex items-center justify-center gap-3 min-h-[64px] text-lg">
