@@ -224,17 +224,19 @@ export function PublicEventRegistration({
 
             {/* Step 1: Initial Registration Button */}
             {step === 1 && (
-              <div className="py-8 text-center">
-                <h3 className="text-xl font-semibold mb-2">
-                  2026 NATIONAL SERMINER "MINISTRY OF HEALTH"
-                </h3>
-                <p className="text-sm text-gray-600 mb-6">
-                  THEME: "STRENGTHENING RECORD MANAGEMENT AND INTERNAL CONTROLS TO
-                  ENHANCE VALUE FOR MONEY IN THE PUBLIC SECTOR"
-                </p>
+              <div className="py-8 text-center space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-[#1C356B]">
+                    2026 NATIONAL SERMINER "MINISTRY OF HEALTH"
+                  </h3>
+                  <p className="text-sm text-gray-700 max-w-2xl mx-auto leading-relaxed px-4">
+                    THEME: "STRENGTHENING RECORD MANAGEMENT AND INTERNAL CONTROLS TO
+                    ENHANCE VALUE FOR MONEY IN THE PUBLIC SECTOR"
+                  </p>
+                </div>
                 <Button
                   onClick={() => setStep(2)}
-                  className="bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white px-8 py-6 text-lg rounded-lg"
+                  className="bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white px-12 py-6 text-lg font-bold rounded-lg shadow-lg hover:shadow-xl transition-all"
                 >
                   REGISTER HERE
                 </Button>
@@ -243,177 +245,217 @@ export function PublicEventRegistration({
 
             {/* Step 2: Group Selection */}
             {step === 2 && (
-              <div className="space-y-4 py-4">
+              <div className="space-y-6 py-6">
+                <div className="text-center mb-4">
+                  <h3 className="text-xl font-bold text-[#1C356B] mb-2">Select Your Group</h3>
+                  <p className="text-sm text-gray-600">Choose the dates that work best for you</p>
+                </div>
+                
                 <Button
                   onClick={() => handleGroupSelect("group1")}
-                  className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-8 text-base rounded-lg"
+                  className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-10 text-base rounded-xl shadow-md hover:shadow-lg transition-all"
                 >
-                  <div>
-                    <div className="font-bold">GROUP 1 REGISTER HERE</div>
-                    <div className="text-sm mt-1">25th -27th MARCH 2025 - Livingstone</div>
+                  <div className="space-y-2">
+                    <div className="text-lg font-bold">GROUP 1 REGISTER HERE</div>
+                    <div className="text-sm font-medium opacity-90">25th - 27th MARCH 2025 - Livingstone</div>
                   </div>
                 </Button>
                 
                 <Button
                   onClick={() => handleGroupSelect("group2")}
-                  className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-8 text-base rounded-lg"
+                  className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-10 text-base rounded-xl shadow-md hover:shadow-lg transition-all"
                 >
-                  <div>
-                    <div className="font-bold">GROUP 2 REGISTER HERE</div>
-                    <div className="text-sm mt-1">30th MARCH -2nd April 2025 - Livingstone</div>
+                  <div className="space-y-2">
+                    <div className="text-lg font-bold">GROUP 2 REGISTER HERE</div>
+                    <div className="text-sm font-medium opacity-90">30th MARCH - 2nd April 2025 - Livingstone</div>
                   </div>
+                </Button>
+
+                <Button
+                  onClick={() => setStep(1)}
+                  variant="outline"
+                  className="w-full mt-4"
+                >
+                  Back
                 </Button>
               </div>
             )}
 
             {/* Step 3: Registration Form */}
             {step === 3 && (
-              <div className="space-y-4 py-4">
-                <div>
-                  <Label htmlFor="fullName">Full Names</Label>
-                  <Input
-                    id="fullName"
-                    value={formData.fullName}
-                    onChange={(e) => updateField("fullName", e.target.value)}
-                    placeholder="Enter your full name"
-                  />
+              <div className="space-y-5 py-4 max-h-[60vh] overflow-y-auto px-1">
+                <div className="text-center mb-4 sticky top-0 bg-white pb-3 border-b">
+                  <h3 className="text-lg font-bold text-[#1C356B]">Registration Form</h3>
+                  <p className="text-sm text-gray-600">
+                    {selectedGroup === "group1" ? "Group 1: 25-27 March 2025" : "Group 2: 30 March - 2 April 2025"}
+                  </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="institution">Institution</Label>
-                  <Input
-                    id="institution"
-                    value={formData.institution}
-                    onChange={(e) => updateField("institution", e.target.value)}
-                    placeholder="Enter your institution"
-                  />
-                </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="fullName" className="text-sm font-semibold text-gray-700">Full Names *</Label>
+                    <Input
+                      id="fullName"
+                      value={formData.fullName}
+                      onChange={(e) => updateField("fullName", e.target.value)}
+                      placeholder="Enter your full name"
+                      className="mt-1"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select value={formData.gender} onValueChange={(value) => updateField("gender", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div>
+                    <Label htmlFor="institution" className="text-sm font-semibold text-gray-700">Institution *</Label>
+                    <Input
+                      id="institution"
+                      value={formData.institution}
+                      onChange={(e) => updateField("institution", e.target.value)}
+                      placeholder="Enter your institution"
+                      className="mt-1"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="email">Email address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => updateField("email", e.target.value)}
-                    placeholder="Enter your email"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="gender" className="text-sm font-semibold text-gray-700">Gender *</Label>
+                    <Select value={formData.gender} onValueChange={(value) => updateField("gender", value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div>
-                  <Label htmlFor="phoneNumber">Phone number</Label>
-                  <Input
-                    id="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={(e) => updateField("phoneNumber", e.target.value)}
-                    placeholder="Enter your phone number"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="email" className="text-sm font-semibold text-gray-700">Email address *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => updateField("email", e.target.value)}
+                      placeholder="Enter your email"
+                      className="mt-1"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => updateField("title", e.target.value)}
-                    placeholder="Enter your title/position"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700">Phone number *</Label>
+                    <Input
+                      id="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={(e) => updateField("phoneNumber", e.target.value)}
+                      placeholder="Enter your phone number"
+                      className="mt-1"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="province">Province</Label>
-                  <Input
-                    id="province"
-                    value={formData.province}
-                    onChange={(e) => updateField("province", e.target.value)}
-                    placeholder="Enter your province"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="title" className="text-sm font-semibold text-gray-700">Title *</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => updateField("title", e.target.value)}
+                      placeholder="Enter your title/position"
+                      className="mt-1"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="district">District</Label>
-                  <Input
-                    id="district"
-                    value={formData.district}
-                    onChange={(e) => updateField("district", e.target.value)}
-                    placeholder="Enter your district"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="province" className="text-sm font-semibold text-gray-700">Province *</Label>
+                    <Input
+                      id="province"
+                      value={formData.province}
+                      onChange={(e) => updateField("province", e.target.value)}
+                      placeholder="Enter your province"
+                      className="mt-1"
+                    />
+                  </div>
 
-                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                  <Label className="text-base font-semibold mb-3 block">
-                    Payment mode (NO ATTACHMENT)
-                  </Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="cash"
-                        checked={formData.paymentModes.cash}
-                        onCheckedChange={(checked) =>
-                          updateField("paymentModes", {
-                            ...formData.paymentModes,
-                            cash: checked === true,
-                          })
-                        }
-                      />
-                      <label htmlFor="cash" className="text-sm cursor-pointer">
-                        CASH
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="mobileMoney"
-                        checked={formData.paymentModes.mobileMoney}
-                        onCheckedChange={(checked) =>
-                          updateField("paymentModes", {
-                            ...formData.paymentModes,
-                            mobileMoney: checked === true,
-                          })
-                        }
-                      />
-                      <label htmlFor="mobileMoney" className="text-sm cursor-pointer">
-                        MOBILE MONEY
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="bankTransfer"
-                        checked={formData.paymentModes.bankTransfer}
-                        onCheckedChange={(checked) =>
-                          updateField("paymentModes", {
-                            ...formData.paymentModes,
-                            bankTransfer: checked === true,
-                          })
-                        }
-                      />
-                      <label htmlFor="bankTransfer" className="text-sm cursor-pointer">
-                        BANK TRANSFER
-                      </label>
+                  <div>
+                    <Label htmlFor="district" className="text-sm font-semibold text-gray-700">District *</Label>
+                    <Input
+                      id="district"
+                      value={formData.district}
+                      onChange={(e) => updateField("district", e.target.value)}
+                      placeholder="Enter your district"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <Label className="text-base font-bold text-gray-800 mb-3 block">
+                      Payment mode <span className="text-red-600">(NO ATTACHMENT)</span>
+                    </Label>
+                    <p className="text-xs text-gray-600 mb-3">Select all that apply</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 p-2 hover:bg-white rounded transition-colors">
+                        <Checkbox
+                          id="cash"
+                          checked={formData.paymentModes.cash}
+                          onCheckedChange={(checked) =>
+                            updateField("paymentModes", {
+                              ...formData.paymentModes,
+                              cash: checked === true,
+                            })
+                          }
+                        />
+                        <label htmlFor="cash" className="text-sm font-medium cursor-pointer flex-1">
+                          CASH
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-3 p-2 hover:bg-white rounded transition-colors">
+                        <Checkbox
+                          id="mobileMoney"
+                          checked={formData.paymentModes.mobileMoney}
+                          onCheckedChange={(checked) =>
+                            updateField("paymentModes", {
+                              ...formData.paymentModes,
+                              mobileMoney: checked === true,
+                            })
+                          }
+                        />
+                        <label htmlFor="mobileMoney" className="text-sm font-medium cursor-pointer flex-1">
+                          MOBILE MONEY
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-3 p-2 hover:bg-white rounded transition-colors">
+                        <Checkbox
+                          id="bankTransfer"
+                          checked={formData.paymentModes.bankTransfer}
+                          onCheckedChange={(checked) =>
+                            updateField("paymentModes", {
+                              ...formData.paymentModes,
+                              bankTransfer: checked === true,
+                            })
+                          }
+                        />
+                        <label htmlFor="bankTransfer" className="text-sm font-medium cursor-pointer flex-1">
+                          BANK TRANSFER
+                        </label>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-bold rounded-lg"
-                >
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </Button>
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      onClick={() => setStep(2)}
+                      variant="outline"
+                      className="flex-1"
+                      disabled={isSubmitting}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-bold rounded-lg shadow-lg hover:shadow-xl transition-all"
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit"}
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </>
