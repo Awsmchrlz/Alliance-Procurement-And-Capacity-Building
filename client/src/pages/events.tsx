@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { RegistrationDialog } from "@/components/registration-dialog";
+import { PublicEventRegistration } from "@/components/public-event-registration";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -60,24 +60,17 @@ const EventsPage = () => {
     queryKey: ["/api/users", user?.id, "registrations"],
     queryFn: async () => {
       if (!user?.id) {
-        console.log("❌ No user ID available for registration fetch");
         return [];
       }
-      console.log("🔍 Fetching registrations for user:", user.id);
       const data = await apiRequest(
         "GET",
         `/api/users/${user?.id}/registrations`,
       );
-      console.log(
-        "📋 User registrations fetched:",
-        data?.length || 0,
-        "registrations",
-      );
       return Array.isArray(data) ? data : [];
     },
     enabled: !!user?.id && !!isAuthenticated,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results
+    staleTime: 0,
+    gcTime: 0,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
   });
@@ -92,58 +85,29 @@ const EventsPage = () => {
   useEffect(() => {
     setAutoOpenDialog(true);
     window.history.replaceState({}, "", "/events");
-
     return () => setAutoOpenDialog(false);
   }, []);
 
-  // Handle auto-open when events and authentication state are loaded
+  // Handle auto-open when events are loaded
   useEffect(() => {
-    if (autoOpenDialog && eventsArray.length > 0 && isAuthenticated) {
-      // Find the main event (first upcoming event or most recent)
+    if (autoOpenDialog && eventsArray.length > 0) {
       const upcomingEvents = eventsArray.filter(
         (event: Event) => new Date(event.startDate) >= new Date(),
       );
-      const mainEvent =
-        upcomingEvents.length > 0 ? upcomingEvents[0] : eventsArray[0];
+      const mainEvent = upcomingEvents.length > 0 ? upcomingEvents[0] : eventsArray[0];
 
       if (mainEvent) {
-        // Check if user is already registered for this event
-        const isAlreadyRegistered = registrationsArray.some(
-          (reg: any) => reg.eventId === mainEvent.id,
-        );
-
-        // Small delay to ensure everything is loaded
         const timer = setTimeout(() => {
-          if (isAlreadyRegistered) {
-            // Show already registered message instead of opening modal
-            toast({
-              title: "Already Registered! ✅",
-              description: `You're already registered for "${mainEvent.title}". Check your dashboard for details.`,
-            });
-          } else {
-            // Open registration modal for unregistered users
-            setSelectedEvent(mainEvent);
-            setShowRegistrationDialog(true);
-
-            toast({
-              title: "Welcome! 🎉",
-              description: "Ready to register for our upcoming event?",
-            });
-          }
+          setSelectedEvent(mainEvent);
+          setShowRegistrationDialog(true);
           setAutoOpenDialog(false);
-        }, 1000); // Increased delay to ensure everything is loaded
-
+        }, 800);
         return () => clearTimeout(timer);
       }
     }
-  }, [autoOpenDialog, eventsArray, registrationsArray, isAuthenticated, toast]);
+  }, [autoOpenDialog, eventsArray]);
 
   const handleRegisterClick = (event: Event) => {
-    if (!isAuthenticated) {
-      // Redirect to registration page with a return URL
-      navigate(`/register?returnTo=/events/${event.id}`);
-      return;
-    }
     setSelectedEvent(event);
     setShowRegistrationDialog(true);
   };
@@ -523,29 +487,16 @@ const EventsPage = () => {
 
       {/* Registration Dialogs */}
       {selectedEvent && (
-        <>
-          <RegistrationDialog
-            open={showRegistrationDialog}
-            onOpenChange={(open) => {
-              setShowRegistrationDialog(open);
-              // Clear auto-open flag when modal is closed
-              if (!open) {
-                localStorage.removeItem("autoOpenEventModal");
-              }
-            }}
-            event={selectedEvent}
-            skipSuccessModal={true}
-            onSuccess={() => {
-              setShowRegistrationDialog(false);
-              // Clear auto-open flag after successful registration
+        <PublicEventRegistration
+          open={showRegistrationDialog}
+          onOpenChange={(open) => {
+            setShowRegistrationDialog(open);
+            if (!open) {
               localStorage.removeItem("autoOpenEventModal");
-              // Set flag to show success modal only on dashboard
-              sessionStorage.setItem("showRegistrationSuccess", "true");
-              // Navigate immediately to dashboard to show success modal there
-              navigate("/dashboard");
-            }}
-          />
-        </>
+            }
+          }}
+          event={selectedEvent}
+        />
       )}
     </div>
   );

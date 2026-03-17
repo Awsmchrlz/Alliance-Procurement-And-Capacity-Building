@@ -1,6 +1,6 @@
 -- Create public event registrations table
 CREATE TABLE IF NOT EXISTS public_event_registrations (
-  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id VARCHAR NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   registration_group TEXT NOT NULL CHECK (registration_group IN ('group1', 'group2')),
   full_name TEXT NOT NULL,

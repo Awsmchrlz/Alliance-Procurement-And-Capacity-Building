@@ -244,6 +244,8 @@ export default function AdminDashboard() {
     })[]
   >([]);
 
+  const [publicRegistrations, setPublicRegistrations] = useState<any[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [localUser, setLocalUser] = useState<any>(null);
@@ -669,6 +671,28 @@ export default function AdminDashboard() {
           }
         } catch (err) {
           console.error("Error fetching exhibitions:", err);
+        }
+
+        // Fetch public registrations
+        try {
+          const publicRegsResponse = await fetch(`/api/admin/public-registrations`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+          if (publicRegsResponse.ok) {
+            const { publicRegistrations: publicRegsData } =
+              await publicRegsResponse.json();
+            setPublicRegistrations(publicRegsData || []);
+          } else {
+            console.error(
+              "Failed to fetch public registrations:",
+              publicRegsResponse.status,
+              publicRegsResponse.statusText,
+            );
+          }
+        } catch (err) {
+          console.error("Error fetching public registrations:", err);
         }
       }
     } catch (err: any) {
