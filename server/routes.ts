@@ -599,6 +599,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Update public registration status (admin only)
+  app.patch(
+    "/api/admin/public-registrations/:id/status",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!["pending", "confirmed", "cancelled"].includes(status)) {
+          return res.status(400).json({ message: "Invalid status" });
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from("public_event_registrations")
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq("id", id)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        res.json({ message: "Status updated", registration: data });
+      } catch (error: any) {
+        console.error("Error updating public registration status:", error);
+        res.status(500).json({
+          message: "Failed to update status",
+          details: error.message,
+        });
+      }
+    },
+  );
+
+  // Delete public registration (super admin only)
+  app.delete(
+    "/api/admin/public-registrations/:id",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin]),
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        const { error } = await supabaseAdmin
+          .from("public_event_registrations")
+          .delete()
+          .eq("id", id);
+
+        if (error) throw error;
+
+        res.json({ message: "Registration deleted successfully" });
+      } catch (error: any) {
+        console.error("Error deleting public registration:", error);
+        res.status(500).json({
+          message: "Failed to delete registration",
+          details: error.message,
+        });
+      }
+    },
+  );
+
   app.post(
     "/api/events/register",
     authenticateSupabase,

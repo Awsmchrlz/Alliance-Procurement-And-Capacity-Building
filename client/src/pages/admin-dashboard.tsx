@@ -4093,6 +4093,266 @@ export default function AdminDashboard() {
           <TabsContent value="documents">
             <AdminDocumentsPanel />
           </TabsContent>
+
+          {/* Public Registrations Tab */}
+          <TabsContent value="public-registrations">
+            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+              <CardHeader className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
+                      Public Event Registrations
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      Manage public registrations for Ministry of Health event
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      // Export public registrations
+                      const data = publicRegistrations.map((reg: any) => ({
+                        "Registration #": reg.registration_number,
+                        "Full Name": reg.full_name,
+                        Email: reg.email,
+                        Phone: reg.phone_number,
+                        Institution: reg.institution,
+                        Gender: reg.gender,
+                        Title: reg.title,
+                        Province: reg.province,
+                        District: reg.district,
+                        Group: reg.registration_group === "group1" ? "Group 1 (25-27 March)" : "Group 2 (30 March - 2 April)",
+                        "Payment Modes": reg.payment_modes?.join(", ") || "",
+                        Status: reg.status,
+                        "Registered At": formatTime(reg.created_at),
+                      }));
+
+                      const headers = Object.keys(data[0] || {});
+                      const csvContent = [
+                        headers.join(","),
+                        ...data.map((row: any) =>
+                          headers
+                            .map((header) => {
+                              const value = row[header];
+                              if (typeof value === "string" && (value.includes(",") || value.includes('"') || value.includes("\n"))) {
+                                return `"${value.replace(/"/g, '""')}"`;
+                              }
+                              return value;
+                            })
+                            .join(","),
+                        ),
+                      ].join("\n");
+
+                      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                      const link = document.createElement("a");
+                      const url = URL.createObjectURL(blob);
+                      link.setAttribute("href", url);
+                      link.setAttribute("download", `public_registrations_${new Date().toISOString().split("T")[0]}.csv`);
+                      link.style.visibility = "hidden";
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(url);
+
+                      toast({
+                        title: "Export Successful",
+                        description: "Public registrations exported successfully",
+                      });
+                    }}
+                    variant="outline"
+                    className="text-[#1C356B] border-[#1C356B] hover:bg-[#1C356B]/10"
+                  >
+                    Export to CSV
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {publicRegistrations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <UserPlus className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      No Public Registrations Yet
+                    </h3>
+                    <p className="text-gray-600">
+                      Public registrations will appear here once users start registering
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-slate-200 overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="font-semibold">Registration #</TableHead>
+                          <TableHead className="font-semibold">Participant</TableHead>
+                          <TableHead className="font-semibold">Contact</TableHead>
+                          <TableHead className="font-semibold">Institution</TableHead>
+                          <TableHead className="font-semibold">Group</TableHead>
+                          <TableHead className="font-semibold">Location</TableHead>
+                          <TableHead className="font-semibold">Payment Modes</TableHead>
+                          <TableHead className="font-semibold">Status</TableHead>
+                          <TableHead className="font-semibold">Date</TableHead>
+                          <TableHead className="font-semibold text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {publicRegistrations.map((reg: any, index: number) => (
+                          <TableRow key={reg.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
+                            <TableCell className="font-mono text-sm">{reg.registration_number}</TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-semibold text-gray-900">{reg.full_name}</div>
+                                <div className="text-sm text-gray-500">{reg.gender} • {reg.title}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="text-sm text-gray-900">{reg.email}</div>
+                                <div className="text-sm text-gray-500">{reg.phone_number}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm">{reg.institution}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="whitespace-nowrap">
+                                {reg.registration_group === "group1" ? "Group 1" : "Group 2"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>{reg.province}</div>
+                                <div className="text-gray-500">{reg.district}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {reg.payment_modes?.map((mode: string) => (
+                                  <Badge key={mode} variant="secondary" className="text-xs">
+                                    {mode === "cash" ? "Cash" : mode === "mobileMoney" ? "Mobile" : "Bank"}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {reg.status === "confirmed" ? (
+                                <Badge className="bg-emerald-500 text-white">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Confirmed
+                                </Badge>
+                              ) : reg.status === "cancelled" ? (
+                                <Badge variant="destructive">
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                  Cancelled
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Pending
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm">{formatDate(reg.created_at)}</TableCell>
+                            <TableCell className="text-center">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="hover:bg-slate-100">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48 bg-white">
+                                  {reg.status !== "confirmed" && (
+                                    <DropdownMenuItem
+                                      onClick={async () => {
+                                        try {
+                                          const { data: { session } } = await supabase.auth.getSession();
+                                          const response = await fetch(`/api/admin/public-registrations/${reg.id}/status`, {
+                                            method: "PATCH",
+                                            headers: {
+                                              "Content-Type": "application/json",
+                                              Authorization: `Bearer ${session?.access_token}`,
+                                            },
+                                            body: JSON.stringify({ status: "confirmed" }),
+                                          });
+                                          if (response.ok) {
+                                            toast({ title: "Status updated to confirmed" });
+                                            await refreshData();
+                                          }
+                                        } catch (error) {
+                                          toast({ title: "Failed to update status", variant: "destructive" });
+                                        }
+                                      }}
+                                      className="text-green-600"
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-2" />
+                                      Confirm
+                                    </DropdownMenuItem>
+                                  )}
+                                  {reg.status !== "cancelled" && (
+                                    <DropdownMenuItem
+                                      onClick={async () => {
+                                        try {
+                                          const { data: { session } } = await supabase.auth.getSession();
+                                          const response = await fetch(`/api/admin/public-registrations/${reg.id}/status`, {
+                                            method: "PATCH",
+                                            headers: {
+                                              "Content-Type": "application/json",
+                                              Authorization: `Bearer ${session?.access_token}`,
+                                            },
+                                            body: JSON.stringify({ status: "cancelled" }),
+                                          });
+                                          if (response.ok) {
+                                            toast({ title: "Status updated to cancelled" });
+                                            await refreshData();
+                                          }
+                                        } catch (error) {
+                                          toast({ title: "Failed to update status", variant: "destructive" });
+                                        }
+                                      }}
+                                      className="text-red-600"
+                                    >
+                                      <XCircle className="w-4 h-4 mr-2" />
+                                      Cancel
+                                    </DropdownMenuItem>
+                                  )}
+                                  {isSuperAdmin && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={async () => {
+                                          if (!confirm(`Delete registration ${reg.registration_number}?`)) return;
+                                          try {
+                                            const { data: { session } } = await supabase.auth.getSession();
+                                            const response = await fetch(`/api/admin/public-registrations/${reg.id}`, {
+                                              method: "DELETE",
+                                              headers: {
+                                                Authorization: `Bearer ${session?.access_token}`,
+                                              },
+                                            });
+                                            if (response.ok) {
+                                              toast({ title: "Registration deleted" });
+                                              await refreshData();
+                                            }
+                                          } catch (error) {
+                                            toast({ title: "Failed to delete", variant: "destructive" });
+                                          }
+                                        }}
+                                        className="text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Enhanced Email Blast Dialog */}
