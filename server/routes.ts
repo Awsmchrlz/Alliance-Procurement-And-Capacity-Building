@@ -473,6 +473,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public event registration (no authentication required)
+  app.post("/api/events/public-register", async (req, res) => {
+    try {
+      const {
+        eventId,
+        group,
+        fullName,
+        institution,
+        gender,
+        email,
+        phoneNumber,
+        title,
+        province,
+        district,
+        paymentModes,
+      } = req.body;
+
+      // Validate required fields
+      if (!eventId || !fullName || !email || !phoneNumber || !institution || !gender || !title || !province || !district) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Validate email format
+      if (!/\S+@\S+\.\S+/.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      // Check if event exists
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      const registrationNumber = `PUB-${Date.now()}`;
+
+      // Store registration in database
+      const { data: registration, error } = await supabaseAdmin
+        .from("public_event_registrations")
+        .insert({
+          event_id: eventId,
+          registration_group: group,
+          full_name: fullName,
+          institution,
+          gender,
+          email,
+          phone_number: phoneNumber,
+          title,
+          province,
+          district,
+          payment_modes: paymentModes,
+          registration_number: registrationNumber,
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Database insert error:", error);
+        throw new Error("Failed to save registration");
+      }
+
+      console.log("✅ Public registration saved:", registration.id);
+
+      // Send confirmation email (fire-and-forget)
+      emailService
+        .sendEventRegistrationConfirmation({
+          firstName: fullName.split(" ")[0],
+          lastName: fullName.split(" ").slice(1).join(" ") || "",
+          email,
+          eventTitle: event.title,
+          eventDate: event.startDate,
+          registrationNumber,
+          organization: institution,
+          country: "Zambia",
+        })
+        .catch((emailError) => {
+          console.error("Failed to send confirmation email:", emailError.message);
+        });
+
+      res.status(201).json({
+        message: "Registration successful",
+        registrationNumber,
+        registration,
+      });
+    } catch (error: any) {
+      console.error("Public registration error:", error);
+      res.status(500).json({
+        message: "Registration failed",
+        details: error.message,
+      });
+    }
+  });
+
+  // Get public registrations (admin only)
+  app.get(
+    "/api/admin/public-registrations",
+    authenticateSupabase,
+    requireRoles([Roles.SuperAdmin, Roles.Finance, Roles.EventManager]),
+    async (req, res) => {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from("public_event_registrations")
+          .select(`
+            *,
+            events (
+              id,
+              title,
+              start_date,
+              location
+            )
+          `)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ publicRegistrations: data || [] });
+      } catch (error: any) {
+        console.error("Error fetching public registrations:", error);
+        res.status(500).json({
+          message: "Failed to fetch public registrations",
+          details: error.message,
+        });
+      }
+    },
+  );
+
   app.post(
     "/api/events/register",
     authenticateSupabase,

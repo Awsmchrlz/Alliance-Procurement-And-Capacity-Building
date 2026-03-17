@@ -11,8 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Event } from "@shared/schema";
-import { useAuth } from "@/hooks/use-auth";
-import { RegistrationDialog } from "./registration-dialog";
+import { PublicEventRegistration } from "./public-event-registration";
 import { useState } from "react";
 import { format } from "date-fns";
 import { LocationModal } from "./location-modal";
@@ -28,16 +27,11 @@ export function EventCard({
   onRegister,
   featured = false,
 }: EventCardProps) {
-  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   const handleRegister = () => {
-    if (user) {
-      setOpen(true);
-      return;
-    }
-    if (onRegister) onRegister(event.id);
+    setOpen(true);
   };
 
   const handleLocationClick = () => {
@@ -241,17 +235,8 @@ export function EventCard({
                       className="bg-primary-yellow hover:bg-primary-yellow/80 text-white font-bold py-2 px-6 rounded-lg text-sm transition-all duration-300 transform hover:scale-105 hover:shadow-lg uppercase tracking-wider flex items-center gap-2 mx-auto"
                       data-testid={`event-register-${event.id}`}
                     >
-                      {user ? (
-                        <>
-                          Register Now
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      ) : (
-                        <>
-                          Register For Event
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
+                      Register Now
+                      <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -470,17 +455,8 @@ export function EventCard({
                       className="bg-primary-yellow hover:bg-primary-yellow/80 text-white font-bold py-4 px-8 rounded-xl text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl uppercase tracking-wider flex items-center gap-2 mx-auto"
                       data-testid={`event-register-${event.id}`}
                     >
-                      {user ? (
-                        <>
-                          Register Now
-                          <ArrowRight className="w-5 h-5" />
-                        </>
-                      ) : (
-                        <>
-                          Register Now
-                          <ArrowRight className="w-5 h-5" />
-                        </>
-                      )}
+                      Register Now
+                      <ArrowRight className="w-5 h-5" />
                     </Button>
                   </div>
                 </div>
@@ -514,19 +490,11 @@ export function EventCard({
           </div>
         </div>
       </div>
-      {user && featured && (
-        <RegistrationDialog 
+      {featured && (
+        <PublicEventRegistration 
           open={open} 
           onOpenChange={setOpen} 
           event={event}
-          skipSuccessModal={true}
-          onSuccess={() => {
-            setOpen(false);
-            // Set flag to show success modal on dashboard
-            sessionStorage.setItem("showRegistrationSuccess", "true");
-            // Navigate to dashboard to show success modal
-            window.location.href = "/dashboard";
-          }}
         />
       )}
 
