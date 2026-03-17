@@ -9,16 +9,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, ArrowDown } from "lucide-react";
 import { Event } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 interface PublicEventRegistrationProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   event: Event;
+  onSuccess?: () => void;
 }
 
 type RegistrationGroup = "group1" | "group2" | null;
@@ -40,15 +38,14 @@ interface FormData {
 }
 
 export function PublicEventRegistration({
-  open,
-  onOpenChange,
   event,
+  onSuccess,
 }: PublicEventRegistrationProps) {
   const { toast } = useToast();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedGroup, setSelectedGroup] = useState<RegistrationGroup>(null);
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -72,11 +69,13 @@ export function PublicEventRegistration({
 
   const handleGroupSelect = (group: RegistrationGroup) => {
     setSelectedGroup(group);
-    setStep(3);
+    setShowForm(true);
+    setTimeout(() => {
+      document.getElementById('registration-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleSubmit = async () => {
-    // Validation
     if (!formData.fullName.trim()) {
       toast({ title: "Full name is required", variant: "destructive" });
       return;
@@ -137,8 +136,6 @@ export function PublicEventRegistration({
           .map(([mode]) => mode),
       };
 
-      console.log("Submitting registration:", payload);
-      
       const response = await fetch("/api/events/public-register", {
         method: "POST",
         headers: {
@@ -153,9 +150,14 @@ export function PublicEventRegistration({
       }
 
       const result = await response.json();
-      console.log("Registration successful:", result);
-      
       setSuccess(true);
+      
+      // Scroll to success message
+      setTimeout(() => {
+        document.getElementById('success-message')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      
+      if (onSuccess) onSuccess();
     } catch (error: any) {
       toast({
         title: "Registration Failed",
@@ -168,9 +170,9 @@ export function PublicEventRegistration({
   };
 
   const reset = () => {
-    setStep(1);
     setSelectedGroup(null);
     setSuccess(false);
+    setShowForm(false);
     setFormData({
       fullName: "",
       institution: "",
@@ -188,279 +190,288 @@ export function PublicEventRegistration({
     });
   };
 
-  const handleClose = () => {
-    reset();
-    onOpenChange(false);
-  };
-
-  if (!open) return null;
+  if (success) {
+    return (
+      <div id="success-message" className="max-w-2xl mx-auto text-center py-16 px-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-12">
+          <CheckCircle className="w-24 h-24 text-green-500 mx-auto mb-6" />
+          <h3 className="text-4xl font-bold text-gray-900 mb-4">
+            Registration Successful!
+          </h3>
+          <p className="text-xl text-gray-600 mb-8">
+            Thank you for registering. We'll send confirmation details to your email.
+          </p>
+          <Button 
+            onClick={reset} 
+            className="bg-[#1C356B] hover:bg-[#2d4a7a] text-white px-8 py-6 text-lg"
+          >
+            Register Another Person
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
-        {success ? (
-          <div className="text-center py-8">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              Registration Successful!
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Thank you for registering. We'll send confirmation details to your email.
-            </p>
-            <Button onClick={handleClose} className="bg-[#4A90E2] hover:bg-[#4A90E2]/90">
-              Close
+    <div className="max-w-4xl mx-auto py-12 px-4">
+      {/* Step 1: Event Title and Register Button */}
+      <div className="text-center mb-12">
+        <div className="inline-block bg-orange-500 text-white px-6 py-2 rounded-lg font-bold text-lg mb-6">
+          1st step
+        </div>
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          2026 NATIONAL SEMINAR "MINISTRY OF HEALTH"
+        </h2>
+        <p className="text-lg text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
+          THEME: "STRENGTHENING RECORD MANAGEMENT AND INTERNAL CONTROLS TO ENHANCE VALUE FOR MONEY IN THE PUBLIC SECTOR"
+        </p>
+        
+        {!selectedGroup && (
+          <div className="flex justify-center">
+            <ArrowDown className="w-8 h-8 text-[#FDC123] animate-bounce" />
+          </div>
+        )}
+      </div>
+
+      {/* Step 2: Group Selection */}
+      {!selectedGroup && (
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <div className="inline-block bg-orange-500 text-white px-6 py-2 rounded-lg font-bold text-lg mb-4">
+              2nd step
+            </div>
+          </div>
+          
+          <div className="max-w-2xl mx-auto space-y-6">
+            <Button
+              onClick={() => handleGroupSelect("group1")}
+              className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-12 text-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all"
+            >
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">GROUP 1 REGISTER HERE</div>
+                <div className="text-base font-medium opacity-90">25th - 27th MARCH 2026 - Livingstone</div>
+              </div>
+            </Button>
+            
+            <div className="flex justify-center">
+              <ArrowDown className="w-8 h-8 text-[#FDC123] animate-bounce" />
+            </div>
+            
+            <Button
+              onClick={() => handleGroupSelect("group2")}
+              className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-12 text-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all"
+            >
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">GROUP 2 REGISTER HERE</div>
+                <div className="text-base font-medium opacity-90">30th MARCH - 2nd April 2026 - Livingstone</div>
+              </div>
             </Button>
           </div>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#1C356B]">
-                {step === 1 && "Event Registration"}
-                {step === 2 && "Select Your Group"}
-                {step === 3 && "Registration Details"}
-              </DialogTitle>
-              <p className="text-sm text-gray-600">{event.title}</p>
-            </DialogHeader>
+        </div>
+      )}
 
-            {/* Step 1: Initial Registration Button */}
-            {step === 1 && (
-              <div className="py-8 text-center space-y-6">
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold text-[#1C356B]">
-                    2026 NATIONAL SERMINER "MINISTRY OF HEALTH"
-                  </h3>
-                  <p className="text-sm text-gray-700 max-w-2xl mx-auto leading-relaxed px-4">
-                    THEME: "STRENGTHENING RECORD MANAGEMENT AND INTERNAL CONTROLS TO
-                    ENHANCE VALUE FOR MONEY IN THE PUBLIC SECTOR"
-                  </p>
-                </div>
-                <Button
-                  onClick={() => setStep(2)}
-                  className="bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white px-12 py-6 text-lg font-bold rounded-lg shadow-lg hover:shadow-xl transition-all"
-                >
-                  REGISTER HERE
-                </Button>
+      {/* Step 3: Registration Form */}
+      {selectedGroup && showForm && (
+        <div id="registration-form" className="mb-12">
+          <div className="text-center mb-8">
+            <div className="inline-block bg-orange-500 text-white px-6 py-2 rounded-lg font-bold text-lg mb-4">
+              Final step
+            </div>
+            <p className="text-lg text-gray-700">
+              Selected: {selectedGroup === "group1" ? "Group 1 (25-27 March 2026)" : "Group 2 (30 March - 2 April 2026)"}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 border-4 border-gray-200">
+            <div className="max-w-xl mx-auto space-y-6">
+              <div>
+                <Label htmlFor="fullName" className="text-base font-bold text-gray-900 mb-2 block">
+                  Full Names *
+                </Label>
+                <Input
+                  id="fullName"
+                  value={formData.fullName}
+                  onChange={(e) => updateField("fullName", e.target.value)}
+                  placeholder="Enter your full name"
+                  className="h-14 text-lg border-2 border-gray-300 focus:border-[#1C5B7D]"
+                />
               </div>
-            )}
 
-            {/* Step 2: Group Selection */}
-            {step === 2 && (
-              <div className="space-y-6 py-6">
-                <div className="text-center mb-4">
-                  <h3 className="text-xl font-bold text-[#1C356B] mb-2">Select Your Group</h3>
-                  <p className="text-sm text-gray-600">Choose the dates that work best for you</p>
-                </div>
-                
-                <Button
-                  onClick={() => handleGroupSelect("group1")}
-                  className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-10 text-base rounded-xl shadow-md hover:shadow-lg transition-all"
-                >
-                  <div className="space-y-2">
-                    <div className="text-lg font-bold">GROUP 1 REGISTER HERE</div>
-                    <div className="text-sm font-medium opacity-90">25th - 27th MARCH 2025 - Livingstone</div>
-                  </div>
-                </Button>
-                
-                <Button
-                  onClick={() => handleGroupSelect("group2")}
-                  className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-10 text-base rounded-xl shadow-md hover:shadow-lg transition-all"
-                >
-                  <div className="space-y-2">
-                    <div className="text-lg font-bold">GROUP 2 REGISTER HERE</div>
-                    <div className="text-sm font-medium opacity-90">30th MARCH - 2nd April 2025 - Livingstone</div>
-                  </div>
-                </Button>
-
-                <Button
-                  onClick={() => setStep(1)}
-                  variant="outline"
-                  className="w-full mt-4"
-                >
-                  Back
-                </Button>
+              <div>
+                <Label htmlFor="institution" className="text-base font-bold text-gray-900 mb-2 block">
+                  Institution *
+                </Label>
+                <Input
+                  id="institution"
+                  value={formData.institution}
+                  onChange={(e) => updateField("institution", e.target.value)}
+                  placeholder="Enter your institution"
+                  className="h-14 text-lg border-2 border-gray-300 focus:border-[#1C5B7D]"
+                />
               </div>
-            )}
 
-            {/* Step 3: Registration Form */}
-            {step === 3 && (
-              <div className="space-y-5 py-4 max-h-[60vh] overflow-y-auto px-1">
-                <div className="text-center mb-4 sticky top-0 bg-white pb-3 border-b">
-                  <h3 className="text-lg font-bold text-[#1C356B]">Registration Form</h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedGroup === "group1" ? "Group 1: 25-27 March 2025" : "Group 2: 30 March - 2 April 2025"}
-                  </p>
-                </div>
+              <div>
+                <Label htmlFor="gender" className="text-base font-bold text-gray-900 mb-2 block">
+                  Gender *
+                </Label>
+                <Select value={formData.gender} onValueChange={(value) => updateField("gender", value)}>
+                  <SelectTrigger className="h-14 text-lg border-2 border-gray-300 focus:border-[#1C5B7D]">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
+              <div>
+                <Label htmlFor="email" className="text-base font-bold text-gray-900 mb-2 block">
+                  Email address *
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => updateField("email", e.target.value)}
+                  placeholder="Enter your email"
+                  className="h-14 text-lg border-2 border-gray-300 focus:border-[#1C5B7D]"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="phoneNumber" className="text-base font-bold text-gray-900 mb-2 block">
+                  Phone number *
+                </Label>
+                <Input
+                  id="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={(e) => updateField("phoneNumber", e.target.value)}
+                  placeholder="Enter your phone number"
+                  className="h-14 text-lg border-2 border-gray-300 focus:border-[#1C5B7D]"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="title" className="text-base font-bold text-gray-900 mb-2 block">
+                  Title *
+                </Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => updateField("title", e.target.value)}
+                  placeholder="Enter your title/position"
+                  className="h-14 text-lg border-2 border-gray-300 focus:border-[#1C5B7D]"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="province" className="text-base font-bold text-gray-900 mb-2 block">
+                  Province *
+                </Label>
+                <Input
+                  id="province"
+                  value={formData.province}
+                  onChange={(e) => updateField("province", e.target.value)}
+                  placeholder="Enter your province"
+                  className="h-14 text-lg border-2 border-gray-300 focus:border-[#1C5B7D]"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="district" className="text-base font-bold text-gray-900 mb-2 block">
+                  District *
+                </Label>
+                <Input
+                  id="district"
+                  value={formData.district}
+                  onChange={(e) => updateField("district", e.target.value)}
+                  placeholder="Enter your district"
+                  className="h-14 text-lg border-2 border-gray-300 focus:border-[#1C5B7D]"
+                />
+              </div>
+
+              <div className="border-4 border-gray-300 rounded-xl p-6 bg-gray-50">
+                <Label className="text-lg font-bold text-gray-900 mb-4 block">
+                  Payment mode - Put check box for CASH, MOBILE MONEY AND BANK TRANSFER{" "}
+                  <span className="text-red-600">"NO ATTACHMENT"</span>
+                </Label>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="fullName" className="text-sm font-semibold text-gray-700">Full Names *</Label>
-                    <Input
-                      id="fullName"
-                      value={formData.fullName}
-                      onChange={(e) => updateField("fullName", e.target.value)}
-                      placeholder="Enter your full name"
-                      className="mt-1"
+                  <div className="flex items-center space-x-4 p-3 hover:bg-white rounded-lg transition-colors">
+                    <Checkbox
+                      id="cash"
+                      checked={formData.paymentModes.cash}
+                      onCheckedChange={(checked) =>
+                        updateField("paymentModes", {
+                          ...formData.paymentModes,
+                          cash: checked === true,
+                        })
+                      }
+                      className="w-6 h-6"
                     />
+                    <label htmlFor="cash" className="text-lg font-semibold cursor-pointer flex-1 text-gray-900">
+                      CASH
+                    </label>
                   </div>
-
-                  <div>
-                    <Label htmlFor="institution" className="text-sm font-semibold text-gray-700">Institution *</Label>
-                    <Input
-                      id="institution"
-                      value={formData.institution}
-                      onChange={(e) => updateField("institution", e.target.value)}
-                      placeholder="Enter your institution"
-                      className="mt-1"
+                  <div className="flex items-center space-x-4 p-3 hover:bg-white rounded-lg transition-colors">
+                    <Checkbox
+                      id="mobileMoney"
+                      checked={formData.paymentModes.mobileMoney}
+                      onCheckedChange={(checked) =>
+                        updateField("paymentModes", {
+                          ...formData.paymentModes,
+                          mobileMoney: checked === true,
+                        })
+                      }
+                      className="w-6 h-6"
                     />
+                    <label htmlFor="mobileMoney" className="text-lg font-semibold cursor-pointer flex-1 text-gray-900">
+                      MOBILE MONEY
+                    </label>
                   </div>
-
-                  <div>
-                    <Label htmlFor="gender" className="text-sm font-semibold text-gray-700">Gender *</Label>
-                    <Select value={formData.gender} onValueChange={(value) => updateField("gender", value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email" className="text-sm font-semibold text-gray-700">Email address *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => updateField("email", e.target.value)}
-                      placeholder="Enter your email"
-                      className="mt-1"
+                  <div className="flex items-center space-x-4 p-3 hover:bg-white rounded-lg transition-colors">
+                    <Checkbox
+                      id="bankTransfer"
+                      checked={formData.paymentModes.bankTransfer}
+                      onCheckedChange={(checked) =>
+                        updateField("paymentModes", {
+                          ...formData.paymentModes,
+                          bankTransfer: checked === true,
+                        })
+                      }
+                      className="w-6 h-6"
                     />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700">Phone number *</Label>
-                    <Input
-                      id="phoneNumber"
-                      value={formData.phoneNumber}
-                      onChange={(e) => updateField("phoneNumber", e.target.value)}
-                      placeholder="Enter your phone number"
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="title" className="text-sm font-semibold text-gray-700">Title *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => updateField("title", e.target.value)}
-                      placeholder="Enter your title/position"
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="province" className="text-sm font-semibold text-gray-700">Province *</Label>
-                    <Input
-                      id="province"
-                      value={formData.province}
-                      onChange={(e) => updateField("province", e.target.value)}
-                      placeholder="Enter your province"
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="district" className="text-sm font-semibold text-gray-700">District *</Label>
-                    <Input
-                      id="district"
-                      value={formData.district}
-                      onChange={(e) => updateField("district", e.target.value)}
-                      placeholder="Enter your district"
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50">
-                    <Label className="text-base font-bold text-gray-800 mb-3 block">
-                      Payment mode <span className="text-red-600">(NO ATTACHMENT)</span>
-                    </Label>
-                    <p className="text-xs text-gray-600 mb-3">Select all that apply</p>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3 p-2 hover:bg-white rounded transition-colors">
-                        <Checkbox
-                          id="cash"
-                          checked={formData.paymentModes.cash}
-                          onCheckedChange={(checked) =>
-                            updateField("paymentModes", {
-                              ...formData.paymentModes,
-                              cash: checked === true,
-                            })
-                          }
-                        />
-                        <label htmlFor="cash" className="text-sm font-medium cursor-pointer flex-1">
-                          CASH
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-3 p-2 hover:bg-white rounded transition-colors">
-                        <Checkbox
-                          id="mobileMoney"
-                          checked={formData.paymentModes.mobileMoney}
-                          onCheckedChange={(checked) =>
-                            updateField("paymentModes", {
-                              ...formData.paymentModes,
-                              mobileMoney: checked === true,
-                            })
-                          }
-                        />
-                        <label htmlFor="mobileMoney" className="text-sm font-medium cursor-pointer flex-1">
-                          MOBILE MONEY
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-3 p-2 hover:bg-white rounded transition-colors">
-                        <Checkbox
-                          id="bankTransfer"
-                          checked={formData.paymentModes.bankTransfer}
-                          onCheckedChange={(checked) =>
-                            updateField("paymentModes", {
-                              ...formData.paymentModes,
-                              bankTransfer: checked === true,
-                            })
-                          }
-                        />
-                        <label htmlFor="bankTransfer" className="text-sm font-medium cursor-pointer flex-1">
-                          BANK TRANSFER
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      onClick={() => setStep(2)}
-                      variant="outline"
-                      className="flex-1"
-                      disabled={isSubmitting}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={isSubmitting}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-bold rounded-lg shadow-lg hover:shadow-xl transition-all"
-                    >
-                      {isSubmitting ? "Submitting..." : "Submit"}
-                    </Button>
+                    <label htmlFor="bankTransfer" className="text-lg font-semibold cursor-pointer flex-1 text-gray-900">
+                      BANK TRANSFER
+                    </label>
                   </div>
                 </div>
               </div>
-            )}
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+
+              <div className="pt-6">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-8 text-2xl font-bold rounded-xl shadow-2xl hover:shadow-3xl transition-all"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit"}
+                </Button>
+              </div>
+
+              <div className="text-center">
+                <Button
+                  onClick={reset}
+                  variant="outline"
+                  className="text-gray-600 border-gray-300"
+                >
+                  Start Over
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
