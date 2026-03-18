@@ -26,13 +26,24 @@ export function FeaturedEventSection() {
   // Find the featured event
   const featuredEvent = events.find((e: Event) => e.featured === true);
 
-  // Don't render if no featured event or if it's in the past
-  if (!featuredEvent) return null;
+  // Don't render if no featured event
+  if (!featuredEvent) {
+    console.log("No featured event found");
+    return null;
+  }
 
   const eventDate = new Date(featuredEvent.startDate);
-  const isPast = eventDate < new Date();
+  const today = new Date();
   
-  if (isPast) return null;
+  // Show event if it's today or in the future
+  const isPast = eventDate < today && eventDate.toDateString() !== today.toDateString();
+  
+  if (isPast) {
+    console.log("Featured event is in the past:", eventDate);
+    return null;
+  }
+
+  console.log("Showing featured event:", featuredEvent.title, "Date:", eventDate);
 
   const handleRegisterClick = () => {
     setSelectedEvent(featuredEvent);
