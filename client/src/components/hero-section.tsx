@@ -4,8 +4,11 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Event } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { RegistrationDialog } from "@/components/registration-dialog";
 
 export function HeroSection() {
+  const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
+  
   // Background images array - replace with your actual image URLs
   const backgroundImages = [
       "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
@@ -113,13 +116,10 @@ export function HeroSection() {
                 data-testid="hero-events-button"
                 onClick={() => {
                   if (latestEvent) {
-                    // Scroll to events section and trigger registration
-                    const eventsSection = document.getElementById('events');
-                    if (eventsSection) {
-                      eventsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
+                    // Open registration dialog
+                    setShowRegistrationDialog(true);
                   } else {
-                    // If no events, scroll to events section anyway
+                    // If no events, scroll to events section
                     const eventsSection = document.getElementById('events');
                     if (eventsSection) {
                       eventsSection.scrollIntoView({ behavior: 'smooth' });
@@ -128,7 +128,7 @@ export function HeroSection() {
                 }}
               >
                 <Calendar className="w-5 h-5 mr-2" />
-                {latestEvent ? 'REGISTER FOR INDABA' : 'VIEW EVENTS'}
+                {latestEvent ? 'REGISTER FOR EVENT' : 'VIEW EVENTS'}
               </Button>
               <Button
                 size="lg"
@@ -209,6 +209,15 @@ export function HeroSection() {
           />
         ))}
       </div>
+
+      {/* Registration Dialog */}
+      {latestEvent && (
+        <RegistrationDialog
+          open={showRegistrationDialog}
+          onOpenChange={setShowRegistrationDialog}
+          event={latestEvent}
+        />
+      )}
     </section>
   );
 }
