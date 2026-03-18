@@ -70,7 +70,7 @@ export function FeaturedEventSection() {
           </div>
 
           {/* Event Details Grid */}
-          <div className="max-w-3xl mx-auto mb-10">
+          <div className="max-w-4xl mx-auto mb-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Date Card */}
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
@@ -80,12 +80,14 @@ export function FeaturedEventSection() {
                   </div>
                   <div>
                     <h4 className="text-white font-bold mb-2">Event Dates</h4>
-                    <p className="text-blue-100 text-sm">
-                      Group 1: March 25-27, 2026
-                    </p>
-                    <p className="text-blue-100 text-sm">
-                      Group 2: March 30 - April 2, 2026
-                    </p>
+                    <div className="space-y-2">
+                      <div className="text-blue-100 text-sm">
+                        <span className="font-semibold">Group 1:</span> March 25-28, 2026
+                      </div>
+                      <div className="text-blue-100 text-sm">
+                        <span className="font-semibold">Group 2:</span> March 30 - April 2, 2026
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -99,13 +101,66 @@ export function FeaturedEventSection() {
                   <div>
                     <h4 className="text-white font-bold mb-2">Location</h4>
                     <p className="text-blue-100 text-sm">
-                      Livingstone, Zambia
+                      Zambia Air Force (ZAF) Banquet Hall
                     </p>
-                    <p className="text-blue-100 text-xs mt-1">
-                      Venue details will be shared upon registration
+                    <p className="text-blue-100 text-sm">
+                      Livingstone, Zambia
                     </p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Group 1 Attendees */}
+          <div className="max-w-3xl mx-auto mb-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-[#FDC123] rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">1</span>
+                </div>
+                <h4 className="text-lg font-bold text-white">
+                  Group 1: March 25-28, 2026
+                </h4>
+              </div>
+              <div className="space-y-2">
+                <p className="text-blue-100 text-sm font-semibold">Attendees:</p>
+                <ul className="text-blue-100 text-sm space-y-1 list-disc list-inside">
+                  <li>Hospital Administrative Officers</li>
+                  <li>Hospital Officer in Charges</li>
+                  <li>Senior / Medical Superintendents</li>
+                  <li>Planning Personnel</li>
+                  <li>Accounts Personnel</li>
+                  <li>District Health Directors (DHDs)</li>
+                  <li>Principal Tutors</li>
+                  <li>Auditors and Stores Officers</li>
+                  <li>Human Resource Personnel</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Group 2 Attendees */}
+          <div className="max-w-3xl mx-auto mb-10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-[#FDC123] rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">2</span>
+                </div>
+                <h4 className="text-lg font-bold text-white">
+                  Group 2: March 30 - April 2, 2026
+                </h4>
+              </div>
+              <div className="space-y-2">
+                <p className="text-blue-100 text-sm font-semibold">Attendees:</p>
+                <ul className="text-blue-100 text-sm space-y-1 list-disc list-inside">
+                  <li>Secretaries / Executive Officers / Personnel Assistants</li>
+                  <li>Administrative Personnel</li>
+                  <li>Cashiers</li>
+                  <li>Registry / Records Personnel</li>
+                  <li>Procurement Officers</li>
+                  <li>Pharmacists</li>
+                </ul>
               </div>
             </div>
           </div>

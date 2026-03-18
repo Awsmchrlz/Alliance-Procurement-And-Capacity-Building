@@ -249,7 +249,8 @@ export function PublicEventRegistration({
             >
               <div className="space-y-2">
                 <div className="text-2xl font-bold">GROUP 1 REGISTER HERE</div>
-                <div className="text-base font-medium opacity-90">25th - 27th MARCH 2026 - Livingstone</div>
+                <div className="text-base font-medium opacity-90">25th - 28th MARCH 2026 - Livingstone</div>
+                <div className="text-xs opacity-75 mt-2">Hospital Admins, Medical Superintendents, Planning, Accounts, DHDs, Tutors, HR</div>
               </div>
             </Button>
             
@@ -263,7 +264,8 @@ export function PublicEventRegistration({
             >
               <div className="space-y-2">
                 <div className="text-2xl font-bold">GROUP 2 REGISTER HERE</div>
-                <div className="text-base font-medium opacity-90">30th MARCH - 2nd April 2026 - Livingstone</div>
+                <div className="text-base font-medium opacity-90">30th MARCH - 2nd APRIL 2026 - Livingstone</div>
+                <div className="text-xs opacity-75 mt-2">Secretaries, Cashiers, Records, Procurement, Pharmacists</div>
               </div>
             </Button>
           </div>
@@ -278,7 +280,7 @@ export function PublicEventRegistration({
               Final step
             </div>
             <p className="text-lg text-gray-700">
-              Selected: {selectedGroup === "group1" ? "Group 1 (25-27 March 2026)" : "Group 2 (30 March - 2 April 2026)"}
+              Selected: {selectedGroup === "group1" ? "Group 1 (March 25-28, 2026)" : "Group 2 (March 30 - April 2, 2026)"}
             </p>
           </div>
 
