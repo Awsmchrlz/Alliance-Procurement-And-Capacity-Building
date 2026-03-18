@@ -492,8 +492,6 @@ export function EventCard({
       </div>
       {featured && (
         <PublicEventRegistration 
-          open={open} 
-          onOpenChange={setOpen} 
           event={event}
         />
       )}

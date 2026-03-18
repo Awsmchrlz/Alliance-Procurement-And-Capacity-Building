@@ -211,8 +211,6 @@ export function FeaturedEventSection() {
       {/* Registration Dialog */}
       {selectedEvent && (
         <PublicEventRegistration
-          open={showRegistrationDialog}
-          onOpenChange={setShowRegistrationDialog}
           event={selectedEvent}
         />
       )}

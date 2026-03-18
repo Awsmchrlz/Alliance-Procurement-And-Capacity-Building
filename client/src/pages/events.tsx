@@ -528,13 +528,6 @@ const EventsPage = () => {
       {/* Registration Dialogs */}
       {selectedEvent && (
         <PublicEventRegistration
-          open={showRegistrationDialog}
-          onOpenChange={(open) => {
-            setShowRegistrationDialog(open);
-            if (!open) {
-              localStorage.removeItem("autoOpenEventModal");
-            }
-          }}
           event={selectedEvent}
         />
       )}
