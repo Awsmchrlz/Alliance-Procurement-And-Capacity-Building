@@ -451,32 +451,24 @@ export function PublicEventRegistration({
 
               <div className="bg-gray-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-gray-200">
                 <Label className="text-xs sm:text-sm font-semibold text-gray-900 mb-3 sm:mb-4 block">
-                  Payment Mode *
+                  Payment Method *
                 </Label>
-                <div className="space-y-2.5 sm:space-y-3">
-                  {[
-                    { id: "cash", label: "Cash" },
-                    { id: "mobileMoney", label: "Mobile Money" },
-                    { id: "bankTransfer", label: "Bank Transfer" },
-                  ].map(({ id, label }) => (
-                    <div key={id} className="flex items-center space-x-2.5 sm:space-x-3">
-                      <Checkbox
-                        id={id}
-                        checked={formData.paymentModes[id as keyof typeof formData.paymentModes]}
-                        onCheckedChange={(checked) =>
-                          updateField("paymentModes", {
-                            ...formData.paymentModes,
-                            [id]: checked === true,
-                          })
-                        }
-                        className="w-4 h-4 sm:w-5 sm:h-5"
-                      />
-                      <label htmlFor={id} className="text-xs sm:text-sm font-medium cursor-pointer text-gray-900">
-                        {label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                <RadioGroup value={formData.paymentMethod} onValueChange={(value) => updateField("paymentMethod", value as PaymentMethod)}>
+                  <div className="space-y-2.5 sm:space-y-3">
+                    {[
+                      { id: "cash", label: "Cash" },
+                      { id: "mobileMoney", label: "Mobile Money" },
+                      { id: "bankTransfer", label: "Bank Transfer" },
+                    ].map(({ id, label }) => (
+                      <div key={id} className="flex items-center space-x-2.5 sm:space-x-3 p-2 sm:p-3 rounded-lg hover:bg-white transition-colors cursor-pointer">
+                        <RadioGroupItem value={id} id={id} className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <label htmlFor={id} className="text-xs sm:text-sm font-medium cursor-pointer text-gray-900 flex-1">
+                          {label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </RadioGroup>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-4">

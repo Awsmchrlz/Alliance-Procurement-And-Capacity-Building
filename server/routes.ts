@@ -542,13 +542,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!Array.isArray(paymentModes) || paymentModes.length === 0) {
-        return res.status(400).json({ message: "At least one payment mode must be selected" });
+        return res.status(400).json({ message: "Payment method is required" });
       }
 
-      // Validate payment modes
+      // Validate payment mode - should be single selection
       const validPaymentModes = ["cash", "mobileMoney", "bankTransfer"];
-      if (!paymentModes.every((mode: any) => validPaymentModes.includes(mode))) {
-        return res.status(400).json({ message: "Invalid payment mode" });
+      if (paymentModes.length !== 1 || !validPaymentModes.includes(paymentModes[0])) {
+        return res.status(400).json({ message: "Invalid payment method" });
       }
 
       // Check if event exists
