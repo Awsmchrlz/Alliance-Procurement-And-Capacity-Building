@@ -271,45 +271,45 @@ export function PublicEventRegistration({
         {/* Group Selection */}
         {!selectedGroup ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-14 md:mb-16">
-            <button
-              onClick={() => handleGroupSelect("group1")}
-              className="group bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 sm:p-8 border-2 border-transparent hover:border-[#1C5B7D] cursor-pointer text-left"
-            >
-              <div className="space-y-4">
-                <div className="inline-block bg-[#1C5B7D] text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-sm sm:text-base">
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 md:p-10 border-2 border-transparent hover:border-[#1C5B7D] flex flex-col h-full">
+              <div className="flex-1 space-y-4 sm:space-y-5 mb-6 sm:mb-8">
+                <div className="inline-block bg-[#1C5B7D] text-white px-5 sm:px-7 py-2 sm:py-2.5 rounded-lg font-bold text-base sm:text-lg">
                   GROUP 1
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-[#1C356B]">
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#1C356B] leading-tight">
                   25th - 28th March 2026
                 </h3>
                 <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
                   Hospital Administrative Officers, Medical Superintendents, Planning Personnel, Accounts Personnel, District Health Directors, Principal Tutors, Auditors, HR Personnel
                 </p>
-                <Button className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-lg transition-colors">
-                  Register for Group 1
-                </Button>
               </div>
-            </button>
+              <button
+                onClick={() => handleGroupSelect("group1")}
+                className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-3 sm:py-4 md:py-5 text-base sm:text-lg md:text-xl font-bold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+              >
+                Register for Group 1
+              </button>
+            </div>
 
-            <button
-              onClick={() => handleGroupSelect("group2")}
-              className="group bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 sm:p-8 border-2 border-transparent hover:border-[#1C5B7D] cursor-pointer text-left"
-            >
-              <div className="space-y-4">
-                <div className="inline-block bg-[#1C5B7D] text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-sm sm:text-base">
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 md:p-10 border-2 border-transparent hover:border-[#1C5B7D] flex flex-col h-full">
+              <div className="flex-1 space-y-4 sm:space-y-5 mb-6 sm:mb-8">
+                <div className="inline-block bg-[#1C5B7D] text-white px-5 sm:px-7 py-2 sm:py-2.5 rounded-lg font-bold text-base sm:text-lg">
                   GROUP 2
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-[#1C356B]">
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#1C356B] leading-tight">
                   30th March - 2nd April 2026
                 </h3>
                 <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
                   Secretaries, Executive Officers, Administrative Personnel, Cashiers, Registry/Records Personnel, Procurement Officers, Pharmacists
                 </p>
-                <Button className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-lg transition-colors">
-                  Register for Group 2
-                </Button>
               </div>
-            </button>
+              <button
+                onClick={() => handleGroupSelect("group2")}
+                className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-3 sm:py-4 md:py-5 text-base sm:text-lg md:text-xl font-bold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+              >
+                Register for Group 2
+              </button>
+            </div>
           </div>
         ) : null}
 
