@@ -155,7 +155,7 @@ export function generateSingleRegistrationPDF(registration: PublicRegistration) 
   doc.setTextColor(0, 0, 0);
 
   const details = [
-    ['Registration Number:', registration.registration_number],
+    ['Registration Number:', registration.registration_number || ''],
     ['Status:', registration.status === 'confirmed' ? 'Confirmed' : registration.status === 'cancelled' ? 'Cancelled' : 'Pending'],
     ['Registered Date:', new Date(registration.created_at).toLocaleDateString()],
     ['Group:', registration.registration_group === 'group1' ? 'Group 1 (25-28 March 2026)' : 'Group 2 (30 March - 2 April 2026)'],
@@ -163,9 +163,9 @@ export function generateSingleRegistrationPDF(registration: PublicRegistration) 
 
   details.forEach(([label, value]) => {
     doc.setFont(undefined, 'bold');
-    doc.text(label, margin, yPosition);
+    doc.text(String(label), margin, yPosition);
     doc.setFont(undefined, 'normal');
-    doc.text(String(value), margin + 50, yPosition);
+    doc.text(String(value || ''), margin + 50, yPosition);
     yPosition += 7;
   });
 
@@ -181,20 +181,20 @@ export function generateSingleRegistrationPDF(registration: PublicRegistration) 
   doc.setTextColor(0, 0, 0);
 
   const participantInfo = [
-    ['Full Name:', registration.full_name],
-    ['Title/Position:', registration.title],
-    ['Gender:', registration.gender],
-    ['Institution:', registration.institution],
-    ['Email:', registration.email],
-    ['Phone Number:', registration.phone_number],
+    ['Full Name:', registration.full_name || ''],
+    ['Title/Position:', registration.title || ''],
+    ['Gender:', registration.gender || ''],
+    ['Institution:', registration.institution || ''],
+    ['Email:', registration.email || ''],
+    ['Phone Number:', registration.phone_number || ''],
   ];
 
   participantInfo.forEach(([label, value]) => {
     doc.setFont(undefined, 'bold');
-    doc.text(label, margin, yPosition);
+    doc.text(String(label), margin, yPosition);
     doc.setFont(undefined, 'normal');
     const textWidth = pageWidth - margin - 50 - margin;
-    const wrappedText = doc.splitTextToSize(String(value), textWidth);
+    const wrappedText = doc.splitTextToSize(String(value || ''), textWidth);
     doc.text(wrappedText, margin + 50, yPosition);
     yPosition += wrappedText.length > 1 ? wrappedText.length * 5 + 2 : 7;
   });
@@ -211,15 +211,15 @@ export function generateSingleRegistrationPDF(registration: PublicRegistration) 
   doc.setTextColor(0, 0, 0);
 
   const locationInfo = [
-    ['Province:', registration.province],
-    ['District:', registration.district],
+    ['Province:', registration.province || ''],
+    ['District:', registration.district || ''],
   ];
 
   locationInfo.forEach(([label, value]) => {
     doc.setFont(undefined, 'bold');
-    doc.text(label, margin, yPosition);
+    doc.text(String(label), margin, yPosition);
     doc.setFont(undefined, 'normal');
-    doc.text(String(value), margin + 50, yPosition);
+    doc.text(String(value || ''), margin + 50, yPosition);
     yPosition += 7;
   });
 
