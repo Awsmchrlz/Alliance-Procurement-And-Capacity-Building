@@ -1,13 +1,8 @@
 import { Calendar, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Event } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { RegistrationDialog } from "@/components/registration-dialog";
 
 export function HeroSection() {
-  const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
   
   // Background images array - replace with your actual image URLs
   const backgroundImages = [
@@ -21,13 +16,6 @@ export function HeroSection() {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-
-  // Fetch events to get the latest featured event
-  const { data: events } = useQuery<Event[]>({
-    queryKey: ["/api/events"],
-  });
-
-  const latestEvent = events?.find(event => event.featured) || events?.[0];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -115,20 +103,15 @@ export function HeroSection() {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#87CEEB'}
                 data-testid="hero-events-button"
                 onClick={() => {
-                  if (latestEvent) {
-                    // Open registration dialog
-                    setShowRegistrationDialog(true);
-                  } else {
-                    // If no events, scroll to events section
-                    const eventsSection = document.getElementById('events');
-                    if (eventsSection) {
-                      eventsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
+                  // Scroll to events section where public registration form is
+                  const eventsSection = document.getElementById('events');
+                  if (eventsSection) {
+                    eventsSection.scrollIntoView({ behavior: 'smooth' });
                   }
                 }}
               >
                 <Calendar className="w-5 h-5 mr-2" />
-                {latestEvent ? 'REGISTER FOR EVENT' : 'VIEW EVENTS'}
+                REGISTER FOR EVENT
               </Button>
               <Button
                 size="lg"
@@ -209,15 +192,6 @@ export function HeroSection() {
           />
         ))}
       </div>
-
-      {/* Registration Dialog */}
-      {latestEvent && (
-        <RegistrationDialog
-          open={showRegistrationDialog}
-          onOpenChange={setShowRegistrationDialog}
-          event={latestEvent}
-        />
-      )}
     </section>
   );
 }

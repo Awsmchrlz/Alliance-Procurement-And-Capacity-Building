@@ -490,20 +490,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentModes,
       } = req.body;
 
+      // Trim all string inputs
+      const fullNameTrimmed = String(fullName || "").trim();
+      const institutionTrimmed = String(institution || "").trim();
+      const genderTrimmed = String(gender || "").trim();
+      const emailTrimmed = String(email || "").trim().toLowerCase();
+      const phoneNumberTrimmed = String(phoneNumber || "").trim();
+      const titleTrimmed = String(title || "").trim();
+      const provinceTrimmed = String(province || "").trim();
+      const districtTrimmed = String(district || "").trim();
+
       // Validate required fields
-      if (!eventId || !fullName || !email || !phoneNumber || !institution || !gender || !title || !province || !district) {
-        return res.status(400).json({ message: "Missing required fields" });
+      if (!eventId || typeof eventId !== "string") {
+        return res.status(400).json({ message: "Invalid event ID" });
       }
 
-      // Validate email format
-      if (!/\S+@\S+\.\S+/.test(email)) {
+      if (!fullNameTrimmed || fullNameTrimmed.length < 2 || fullNameTrimmed.length > 100) {
+        return res.status(400).json({ message: "Full name must be between 2 and 100 characters" });
+      }
+
+      if (!emailTrimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
         return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      if (!phoneNumberTrimmed || phoneNumberTrimmed.length < 7 || phoneNumberTrimmed.length > 20) {
+        return res.status(400).json({ message: "Phone number must be between 7 and 20 characters" });
+      }
+
+      if (!institutionTrimmed || institutionTrimmed.length < 2 || institutionTrimmed.length > 150) {
+        return res.status(400).json({ message: "Institution must be between 2 and 150 characters" });
+      }
+
+      if (!genderTrimmed || !["Male", "Female", "Other"].includes(genderTrimmed)) {
+        return res.status(400).json({ message: "Invalid gender selection" });
+      }
+
+      if (!titleTrimmed) {
+        return res.status(400).json({ message: "Title is required" });
+      }
+
+      if (!provinceTrimmed || provinceTrimmed.length < 2 || provinceTrimmed.length > 50) {
+        return res.status(400).json({ message: "Province must be between 2 and 50 characters" });
+      }
+
+      if (!districtTrimmed || districtTrimmed.length < 2 || districtTrimmed.length > 50) {
+        return res.status(400).json({ message: "District must be between 2 and 50 characters" });
+      }
+
+      if (!group || !["group1", "group2"].includes(group)) {
+        return res.status(400).json({ message: "Invalid group selection" });
+      }
+
+      if (!Array.isArray(paymentModes) || paymentModes.length === 0) {
+        return res.status(400).json({ message: "At least one payment mode must be selected" });
+      }
+
+      // Validate payment modes
+      const validPaymentModes = ["cash", "mobileMoney", "bankTransfer"];
+      if (!paymentModes.every((mode: any) => validPaymentModes.includes(mode))) {
+        return res.status(400).json({ message: "Invalid payment mode" });
       }
 
       // Check if event exists
       const event = await storage.getEvent(eventId);
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
+      }
+
+      // Check for duplicate registration (same email + event)
+      const { data: existingReg } = await supabaseAdmin
+        .from("public_event_registrations")
+        .select("id")
+        .eq("event_id", eventId)
+        .eq("email", emailTrimmed)
+        .single();
+
+      if (existingReg) {
+        return res.status(409).json({ message: "You have already registered for this event with this email" });
       }
 
       const registrationNumber = `PUB-${Date.now()}`;
@@ -514,14 +577,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .insert({
           event_id: eventId,
           registration_group: group,
-          full_name: fullName,
-          institution,
-          gender,
-          email,
-          phone_number: phoneNumber,
-          title,
-          province,
-          district,
+          full_name: fullNameTrimmed,
+          institution: institutionTrimmed,
+          gender: genderTrimmed,
+          email: emailTrimmed,
+          phone_number: phoneNumberTrimmed,
+          title: titleTrimmed,
+          province: provinceTrimmed,
+          district: districtTrimmed,
           payment_modes: paymentModes,
           registration_number: registrationNumber,
           status: "pending",
@@ -539,13 +602,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send confirmation email (fire-and-forget)
       emailService
         .sendEventRegistrationConfirmation({
-          firstName: fullName.split(" ")[0],
-          lastName: fullName.split(" ").slice(1).join(" ") || "",
-          email,
+          firstName: fullNameTrimmed.split(" ")[0],
+          lastName: fullNameTrimmed.split(" ").slice(1).join(" ") || "",
+          email: emailTrimmed,
           eventTitle: event.title,
           eventDate: event.startDate,
           registrationNumber,
-          organization: institution,
+          organization: institutionTrimmed,
           country: "Zambia",
         })
         .catch((emailError) => {

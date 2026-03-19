@@ -211,6 +211,7 @@ import { SponsorshipDialog } from "@/components/sponsorship-dialog";
 import { ExhibitionDialog } from "@/components/exhibition-dialog";
 import { AdminDocumentsPanel } from "@/components/admin-documents-panel";
 import { useAuth } from "@/hooks/use-auth";
+import { generatePublicRegistrationPDF, generateSingleRegistrationPDF } from "@/lib/pdf-generator";
 
 import { apiRequest } from "@/lib/queryClient";
 
