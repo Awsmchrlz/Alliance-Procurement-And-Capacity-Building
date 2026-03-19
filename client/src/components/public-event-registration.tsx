@@ -75,10 +75,6 @@ export function PublicEventRegistration({
     district: "",
     paymentMethod: "",
   });
-      mobileMoney: false,
-      bankTransfer: false,
-    },
-  });
 
   const updateField = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
