@@ -50,6 +50,9 @@ interface FormData {
   email: string;
   phoneNumber: string;
   title: string;
+  titleOther: string;
+  position: string;
+  positionOther: string;
   province: string;
   district: string;
   paymentMethod: PaymentMethod;
@@ -71,6 +74,9 @@ export function PublicEventRegistration({
     email: "",
     phoneNumber: "",
     title: "",
+    titleOther: "",
+    position: "",
+    positionOther: "",
     province: "",
     district: "",
     paymentMethod: "",
@@ -82,7 +88,7 @@ export function PublicEventRegistration({
 
   const handleGroupSelect = (group: RegistrationGroup) => {
     setSelectedGroup(group);
-    setFormData((prev) => ({ ...prev, title: "" }));
+    setFormData((prev) => ({ ...prev, position: "", positionOther: "" }));
   };
 
   const handleSubmit = async () => {
@@ -92,6 +98,9 @@ export function PublicEventRegistration({
     const phoneNumberTrimmed = formData.phoneNumber.trim();
     const institutionTrimmed = formData.institution.trim();
     const titleTrimmed = formData.title.trim();
+    const titleOtherTrimmed = formData.titleOther.trim();
+    const positionTrimmed = formData.position.trim();
+    const positionOtherTrimmed = formData.positionOther.trim();
     const provinceTrimmed = formData.province.trim();
     const districtTrimmed = formData.district.trim();
 
@@ -138,6 +147,21 @@ export function PublicEventRegistration({
       return;
     }
 
+    if (titleTrimmed === "Other" && !titleOtherTrimmed) {
+      toast({ title: "Please specify your title", variant: "destructive" });
+      return;
+    }
+
+    if (!positionTrimmed) {
+      toast({ title: "Position is required", variant: "destructive" });
+      return;
+    }
+
+    if (positionTrimmed === "Other" && !positionOtherTrimmed) {
+      toast({ title: "Please specify your position", variant: "destructive" });
+      return;
+    }
+
     if (!provinceTrimmed || provinceTrimmed.length < 2) {
       toast({ title: "Province must be at least 2 characters", variant: "destructive" });
       return;
@@ -177,7 +201,8 @@ export function PublicEventRegistration({
         gender: formData.gender,
         email: emailTrimmed,
         phoneNumber: phoneNumberTrimmed,
-        title: titleTrimmed,
+        title: titleTrimmed === "Other" ? titleOtherTrimmed : titleTrimmed,
+        position: positionTrimmed === "Other" ? positionOtherTrimmed : positionTrimmed,
         province: provinceTrimmed,
         district: districtTrimmed,
         paymentModes: [formData.paymentMethod],
@@ -219,6 +244,9 @@ export function PublicEventRegistration({
       email: "",
       phoneNumber: "",
       title: "",
+      titleOther: "",
+      position: "",
+      positionOther: "",
       province: "",
       district: "",
       paymentMethod: "",
@@ -380,15 +408,31 @@ export function PublicEventRegistration({
                       <SelectValue placeholder="Select your title" />
                     </SelectTrigger>
                     <SelectContent>
-                      {GROUP_TITLES[selectedGroup].map((title) => (
-                        <SelectItem key={title} value={title}>
-                          {title}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="Mr.">Mr.</SelectItem>
+                      <SelectItem value="Mrs.">Mrs.</SelectItem>
+                      <SelectItem value="Miss">Miss</SelectItem>
+                      <SelectItem value="Dr.">Dr.</SelectItem>
+                      <SelectItem value="Prof.">Prof.</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {formData.title === "Other" && (
+                <div>
+                  <Label htmlFor="titleOther" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
+                    Please specify your title *
+                  </Label>
+                  <Input
+                    id="titleOther"
+                    value={formData.titleOther}
+                    onChange={(e) => updateField("titleOther", e.target.value)}
+                    placeholder="Enter your title"
+                    className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
+                  />
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="email" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
@@ -416,6 +460,40 @@ export function PublicEventRegistration({
                   className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
                 />
               </div>
+
+              <div>
+                <Label htmlFor="position" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
+                  Position *
+                </Label>
+                <Select value={formData.position} onValueChange={(value) => updateField("position", value)}>
+                  <SelectTrigger className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]">
+                    <SelectValue placeholder="Select your position" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GROUP_TITLES[selectedGroup].map((position) => (
+                      <SelectItem key={position} value={position}>
+                        {position}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.position === "Other" && (
+                <div>
+                  <Label htmlFor="positionOther" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
+                    Please specify your position *
+                  </Label>
+                  <Input
+                    id="positionOther"
+                    value={formData.positionOther}
+                    onChange={(e) => updateField("positionOther", e.target.value)}
+                    placeholder="Enter your position"
+                    className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
