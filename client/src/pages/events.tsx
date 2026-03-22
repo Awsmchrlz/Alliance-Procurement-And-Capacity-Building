@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { PublicEventRegistration } from "@/components/public-event-registration";
@@ -20,12 +19,9 @@ import {
   Calendar,
   MapPin,
   Clock,
-  Users,
-  DollarSign,
   ArrowRight,
   Sparkles,
   CheckCircle,
-  AlertCircle,
   Crown,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -34,11 +30,7 @@ import { Event } from "@shared/schema";
 const EventsPage = () => {
   const [, navigate] = useLocation();
   const { user, isAuthenticated } = useAuth();
-  const { toast } = useToast();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
-
-  const [autoOpenDialog, setAutoOpenDialog] = useState(false);
 
   // Fetch events
   const { data: events = [], isLoading } = useQuery({
@@ -53,11 +45,7 @@ const EventsPage = () => {
   });
 
   // Fetch user registrations with better error handling
-  const {
-    data: userRegistrations = [],
-    isLoading: isLoadingRegistrations,
-    refetch: refetchRegistrations,
-  } = useQuery({
+  const { data: userRegistrations = [] } = useQuery({
     queryKey: ["/api/users", user?.id, "registrations"],
     queryFn: async () => {
       if (!user?.id) {
@@ -82,48 +70,8 @@ const EventsPage = () => {
     ? userRegistrations
     : [];
 
-  // Auto-open registration dialog when component mounts
-  useEffect(() => {
-    setAutoOpenDialog(true);
-    window.history.replaceState({}, "", "/events");
-    return () => setAutoOpenDialog(false);
-  }, []);
-
-  // Handle auto-open when events are loaded
-  useEffect(() => {
-    if (autoOpenDialog && eventsArray.length > 0) {
-      // Find the featured event first
-      const featuredEvent = eventsArray.find((e: Event) => e.featured === true);
-      
-      if (featuredEvent) {
-        const timer = setTimeout(() => {
-          setSelectedEvent(featuredEvent);
-          setShowRegistrationDialog(true);
-          setAutoOpenDialog(false);
-        }, 800);
-        return () => clearTimeout(timer);
-      }
-      
-      // Fallback to first upcoming event if no featured event
-      const upcomingEvents = eventsArray.filter(
-        (event: Event) => new Date(event.startDate) >= new Date(),
-      );
-      const mainEvent = upcomingEvents.length > 0 ? upcomingEvents[0] : eventsArray[0];
-
-      if (mainEvent) {
-        const timer = setTimeout(() => {
-          setSelectedEvent(mainEvent);
-          setShowRegistrationDialog(true);
-          setAutoOpenDialog(false);
-        }, 800);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [autoOpenDialog, eventsArray]);
-
   const handleRegisterClick = (event: Event) => {
     setSelectedEvent(event);
-    setShowRegistrationDialog(true);
   };
 
   const isUserRegistered = (eventId: string) => {
@@ -239,130 +187,122 @@ const EventsPage = () => {
                         return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
                       })
                       .map((event: Event) => {
-                const status = getEventStatus(event);
-                const isRegistered = isUserRegistered(event.id);
+                        const status = getEventStatus(event);
+                        const isRegistered = isUserRegistered(event.id);
 
-                return (
-                  <Card
-                    key={event.id}
-                    className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden ${
-                      event.featured ? "md:col-span-2 lg:col-span-3 ring-4 ring-[#FDC123]/30" : ""
-                    }`}
-                  >
-                    <div className="relative">
-                      {event.imageUrl && (
-                        <div className="h-48 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] relative overflow-hidden">
-                          <img
-                            src={event.imageUrl}
-                            alt={event.title}
-                            className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                        </div>
-                      )}
-
-                      <div className="absolute top-4 right-4">
-                        {getStatusBadge(status)}
-                      </div>
-
-                      {event.featured && (
-                        <div className="absolute top-4 left-4">
-                          <Badge className="bg-[#FDC123] text-white">
-                            <Crown className="w-3 h-3 mr-1" />
-                            Featured
-                          </Badge>
-                        </div>
-                      )}
-
-                      {isRegistered && !event.featured && (
-                        <div className="absolute top-4 left-4">
-                          <Badge className="bg-[#87CEEB] text-white">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Registered
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-
-                    <CardHeader className="pb-4">
-                      <CardTitle className={`font-bold text-gray-900 group-hover:text-[#1C356B] transition-colors ${
-                        event.featured ? "text-3xl" : "text-xl"
-                      }`}>
-                        {event.title}
-                      </CardTitle>
-                      {event.description && (
-                        <CardDescription className={`text-gray-600 ${
-                          event.featured ? "text-lg line-clamp-3" : "line-clamp-2"
-                        }`}>
-                          {event.description}
-                        </CardDescription>
-                      )}
-                    </CardHeader>
-
-                    <CardContent className="space-y-4">
-                      <div className={`space-y-3 ${event.featured ? "grid md:grid-cols-2 gap-4" : ""}`}>
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 text-[#1C356B]" />
-                          <span>
-                            {format(new Date(event.startDate), "MMM d, yyyy")}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                          <Clock className="w-4 h-4 text-[#1C356B]" />
-                          <span>
-                            {format(new Date(event.startDate), "h:mm a")}
-                          </span>
-                        </div>
-
-                        {event.location && (
-                          <div className="flex items-center gap-3 text-sm text-gray-600">
-                            <MapPin className="w-4 h-4 text-[#1C356B]" />
-                            <span className="line-clamp-1">
-                              {event.location}
-                            </span>
-                          </div>
-                        )}
-
-                        {event.maxAttendees && (
-                          <div className="flex items-center gap-3 text-sm text-gray-600">
-                            <Users className="w-4 h-4 text-[#1C356B]" />
-                            <span>Max {event.maxAttendees} participants</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="pt-4 border-t border-gray-100">
-                        {status === "upcoming" && !isRegistered ? (
-                          <button
-                            onClick={() => handleRegisterClick(event)}
-                            className={`w-full font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
-                              event.featured 
-                                ? "bg-[#FDC123] hover:bg-[#FDC123]/90 text-[#1C356B] py-6 px-6 text-xl min-h-[72px]"
-                                : "bg-[#1C356B] hover:bg-[#2d4a7a] active:bg-[#1a2f5a] text-white py-5 px-4 text-lg min-h-[64px]"
+                        return (
+                          <Card
+                            key={event.id}
+                            className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden ${
+                              event.featured ? "md:col-span-2 lg:col-span-3 ring-4 ring-[#FDC123]/30" : ""
                             }`}
                           >
-                            <span>{event.featured ? "REGISTER HERE" : "Register for Event"}</span>
-                            <ArrowRight className={event.featured ? "w-6 h-6" : "w-5 h-5"} />
-                          </button>
-                        ) : isRegistered ? (
-                          <div className="w-full bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold py-5 px-4 rounded-xl flex items-center justify-center gap-3 min-h-[64px] text-lg">
-                            <CheckCircle className="w-5 h-5 text-emerald-600" />
-                            <span>Already Registered</span>
-                          </div>
-                        ) : (
-                          <div className="w-full bg-gray-50 border-2 border-gray-200 text-gray-500 font-bold py-5 px-4 rounded-xl flex items-center justify-center min-h-[64px] text-lg">
-                            <span>
-                              {status === "ongoing" ? "Event in Progress" : "Event Completed"}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                            <div className="relative">
+                              {event.imageUrl && (
+                                <div className="h-48 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] relative overflow-hidden">
+                                  <img
+                                    src={event.imageUrl}
+                                    alt={event.title}
+                                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                                </div>
+                              )}
 
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                              <div className="absolute top-4 right-4">
+                                {getStatusBadge(status)}
+                              </div>
+
+                              {event.featured && (
+                                <div className="absolute top-4 left-4">
+                                  <Badge className="bg-[#FDC123] text-white">
+                                    <Crown className="w-3 h-3 mr-1" />
+                                    Featured
+                                  </Badge>
+                                </div>
+                              )}
+
+                              {isRegistered && !event.featured && (
+                                <div className="absolute top-4 left-4">
+                                  <Badge className="bg-[#87CEEB] text-white">
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Registered
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+
+                            <CardHeader className="pb-4">
+                              <CardTitle className={`font-bold text-gray-900 group-hover:text-[#1C356B] transition-colors ${
+                                event.featured ? "text-3xl" : "text-xl"
+                              }`}>
+                                {event.title}
+                              </CardTitle>
+                              {event.description && (
+                                <CardDescription className={`text-gray-600 ${
+                                  event.featured ? "text-lg line-clamp-3" : "line-clamp-2"
+                                }`}>
+                                  {event.description}
+                                </CardDescription>
+                              )}
+                            </CardHeader>
+
+                            <CardContent className="space-y-4">
+                              <div className={`space-y-3 ${event.featured ? "grid md:grid-cols-2 gap-4" : ""}`}>
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                  <Calendar className="w-4 h-4 text-[#1C356B]" />
+                                  <span>
+                                    {format(new Date(event.startDate), "MMM d, yyyy")}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                  <Clock className="w-4 h-4 text-[#1C356B]" />
+                                  <span>
+                                    {format(new Date(event.startDate), "h:mm a")}
+                                  </span>
+                                </div>
+
+                                {event.location && (
+                                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                                    <MapPin className="w-4 h-4 text-[#1C356B]" />
+                                    <span className="line-clamp-1">
+                                      {event.location}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="pt-4 border-t border-gray-100">
+                                {status === "upcoming" && !isRegistered ? (
+                                  <button
+                                    onClick={() => handleRegisterClick(event)}
+                                    className={`w-full font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
+                                      event.featured 
+                                        ? "bg-[#FDC123] hover:bg-[#FDC123]/90 text-[#1C356B] py-6 px-6 text-xl min-h-[72px]"
+                                        : "bg-[#1C356B] hover:bg-[#2d4a7a] active:bg-[#1a2f5a] text-white py-5 px-4 text-lg min-h-[64px]"
+                                    }`}
+                                  >
+                                    <span>{event.featured ? "REGISTER HERE" : "Register for Event"}</span>
+                                    <ArrowRight className={event.featured ? "w-6 h-6" : "w-5 h-5"} />
+                                  </button>
+                                ) : isRegistered ? (
+                                  <div className="w-full bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold py-5 px-4 rounded-xl flex items-center justify-center gap-3 min-h-[64px] text-lg">
+                                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                                    <span>Already Registered</span>
+                                  </div>
+                                ) : (
+                                  <div className="w-full bg-gray-50 border-2 border-gray-200 text-gray-500 font-bold py-5 px-4 rounded-xl flex items-center justify-center min-h-[64px] text-lg">
+                                    <span>
+                                      {status === "ongoing" ? "Event in Progress" : "Event Completed"}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                   </div>
                 </div>
               )}
@@ -387,95 +327,87 @@ const EventsPage = () => {
                       .filter((e: Event) => getEventStatus(e) === "past")
                       .sort((a: Event, b: Event) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
                       .map((event: Event) => {
-                const status = getEventStatus(event);
-                const isRegistered = isUserRegistered(event.id);
+                        const status = getEventStatus(event);
+                        const isRegistered = isUserRegistered(event.id);
 
-                return (
-                  <Card
-                    key={event.id}
-                    className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md overflow-hidden opacity-90 hover:opacity-100"
-                  >
-                    <div className="relative">
-                      {event.imageUrl && (
-                        <div className="h-48 bg-gradient-to-br from-gray-600 to-gray-800 relative overflow-hidden">
-                          <img
-                            src={event.imageUrl}
-                            alt={event.title}
-                            className="w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-105 transition-all duration-300 grayscale group-hover:grayscale-0"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        </div>
-                      )}
+                        return (
+                          <Card
+                            key={event.id}
+                            className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md overflow-hidden opacity-90 hover:opacity-100"
+                          >
+                            <div className="relative">
+                              {event.imageUrl && (
+                                <div className="h-48 bg-gradient-to-br from-gray-600 to-gray-800 relative overflow-hidden">
+                                  <img
+                                    src={event.imageUrl}
+                                    alt={event.title}
+                                    className="w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-105 transition-all duration-300 grayscale group-hover:grayscale-0"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                </div>
+                              )}
 
-                      <div className="absolute top-4 right-4">
-                        {getStatusBadge(status)}
-                      </div>
+                              <div className="absolute top-4 right-4">
+                                {getStatusBadge(status)}
+                              </div>
 
-                      {isRegistered && (
-                        <div className="absolute top-4 left-4">
-                          <Badge className="bg-emerald-500 text-white">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Attended
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
+                              {isRegistered && (
+                                <div className="absolute top-4 left-4">
+                                  <Badge className="bg-emerald-500 text-white">
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Attended
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
 
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-xl font-bold text-gray-800 group-hover:text-[#1C356B] transition-colors">
-                        {event.title}
-                      </CardTitle>
-                      {event.description && (
-                        <CardDescription className="text-gray-600 line-clamp-2">
-                          {event.description}
-                        </CardDescription>
-                      )}
-                    </CardHeader>
+                            <CardHeader className="pb-4">
+                              <CardTitle className="text-xl font-bold text-gray-800 group-hover:text-[#1C356B] transition-colors">
+                                {event.title}
+                              </CardTitle>
+                              {event.description && (
+                                <CardDescription className="text-gray-600 line-clamp-2">
+                                  {event.description}
+                                </CardDescription>
+                              )}
+                            </CardHeader>
 
-                    <CardContent className="space-y-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          <span>
-                            {format(new Date(event.startDate), "MMM d, yyyy")}
-                          </span>
-                        </div>
+                            <CardContent className="space-y-4">
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                  <Calendar className="w-4 h-4 text-gray-500" />
+                                  <span>
+                                    {format(new Date(event.startDate), "MMM d, yyyy")}
+                                  </span>
+                                </div>
 
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                          <Clock className="w-4 h-4 text-gray-500" />
-                          <span>
-                            {format(new Date(event.startDate), "h:mm a")}
-                          </span>
-                        </div>
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                  <Clock className="w-4 h-4 text-gray-500" />
+                                  <span>
+                                    {format(new Date(event.startDate), "h:mm a")}
+                                  </span>
+                                </div>
 
-                        {event.location && (
-                          <div className="flex items-center gap-3 text-sm text-gray-600">
-                            <MapPin className="w-4 h-4 text-gray-500" />
-                            <span className="line-clamp-1">
-                              {event.location}
-                            </span>
-                          </div>
-                        )}
+                                {event.location && (
+                                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                                    <MapPin className="w-4 h-4 text-gray-500" />
+                                    <span className="line-clamp-1">
+                                      {event.location}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
 
-                        {event.maxAttendees && (
-                          <div className="flex items-center gap-3 text-sm text-gray-600">
-                            <Users className="w-4 h-4 text-gray-500" />
-                            <span>Max {event.maxAttendees} participants</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="pt-4 border-t border-gray-100">
-                        <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 font-medium py-4 px-4 rounded-lg flex items-center justify-center gap-2">
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Event Completed</span>
-                        </div>
-                      </div>
-
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                              <div className="pt-4 border-t border-gray-100">
+                                <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 font-medium py-4 px-4 rounded-lg flex items-center justify-center gap-2">
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>Event Completed</span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                   </div>
                 </div>
               )}
@@ -525,10 +457,11 @@ const EventsPage = () => {
 
       <Footer />
 
-      {/* Registration Dialogs */}
+      {/* Registration Dialog */}
       {selectedEvent && (
         <PublicEventRegistration
           event={selectedEvent}
+          onSuccess={() => setSelectedEvent(null)}
         />
       )}
     </div>
