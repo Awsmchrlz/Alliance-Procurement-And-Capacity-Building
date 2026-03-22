@@ -333,6 +333,9 @@ export default function AdminDashboard() {
   const [publicRegGroupFilter, setPublicRegGroupFilter] = useState<string>("all");
   const [publicRegStatusFilter, setPublicRegStatusFilter] = useState<string>("all");
   const [publicRegPaymentFilter, setPublicRegPaymentFilter] = useState<string>("all");
+  const [publicRegTitleFilter, setPublicRegTitleFilter] = useState<string>("all");
+  const [publicRegPositionFilter, setPublicRegPositionFilter] = useState<string>("all");
+  const [publicRegGenderFilter, setPublicRegGenderFilter] = useState<string>("all");
 
   // Defensive render helpers to avoid rendering objects directly in JSX
   const asText = (value: any): string => {
@@ -580,8 +583,29 @@ export default function AdminDashboard() {
       );
     }
 
+    // Filter by title (Mr., Mrs., Miss, Dr., Prof., Other)
+    if (publicRegTitleFilter !== "all") {
+      filtered = filtered.filter(
+        (reg: any) => reg.title === publicRegTitleFilter
+      );
+    }
+
+    // Filter by position
+    if (publicRegPositionFilter !== "all") {
+      filtered = filtered.filter(
+        (reg: any) => reg.position === publicRegPositionFilter
+      );
+    }
+
+    // Filter by gender
+    if (publicRegGenderFilter !== "all") {
+      filtered = filtered.filter(
+        (reg: any) => reg.gender === publicRegGenderFilter
+      );
+    }
+
     return filtered;
-  }, [publicRegistrations, publicRegSearchTerm, publicRegGroupFilter, publicRegStatusFilter, publicRegPaymentFilter]);
+  }, [publicRegistrations, publicRegSearchTerm, publicRegGroupFilter, publicRegStatusFilter, publicRegPaymentFilter, publicRegTitleFilter, publicRegPositionFilter, publicRegGenderFilter]);
 
   const refreshData = async () => {
     try {
@@ -4225,12 +4249,12 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Filter Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <Input
                     placeholder="Search by name, email, phone, institution..."
                     value={publicRegSearchTerm}
                     onChange={(e) => setPublicRegSearchTerm(e.target.value)}
-                    className="border-slate-200"
+                    className="border-slate-200 lg:col-span-2"
                   />
                   <Select value={publicRegGroupFilter} onValueChange={setPublicRegGroupFilter}>
                     <SelectTrigger className="border-slate-200">
@@ -4253,6 +4277,9 @@ export default function AdminDashboard() {
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <Select value={publicRegPaymentFilter} onValueChange={setPublicRegPaymentFilter}>
                     <SelectTrigger className="border-slate-200">
                       <SelectValue placeholder="Filter by payment" />
@@ -4264,17 +4291,45 @@ export default function AdminDashboard() {
                       <SelectItem value="bankTransfer">Bank Transfer</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Select value={publicRegTitleFilter} onValueChange={setPublicRegTitleFilter}>
+                    <SelectTrigger className="border-slate-200">
+                      <SelectValue placeholder="Filter by title" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Titles</SelectItem>
+                      <SelectItem value="Mr.">Mr.</SelectItem>
+                      <SelectItem value="Mrs.">Mrs.</SelectItem>
+                      <SelectItem value="Miss">Miss</SelectItem>
+                      <SelectItem value="Dr.">Dr.</SelectItem>
+                      <SelectItem value="Prof.">Prof.</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={publicRegGenderFilter} onValueChange={setPublicRegGenderFilter}>
+                    <SelectTrigger className="border-slate-200">
+                      <SelectValue placeholder="Filter by gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Genders</SelectItem>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Button
                     onClick={() => {
                       setPublicRegSearchTerm("");
                       setPublicRegGroupFilter("all");
                       setPublicRegStatusFilter("all");
                       setPublicRegPaymentFilter("all");
+                      setPublicRegTitleFilter("all");
+                      setPublicRegPositionFilter("all");
+                      setPublicRegGenderFilter("all");
                     }}
                     variant="outline"
                     className="border-slate-200"
                   >
-                    Clear Filters
+                    Clear All
                   </Button>
                 </div>
               </CardHeader>
