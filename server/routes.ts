@@ -604,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: emailTrimmed,
           eventTitle: event.title,
           eventDate: event.startDate,
-          registrationNumber,
+          registrationNumber: registration.registration_number,
           organization: institutionTrimmed,
           country: "Zambia",
         })
@@ -614,7 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json({
         message: "Registration successful",
-        registrationNumber,
+        registrationNumber: registration.registration_number,
         registration,
       });
     } catch (error: any) {
