@@ -65,6 +65,7 @@ export function PublicEventRegistration({
   const { toast } = useToast();
   const [selectedGroup, setSelectedGroup] = useState<RegistrationGroup>(null);
   const [success, setSuccess] = useState(false);
+  const [successData, setSuccessData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
@@ -199,6 +200,15 @@ export function PublicEventRegistration({
         throw new Error(error.message || "Registration failed");
       }
 
+      const data = await response.json();
+      setSuccessData({
+        registrationNumber: data.registrationNumber,
+        fullName: fullNameTrimmed,
+        email: emailTrimmed,
+        institution: institutionTrimmed,
+        group: selectedGroup,
+        eventTitle: event.title,
+      });
       setSuccess(true);
       if (onSuccess) onSuccess();
     } catch (error: any) {
@@ -215,6 +225,7 @@ export function PublicEventRegistration({
   const reset = () => {
     setSelectedGroup(null);
     setSuccess(false);
+    setSuccessData(null);
     setFormData({
       fullName: "",
       institution: "",
@@ -233,21 +244,111 @@ export function PublicEventRegistration({
 
   if (success) {
     return (
-      <div className="w-full bg-white py-16 sm:py-20 px-4 sm:px-6">
-        <div className="flex items-center justify-center min-h-[300px]">
-          <div className="text-center max-w-md">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
-            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+      <div className="w-full bg-gradient-to-br from-green-50 to-emerald-50 py-16 sm:py-20 px-4 sm:px-6">
+        <div className="max-w-2xl mx-auto">
+          {/* Success Header */}
+          <div className="text-center mb-10">
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-green-200 rounded-full blur-xl opacity-50"></div>
+                <CheckCircle className="w-20 h-20 text-green-600 relative" />
+              </div>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
               Registration Successful!
-            </h3>
-            <p className="text-gray-600 mb-8 leading-relaxed">
-              Thank you for registering. A confirmation email has been sent to you.
+            </h2>
+            <p className="text-gray-600 text-lg">
+              Your registration for {successData?.eventTitle} has been confirmed
             </p>
+          </div>
+
+          {/* Registration Number Card */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-green-200 p-8 mb-8">
+            <div className="text-center mb-6">
+              <p className="text-gray-600 text-sm font-semibold uppercase tracking-wide mb-2">
+                Your Registration Number
+              </p>
+              <div className="text-5xl font-bold text-green-600 font-mono tracking-wider">
+                {successData?.registrationNumber}
+              </div>
+              <p className="text-gray-500 text-sm mt-3">
+                Please save this number for your records
+              </p>
+            </div>
+          </div>
+
+          {/* Details Card */}
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-8 mb-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-6 pb-4 border-b border-gray-200">
+              Registration Details
+            </h3>
+            
+            <div className="space-y-5">
+              {/* Row 1 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                    Full Name
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {successData?.fullName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                    Email
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900 break-all">
+                    {successData?.email}
+                  </p>
+                </div>
+              </div>
+
+              {/* Row 2 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                    Institution
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {successData?.institution}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                    Group
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {successData?.group === "group1" 
+                      ? "Group 1 (25-28 March)" 
+                      : "Group 2 (30 March - 2 April)"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Confirmation Message */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <p className="text-blue-900 text-center">
+              A confirmation email with your registration details has been sent to <span className="font-semibold">{successData?.email}</span>. Please check your inbox and spam folder.
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4">
             <Button 
               onClick={reset} 
-              className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white py-3 text-base font-semibold rounded-lg"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 text-base font-semibold rounded-lg transition-colors"
             >
               Register Another Person
+            </Button>
+            <Button 
+              onClick={() => window.location.href = "/"} 
+              variant="outline"
+              className="flex-1 border-gray-300 text-gray-700 py-3 text-base font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Back to Home
             </Button>
           </div>
         </div>
