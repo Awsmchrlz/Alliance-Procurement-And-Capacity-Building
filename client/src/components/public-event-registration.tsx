@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, ArrowLeft } from "lucide-react";
 import { Event } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -92,7 +92,6 @@ export function PublicEventRegistration({
   };
 
   const handleSubmit = async () => {
-    // Trim and validate all fields
     const fullNameTrimmed = formData.fullName.trim();
     const emailTrimmed = formData.email.trim().toLowerCase();
     const phoneNumberTrimmed = formData.phoneNumber.trim();
@@ -104,46 +103,33 @@ export function PublicEventRegistration({
     const provinceTrimmed = formData.province.trim();
     const districtTrimmed = formData.district.trim();
 
-    // Validation checks
     if (!fullNameTrimmed || fullNameTrimmed.length < 2) {
-      toast({ title: "Full name must be at least 2 characters", variant: "destructive" });
-      return;
-    }
-    if (fullNameTrimmed.length > 100) {
-      toast({ title: "Full name must be less than 100 characters", variant: "destructive" });
+      toast({ title: "Please enter your full name", variant: "destructive" });
       return;
     }
 
     if (!emailTrimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
-      toast({ title: "Valid email is required", variant: "destructive" });
+      toast({ title: "Please enter a valid email address", variant: "destructive" });
       return;
     }
 
     if (!phoneNumberTrimmed || phoneNumberTrimmed.length < 7) {
-      toast({ title: "Valid phone number is required", variant: "destructive" });
-      return;
-    }
-    if (phoneNumberTrimmed.length > 20) {
-      toast({ title: "Phone number is too long", variant: "destructive" });
+      toast({ title: "Please enter a valid phone number", variant: "destructive" });
       return;
     }
 
     if (!institutionTrimmed || institutionTrimmed.length < 2) {
-      toast({ title: "Institution must be at least 2 characters", variant: "destructive" });
-      return;
-    }
-    if (institutionTrimmed.length > 150) {
-      toast({ title: "Institution name is too long", variant: "destructive" });
+      toast({ title: "Please enter your institution", variant: "destructive" });
       return;
     }
 
     if (!formData.gender) {
-      toast({ title: "Gender is required", variant: "destructive" });
+      toast({ title: "Please select your gender", variant: "destructive" });
       return;
     }
 
     if (!titleTrimmed) {
-      toast({ title: "Title is required", variant: "destructive" });
+      toast({ title: "Please select your title", variant: "destructive" });
       return;
     }
 
@@ -153,7 +139,7 @@ export function PublicEventRegistration({
     }
 
     if (!positionTrimmed) {
-      toast({ title: "Position is required", variant: "destructive" });
+      toast({ title: "Please select your position", variant: "destructive" });
       return;
     }
 
@@ -162,21 +148,13 @@ export function PublicEventRegistration({
       return;
     }
 
-    if (!provinceTrimmed || provinceTrimmed.length < 2) {
-      toast({ title: "Province must be at least 2 characters", variant: "destructive" });
-      return;
-    }
-    if (provinceTrimmed.length > 50) {
-      toast({ title: "Province name is too long", variant: "destructive" });
+    if (!provinceTrimmed) {
+      toast({ title: "Please enter your province", variant: "destructive" });
       return;
     }
 
-    if (!districtTrimmed || districtTrimmed.length < 2) {
-      toast({ title: "District must be at least 2 characters", variant: "destructive" });
-      return;
-    }
-    if (districtTrimmed.length > 50) {
-      toast({ title: "District name is too long", variant: "destructive" });
+    if (!districtTrimmed) {
+      toast({ title: "Please enter your district", variant: "destructive" });
       return;
     }
 
@@ -255,19 +233,19 @@ export function PublicEventRegistration({
 
   if (success) {
     return (
-      <div className="w-full bg-gradient-to-br from-[#1C356B] to-[#0f1e3d] py-16 sm:py-20 md:py-24 px-4 sm:px-6">
-        <div className="flex items-center justify-center min-h-[400px] sm:min-h-[500px]">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 md:p-12 max-w-sm w-full text-center">
-            <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 text-green-500 mx-auto mb-4 sm:mb-6" />
-            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">
+      <div className="w-full bg-white py-16 sm:py-20 px-4 sm:px-6">
+        <div className="flex items-center justify-center min-h-[300px]">
+          <div className="text-center max-w-md">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
+            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
               Registration Successful!
             </h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8 leading-relaxed">
-              Thank you for registering. Confirmation details have been sent to your email.
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              Thank you for registering. A confirmation email has been sent to you.
             </p>
             <Button 
               onClick={reset} 
-              className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-lg transition-colors"
+              className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white py-3 text-base font-semibold rounded-lg"
             >
               Register Another Person
             </Button>
@@ -278,118 +256,100 @@ export function PublicEventRegistration({
   }
 
   return (
-    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Event Title Section */}
-        <div className="text-center mb-12 sm:mb-14 md:mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#1C356B] mb-2 sm:mb-3 md:mb-4 leading-tight">
-            2026 NATIONAL SEMINAR
-          </h2>
-          <p className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#1C5B7D] mb-3 sm:mb-4 md:mb-4">
-            "MINISTRY OF HEALTH"
-          </p>
-          <p className="text-base sm:text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed mb-2 sm:mb-3">
-            THEME: Strengthening Record Management and Internal Controls to Enhance Value for Money in the Public Sector
-          </p>
-          <p className="text-sm sm:text-base text-gray-600">
-            Zambia Air Force (ZAF) Banquet Hall, Livingstone
-          </p>
-        </div>
-
+    <div className="w-full bg-white py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-2xl mx-auto">
         {/* Group Selection */}
         {!selectedGroup ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-14 md:mb-16">
-            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 md:p-10 border-2 border-transparent hover:border-[#1C5B7D] flex flex-col h-full">
-              <div className="flex-1 space-y-4 sm:space-y-5 mb-6 sm:mb-8">
-                <div className="inline-block bg-[#1C5B7D] text-white px-5 sm:px-7 py-2 sm:py-2.5 rounded-lg font-bold text-base sm:text-lg">
-                  GROUP 1
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#1C356B] leading-tight">
-                  25th - 28th March 2026
-                </h3>
-                <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-                  Hospital Administrative Officers, Medical Superintendents, Planning Personnel, Accounts Personnel, District Health Directors, Principal Tutors, Auditors, HR Personnel
-                </p>
-              </div>
+          <>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#1C356B] mb-2 text-center">
+              Select Your Group
+            </h2>
+            <p className="text-gray-600 text-center mb-8">
+              Choose the group that matches your role
+            </p>
+
+            <div className="space-y-4 mb-8">
               <button
                 onClick={() => handleGroupSelect("group1")}
-                className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-3 sm:py-4 md:py-5 text-base sm:text-lg md:text-xl font-bold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                className="w-full bg-white border-2 border-[#1C356B] hover:bg-[#1C356B] hover:text-white text-[#1C356B] p-6 rounded-lg transition-all duration-200 text-left"
               >
-                Register for Group 1
-              </button>
-            </div>
-
-            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 md:p-10 border-2 border-transparent hover:border-[#1C5B7D] flex flex-col h-full">
-              <div className="flex-1 space-y-4 sm:space-y-5 mb-6 sm:mb-8">
-                <div className="inline-block bg-[#1C5B7D] text-white px-5 sm:px-7 py-2 sm:py-2.5 rounded-lg font-bold text-base sm:text-lg">
-                  GROUP 2
+                <div className="font-bold text-lg mb-2">Group 1: 25th - 28th March 2026</div>
+                <div className="text-sm opacity-90">
+                  Hospital Officers, Medical Superintendents, Planning & Accounts Personnel, District Health Directors, Principal Tutors, Auditors, HR Personnel
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#1C356B] leading-tight">
-                  30th March - 2nd April 2026
-                </h3>
-                <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-                  Secretaries, Executive Officers, Administrative Personnel, Cashiers, Registry/Records Personnel, Procurement Officers, Pharmacists
-                </p>
-              </div>
+              </button>
+
               <button
                 onClick={() => handleGroupSelect("group2")}
-                className="w-full bg-[#1C5B7D] hover:bg-[#1C5B7D]/90 text-white py-3 sm:py-4 md:py-5 text-base sm:text-lg md:text-xl font-bold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                className="w-full bg-white border-2 border-[#1C356B] hover:bg-[#1C356B] hover:text-white text-[#1C356B] p-6 rounded-lg transition-all duration-200 text-left"
               >
-                Register for Group 2
+                <div className="font-bold text-lg mb-2">Group 2: 30th March - 2nd April 2026</div>
+                <div className="text-sm opacity-90">
+                  Secretaries, Executive Officers, Administrative Personnel, Cashiers, Registry/Records Personnel, Procurement Officers, Pharmacists
+                </div>
               </button>
             </div>
-          </div>
+          </>
         ) : null}
 
         {/* Registration Form */}
         {selectedGroup && (
-          <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-lg md:shadow-2xl p-6 sm:p-8 md:p-12">
-            <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b-2 border-gray-200">
-              <h3 className="text-xl sm:text-2xl font-bold text-[#1C356B] mb-1 sm:mb-2">
-                {selectedGroup === "group1" ? "Group 1 Registration" : "Group 2 Registration"}
-              </h3>
-              <p className="text-sm sm:text-base text-gray-600">
-                {selectedGroup === "group1" 
-                  ? "25th - 28th March 2026" 
-                  : "30th March - 2nd April 2026"}
-              </p>
+          <div>
+            <div className="flex items-center gap-3 mb-8">
+              <button
+                onClick={() => setSelectedGroup(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-[#1C356B]" />
+              </button>
+              <div>
+                <h2 className="text-2xl font-bold text-[#1C356B]">
+                  {selectedGroup === "group1" ? "Group 1" : "Group 2"} Registration
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {selectedGroup === "group1" 
+                    ? "25th - 28th March 2026" 
+                    : "30th March - 2nd April 2026"}
+                </p>
+              </div>
             </div>
 
-            <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6">
-              <div>
-                <Label htmlFor="fullName" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
-                  Full Name *
-                </Label>
-                <Input
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={(e) => updateField("fullName", e.target.value)}
-                  placeholder="Enter your full name"
-                  className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="institution" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
-                  Institution *
-                </Label>
-                <Input
-                  id="institution"
-                  value={formData.institution}
-                  onChange={(e) => updateField("institution", e.target.value)}
-                  placeholder="Enter your institution"
-                  className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-5">
+              {/* Row 1: Full Name & Institution */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="gender" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Full Name *
+                  </Label>
+                  <Input
+                    value={formData.fullName}
+                    onChange={(e) => updateField("fullName", e.target.value)}
+                    placeholder="Your full name"
+                    className="h-11 text-base"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Institution *
+                  </Label>
+                  <Input
+                    value={formData.institution}
+                    onChange={(e) => updateField("institution", e.target.value)}
+                    placeholder="Your institution"
+                    className="h-11 text-base"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Gender & Title */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
                     Gender *
                   </Label>
                   <Select value={formData.gender} onValueChange={(value) => updateField("gender", value)}>
-                    <SelectTrigger className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]">
-                      <SelectValue placeholder="Select gender" />
+                    <SelectTrigger className="h-11 text-base">
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Male">Male</SelectItem>
@@ -398,14 +358,13 @@ export function PublicEventRegistration({
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div>
-                  <Label htmlFor="title" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
                     Title *
                   </Label>
                   <Select value={formData.title} onValueChange={(value) => updateField("title", value)}>
-                    <SelectTrigger className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]">
-                      <SelectValue placeholder="Select your title" />
+                    <SelectTrigger className="h-11 text-base">
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Mr.">Mr.</SelectItem>
@@ -421,52 +380,52 @@ export function PublicEventRegistration({
 
               {formData.title === "Other" && (
                 <div>
-                  <Label htmlFor="titleOther" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
-                    Please specify your title *
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Specify your title *
                   </Label>
                   <Input
-                    id="titleOther"
                     value={formData.titleOther}
                     onChange={(e) => updateField("titleOther", e.target.value)}
                     placeholder="Enter your title"
-                    className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
+                    className="h-11 text-base"
                   />
                 </div>
               )}
 
-              <div>
-                <Label htmlFor="email" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
-                  Email Address *
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => updateField("email", e.target.value)}
-                  placeholder="Enter your email"
-                  className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
-                />
+              {/* Row 3: Email & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Email *
+                  </Label>
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => updateField("email", e.target.value)}
+                    placeholder="your@email.com"
+                    className="h-11 text-base"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Phone Number *
+                  </Label>
+                  <Input
+                    value={formData.phoneNumber}
+                    onChange={(e) => updateField("phoneNumber", e.target.value)}
+                    placeholder="Your phone number"
+                    className="h-11 text-base"
+                  />
+                </div>
               </div>
 
+              {/* Position */}
               <div>
-                <Label htmlFor="phoneNumber" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
-                  Phone Number *
-                </Label>
-                <Input
-                  id="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={(e) => updateField("phoneNumber", e.target.value)}
-                  placeholder="Enter your phone number"
-                  className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="position" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
+                <Label className="text-sm font-semibold text-gray-900 mb-2 block">
                   Position *
                 </Label>
                 <Select value={formData.position} onValueChange={(value) => updateField("position", value)}>
-                  <SelectTrigger className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]">
+                  <SelectTrigger className="h-11 text-base">
                     <SelectValue placeholder="Select your position" />
                   </SelectTrigger>
                   <SelectContent>
@@ -482,61 +441,59 @@ export function PublicEventRegistration({
 
               {formData.position === "Other" && (
                 <div>
-                  <Label htmlFor="positionOther" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
-                    Please specify your position *
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Specify your position *
                   </Label>
                   <Input
-                    id="positionOther"
                     value={formData.positionOther}
                     onChange={(e) => updateField("positionOther", e.target.value)}
                     placeholder="Enter your position"
-                    className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
+                    className="h-11 text-base"
                   />
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {/* Row 4: Province & District */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="province" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
                     Province *
                   </Label>
                   <Input
-                    id="province"
                     value={formData.province}
                     onChange={(e) => updateField("province", e.target.value)}
-                    placeholder="Enter your province"
-                    className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
+                    placeholder="Your province"
+                    className="h-11 text-base"
                   />
                 </div>
-
                 <div>
-                  <Label htmlFor="district" className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2 block">
+                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
                     District *
                   </Label>
                   <Input
-                    id="district"
                     value={formData.district}
                     onChange={(e) => updateField("district", e.target.value)}
-                    placeholder="Enter your district"
-                    className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-[#1C5B7D] focus:ring-[#1C5B7D]"
+                    placeholder="Your district"
+                    className="h-11 text-base"
                   />
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-gray-200">
-                <Label className="text-xs sm:text-sm font-semibold text-gray-900 mb-3 sm:mb-4 block">
+              {/* Payment Method */}
+              <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                <Label className="text-sm font-semibold text-gray-900 mb-4 block">
                   Payment Method *
                 </Label>
                 <RadioGroup value={formData.paymentMethod} onValueChange={(value) => updateField("paymentMethod", value as PaymentMethod)}>
-                  <div className="space-y-2.5 sm:space-y-3">
+                  <div className="space-y-3">
                     {[
                       { id: "cash", label: "Cash" },
                       { id: "mobileMoney", label: "Mobile Money" },
                       { id: "bankTransfer", label: "Bank Transfer" },
                     ].map(({ id, label }) => (
-                      <div key={id} className="flex items-center space-x-2.5 sm:space-x-3 p-2 sm:p-3 rounded-lg hover:bg-white transition-colors cursor-pointer">
-                        <RadioGroupItem value={id} id={id} className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <label htmlFor={id} className="text-xs sm:text-sm font-medium cursor-pointer text-gray-900 flex-1">
+                      <div key={id} className="flex items-center space-x-3 cursor-pointer">
+                        <RadioGroupItem value={id} id={id} />
+                        <label htmlFor={id} className="text-sm font-medium cursor-pointer text-gray-900">
                           {label}
                         </label>
                       </div>
@@ -545,18 +502,19 @@ export function PublicEventRegistration({
                 </RadioGroup>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-4">
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-6">
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 text-base font-semibold rounded-lg"
                 >
                   {isSubmitting ? "Submitting..." : "Submit Registration"}
                 </Button>
                 <Button
                   onClick={() => setSelectedGroup(null)}
                   variant="outline"
-                  className="flex-1 border-gray-300 text-gray-700 py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 border-gray-300 text-gray-700 py-3 text-base font-semibold rounded-lg"
                 >
                   Back
                 </Button>
