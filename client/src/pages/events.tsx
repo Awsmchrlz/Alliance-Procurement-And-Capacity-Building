@@ -6,15 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { PublicEventRegistration } from "@/components/public-event-registration";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -184,10 +176,8 @@ const EventsPage = () => {
                     {eventsArray
                       .filter((e: Event) => getEventStatus(e) === "upcoming" || getEventStatus(e) === "ongoing")
                       .sort((a: Event, b: Event) => {
-                        // Featured events first
                         if (a.featured && !b.featured) return -1;
                         if (!a.featured && b.featured) return 1;
-                        // Then by date
                         return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
                       })
                       .map((event: Event) => {
@@ -195,112 +185,70 @@ const EventsPage = () => {
                         const isRegistered = isUserRegistered(event.id);
 
                         return (
-                          <Card
+                          <div
                             key={event.id}
-                            className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden ${
-                              event.featured ? "md:col-span-2 lg:col-span-3 ring-4 ring-[#FDC123]/30" : ""
-                            }`}
+                            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden"
                           >
-                            <div className="relative">
-                              {event.imageUrl && (
-                                <div className="h-48 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] relative overflow-hidden">
-                                  <img
-                                    src={event.imageUrl}
-                                    alt={event.title}
-                                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                                </div>
-                              )}
-
-                              <div className="absolute top-4 right-4">
-                                {getStatusBadge(status)}
+                            {event.imageUrl && (
+                              <div className="h-40 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] overflow-hidden">
+                                <img
+                                  src={event.imageUrl}
+                                  alt={event.title}
+                                  className="w-full h-full object-cover opacity-80"
+                                />
                               </div>
+                            )}
 
-                              {event.featured && (
-                                <div className="absolute top-4 left-4">
-                                  <Badge className="bg-[#FDC123] text-white">
-                                    <Crown className="w-3 h-3 mr-1" />
-                                    Featured
-                                  </Badge>
-                                </div>
-                              )}
-
-                              {isRegistered && !event.featured && (
-                                <div className="absolute top-4 left-4">
-                                  <Badge className="bg-[#87CEEB] text-white">
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                    Registered
-                                  </Badge>
-                                </div>
-                              )}
-                            </div>
-
-                            <CardHeader className="pb-4">
-                              <CardTitle className={`font-bold text-gray-900 group-hover:text-[#1C356B] transition-colors ${
-                                event.featured ? "text-3xl" : "text-xl"
-                              }`}>
+                            <div className="p-5">
+                              <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">
                                 {event.title}
-                              </CardTitle>
-                              {event.description && (
-                                <CardDescription className={`text-gray-600 ${
-                                  event.featured ? "text-lg line-clamp-3" : "line-clamp-2"
-                                }`}>
-                                  {event.description}
-                                </CardDescription>
-                              )}
-                            </CardHeader>
+                              </h3>
 
-                            <CardContent className="space-y-4 pb-0">
-                              <div className={`space-y-3 ${event.featured ? "grid md:grid-cols-2 gap-4" : ""}`}>
-                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                              {event.description && (
+                                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                                  {event.description}
+                                </p>
+                              )}
+
+                              <div className="space-y-2 mb-4 text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
                                   <Calendar className="w-4 h-4 text-[#1C356B] flex-shrink-0" />
-                                  <span>
-                                    {format(new Date(event.startDate), "MMM d, yyyy")}
-                                  </span>
+                                  <span>{format(new Date(event.startDate), "MMM d, yyyy")}</span>
                                 </div>
 
-                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
                                   <Clock className="w-4 h-4 text-[#1C356B] flex-shrink-0" />
-                                  <span>
-                                    {format(new Date(event.startDate), "h:mm a")}
-                                  </span>
+                                  <span>{format(new Date(event.startDate), "h:mm a")}</span>
                                 </div>
 
                                 {event.location && (
-                                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                                  <div className="flex items-center gap-2">
                                     <MapPin className="w-4 h-4 text-[#1C356B] flex-shrink-0" />
-                                    <span className="line-clamp-1">
-                                      {event.location}
-                                    </span>
+                                    <span className="line-clamp-1">{event.location}</span>
                                   </div>
                                 )}
                               </div>
 
-                              <div className="pt-4 border-t border-gray-100 mt-4">
-                                {status === "upcoming" && !isRegistered ? (
-                                  <button
-                                    onClick={() => handleRegisterClick(event)}
-                                    className="w-full font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg bg-[#1C356B] hover:bg-[#2d4a7a] text-white py-3 px-3 text-base min-h-[48px]"
-                                  >
-                                    <span>Register Here</span>
-                                    <ArrowRight className="w-4 h-4 flex-shrink-0" />
-                                  </button>
-                                ) : isRegistered ? (
-                                  <div className="w-full bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold py-3 px-3 rounded-lg flex items-center justify-center gap-2 min-h-[48px] text-base">
-                                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                                    <span>Already Registered</span>
-                                  </div>
-                                ) : (
-                                  <div className="w-full bg-gray-50 border-2 border-gray-200 text-gray-500 font-bold py-3 px-3 rounded-lg flex items-center justify-center min-h-[48px] text-base">
-                                    <span>
-                                      {status === "ongoing" ? "Event in Progress" : "Event Completed"}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
+                              {status === "upcoming" && !isRegistered ? (
+                                <button
+                                  onClick={() => handleRegisterClick(event)}
+                                  className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white font-bold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                                >
+                                  <span>Register Here</span>
+                                  <ArrowRight className="w-4 h-4" />
+                                </button>
+                              ) : isRegistered ? (
+                                <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-sm">
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>Registered</span>
+                                </div>
+                              ) : (
+                                <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 font-bold py-2.5 px-4 rounded-lg text-center text-sm">
+                                  {status === "ongoing" ? "In Progress" : "Completed"}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         );
                       })}
                   </div>
@@ -331,81 +279,55 @@ const EventsPage = () => {
                         const isRegistered = isUserRegistered(event.id);
 
                         return (
-                          <Card
+                          <div
                             key={event.id}
-                            className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md overflow-hidden opacity-90 hover:opacity-100"
+                            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden opacity-75"
                           >
-                            <div className="relative">
-                              {event.imageUrl && (
-                                <div className="h-48 bg-gradient-to-br from-gray-600 to-gray-800 relative overflow-hidden">
-                                  <img
-                                    src={event.imageUrl}
-                                    alt={event.title}
-                                    className="w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-105 transition-all duration-300 grayscale group-hover:grayscale-0"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                </div>
-                              )}
-
-                              <div className="absolute top-4 right-4">
-                                {getStatusBadge(status)}
+                            {event.imageUrl && (
+                              <div className="h-40 bg-gradient-to-br from-gray-600 to-gray-800 overflow-hidden">
+                                <img
+                                  src={event.imageUrl}
+                                  alt={event.title}
+                                  className="w-full h-full object-cover opacity-60 grayscale"
+                                />
                               </div>
+                            )}
 
-                              {isRegistered && (
-                                <div className="absolute top-4 left-4">
-                                  <Badge className="bg-emerald-500 text-white">
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                    Attended
-                                  </Badge>
-                                </div>
-                              )}
-                            </div>
-
-                            <CardHeader className="pb-4">
-                              <CardTitle className="text-xl font-bold text-gray-800 group-hover:text-[#1C356B] transition-colors">
+                            <div className="p-5">
+                              <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">
                                 {event.title}
-                              </CardTitle>
-                              {event.description && (
-                                <CardDescription className="text-gray-600 line-clamp-2">
-                                  {event.description}
-                                </CardDescription>
-                              )}
-                            </CardHeader>
+                              </h3>
 
-                            <CardContent className="space-y-4">
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-3 text-sm text-gray-600">
-                                  <Calendar className="w-4 h-4 text-gray-500" />
-                                  <span>
-                                    {format(new Date(event.startDate), "MMM d, yyyy")}
-                                  </span>
+                              {event.description && (
+                                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                                  {event.description}
+                                </p>
+                              )}
+
+                              <div className="space-y-2 mb-4 text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                  <span>{format(new Date(event.startDate), "MMM d, yyyy")}</span>
                                 </div>
 
-                                <div className="flex items-center gap-3 text-sm text-gray-600">
-                                  <Clock className="w-4 h-4 text-gray-500" />
-                                  <span>
-                                    {format(new Date(event.startDate), "h:mm a")}
-                                  </span>
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                  <span>{format(new Date(event.startDate), "h:mm a")}</span>
                                 </div>
 
                                 {event.location && (
-                                  <div className="flex items-center gap-3 text-sm text-gray-600">
-                                    <MapPin className="w-4 h-4 text-gray-500" />
-                                    <span className="line-clamp-1">
-                                      {event.location}
-                                    </span>
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                    <span className="line-clamp-1">{event.location}</span>
                                   </div>
                                 )}
                               </div>
 
-                              <div className="pt-4 border-t border-gray-100">
-                                <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 font-medium py-4 px-4 rounded-lg flex items-center justify-center gap-2">
-                                  <CheckCircle className="w-4 h-4" />
-                                  <span>Event Completed</span>
-                                </div>
+                              <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 font-bold py-2.5 px-4 rounded-lg text-center text-sm">
+                                Event Completed
                               </div>
-                            </CardContent>
-                          </Card>
+                            </div>
+                          </div>
                         );
                       })}
                   </div>
