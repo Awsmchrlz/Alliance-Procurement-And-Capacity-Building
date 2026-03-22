@@ -36,6 +36,7 @@ app.use((req, res, next) => {
   next();
 });
 
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -51,6 +52,7 @@ app.use((req, res, next) => {
     // Dev mode — use Vite middleware
     const { setupVite } = await import("./vite.js");
     await setupVite(app, server);
+
   } else {
     // ✅ Production — serve built frontend from dist/public
     const publicPath = path.resolve(import.meta.dirname, "public");
