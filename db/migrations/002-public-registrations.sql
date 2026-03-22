@@ -61,6 +61,12 @@ EXECUTE FUNCTION set_public_registration_number();
 -- Add RLS policies (optional - for security)
 ALTER TABLE public_event_registrations ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow public insert" ON public_event_registrations;
+DROP POLICY IF EXISTS "Allow admin select" ON public_event_registrations;
+DROP POLICY IF EXISTS "Allow admin update" ON public_event_registrations;
+DROP POLICY IF EXISTS "Allow admin delete" ON public_event_registrations;
+
 -- Allow public inserts (for the registration form)
 CREATE POLICY "Allow public insert" ON public_event_registrations
   FOR INSERT
