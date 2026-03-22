@@ -281,22 +281,18 @@ const EventsPage = () => {
                                 {status === "upcoming" && !isRegistered ? (
                                   <button
                                     onClick={() => handleRegisterClick(event)}
-                                    className={`w-full font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${
-                                      event.featured 
-                                        ? "bg-[#1C356B] hover:bg-[#2d4a7a] text-white py-3 sm:py-4 px-4 sm:px-6 text-base sm:text-lg min-h-[48px] sm:min-h-[56px]"
-                                        : "bg-[#1C356B] hover:bg-[#2d4a7a] text-white py-3 px-4 text-sm sm:text-base min-h-[48px]"
-                                    }`}
+                                    className="w-full font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg bg-[#1C356B] hover:bg-[#2d4a7a] text-white py-3 px-4 text-base min-h-[48px]"
                                   >
-                                    <span className="truncate">{event.featured ? "REGISTER HERE" : "Register for Event"}</span>
-                                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                    <span>Register Here</span>
+                                    <ArrowRight className="w-4 h-4 flex-shrink-0" />
                                   </button>
                                 ) : isRegistered ? (
-                                  <div className="w-full bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 min-h-[48px] text-sm sm:text-base">
-                                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                  <div className="w-full bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 min-h-[48px] text-base">
+                                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
                                     <span>Already Registered</span>
                                   </div>
                                 ) : (
-                                  <div className="w-full bg-gray-50 border-2 border-gray-200 text-gray-500 font-bold py-3 px-4 rounded-lg flex items-center justify-center min-h-[48px] text-sm sm:text-base">
+                                  <div className="w-full bg-gray-50 border-2 border-gray-200 text-gray-500 font-bold py-3 px-4 rounded-lg flex items-center justify-center min-h-[48px] text-base">
                                     <span>
                                       {status === "ongoing" ? "Event in Progress" : "Event Completed"}
                                     </span>
