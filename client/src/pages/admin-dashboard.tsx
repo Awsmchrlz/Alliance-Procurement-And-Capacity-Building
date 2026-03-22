@@ -328,6 +328,12 @@ export default function AdminDashboard() {
   const [showCreateExhibitionDialog, setShowCreateExhibitionDialog] =
     useState(false);
 
+  // Public registrations filters
+  const [publicRegSearchTerm, setPublicRegSearchTerm] = useState("");
+  const [publicRegGroupFilter, setPublicRegGroupFilter] = useState<string>("all");
+  const [publicRegStatusFilter, setPublicRegStatusFilter] = useState<string>("all");
+  const [publicRegPaymentFilter, setPublicRegPaymentFilter] = useState<string>("all");
+
   // Defensive render helpers to avoid rendering objects directly in JSX
   const asText = (value: any): string => {
     if (value === null || value === undefined) return "";
@@ -535,6 +541,47 @@ export default function AdminDashboard() {
       );
     }
   }, [searchTerm, users, events, registrations]);
+
+  // Filter public registrations based on search and filters
+  const filteredPublicRegistrations = useMemo(() => {
+    let filtered = publicRegistrations;
+
+    // Filter by search term
+    if (publicRegSearchTerm.trim()) {
+      const term = publicRegSearchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (reg: any) =>
+          reg.full_name?.toLowerCase().includes(term) ||
+          reg.email?.toLowerCase().includes(term) ||
+          reg.phone_number?.toLowerCase().includes(term) ||
+          reg.institution?.toLowerCase().includes(term) ||
+          reg.registration_number?.toLowerCase().includes(term)
+      );
+    }
+
+    // Filter by group
+    if (publicRegGroupFilter !== "all") {
+      filtered = filtered.filter(
+        (reg: any) => reg.registration_group === publicRegGroupFilter
+      );
+    }
+
+    // Filter by status
+    if (publicRegStatusFilter !== "all") {
+      filtered = filtered.filter(
+        (reg: any) => reg.status === publicRegStatusFilter
+      );
+    }
+
+    // Filter by payment mode
+    if (publicRegPaymentFilter !== "all") {
+      filtered = filtered.filter(
+        (reg: any) => reg.payment_modes?.includes(publicRegPaymentFilter)
+      );
+    }
+
+    return filtered;
+  }, [publicRegistrations, publicRegSearchTerm, publicRegGroupFilter, publicRegStatusFilter, publicRegPaymentFilter]);
 
   const refreshData = async () => {
     try {
@@ -2689,6 +2736,9 @@ export default function AdminDashboard() {
                             Reg. #
                           </TableHead>
                           <TableHead className="font-semibold text-xs px-2 py-2">
+                            Reg Type
+                          </TableHead>
+                          <TableHead className="font-semibold text-xs px-2 py-2">
                             Participant
                           </TableHead>
                           <TableHead className="font-semibold text-xs px-2 py-2">
@@ -2744,6 +2794,11 @@ export default function AdminDashboard() {
                               <div className="font-mono text-xs text-gray-600 bg-gray-100 px-1 py-0.5 rounded">
                                 {registration.registrationNumber || "N/A"}
                               </div>
+                            </TableCell>
+                            <TableCell className="px-2 py-2">
+                              <Badge className="bg-green-100 text-green-800 text-xs whitespace-nowrap">
+                                Event
+                              </Badge>
                             </TableCell>
                             <TableCell className="px-2 py-2">
                               <div className="flex items-center gap-2">
@@ -3067,8 +3122,11 @@ export default function AdminDashboard() {
                                     ? `${registration.user.firstName} ${registration.user.lastName}`
                                     : "Unknown User"}
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                  #{registration.registrationNumber || "N/A"}
+                                <div className="text-xs text-gray-500 flex items-center gap-2">
+                                  <span>#{registration.registrationNumber || "N/A"}</span>
+                                  <Badge className="bg-green-100 text-green-800 text-xs">
+                                    Event
+                                  </Badge>
                                 </div>
                               </div>
                             </div>
@@ -4105,13 +4163,13 @@ export default function AdminDashboard() {
                       Public Event Registrations
                     </CardTitle>
                     <CardDescription className="text-sm">
-                      Manage public registrations for Ministry of Health event
+                      Manage public registrations for Ministry of Health event ({filteredPublicRegistrations.length} of {publicRegistrations.length})
                     </CardDescription>
                   </div>
                   <Button
                     onClick={() => {
-                      // Export public registrations
-                      const data = publicRegistrations.map((reg: any) => ({
+                      // Export filtered public registrations
+                      const data = filteredPublicRegistrations.map((reg: any) => ({
                         "Registration #": reg.registration_number,
                         "Full Name": reg.full_name,
                         Email: reg.email,
@@ -4165,6 +4223,60 @@ export default function AdminDashboard() {
                     Export to CSV
                   </Button>
                 </div>
+
+                {/* Filter Controls */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  <Input
+                    placeholder="Search by name, email, phone, institution..."
+                    value={publicRegSearchTerm}
+                    onChange={(e) => setPublicRegSearchTerm(e.target.value)}
+                    className="border-slate-200"
+                  />
+                  <Select value={publicRegGroupFilter} onValueChange={setPublicRegGroupFilter}>
+                    <SelectTrigger className="border-slate-200">
+                      <SelectValue placeholder="Filter by group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Groups</SelectItem>
+                      <SelectItem value="group1">Group 1 (25-27 March)</SelectItem>
+                      <SelectItem value="group2">Group 2 (30 March - 2 April)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={publicRegStatusFilter} onValueChange={setPublicRegStatusFilter}>
+                    <SelectTrigger className="border-slate-200">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={publicRegPaymentFilter} onValueChange={setPublicRegPaymentFilter}>
+                    <SelectTrigger className="border-slate-200">
+                      <SelectValue placeholder="Filter by payment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Payment Modes</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="mobileMoney">Mobile Money</SelectItem>
+                      <SelectItem value="bankTransfer">Bank Transfer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={() => {
+                      setPublicRegSearchTerm("");
+                      setPublicRegGroupFilter("all");
+                      setPublicRegStatusFilter("all");
+                      setPublicRegPaymentFilter("all");
+                    }}
+                    variant="outline"
+                    className="border-slate-200"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {publicRegistrations.length === 0 ? (
@@ -4177,11 +4289,22 @@ export default function AdminDashboard() {
                       Public registrations will appear here once users start registering
                     </p>
                   </div>
+                ) : filteredPublicRegistrations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <UserPlus className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      No Registrations Match Filters
+                    </h3>
+                    <p className="text-gray-600">
+                      Try adjusting your filters to see more results
+                    </p>
+                  </div>
                 ) : (
                   <div className="rounded-lg border border-slate-200 overflow-hidden">
                     <Table>
                       <TableHeader className="bg-slate-50">
                         <TableRow>
+                          <TableHead className="font-semibold">Type</TableHead>
                           <TableHead className="font-semibold">Registration #</TableHead>
                           <TableHead className="font-semibold">Participant</TableHead>
                           <TableHead className="font-semibold">Contact</TableHead>
@@ -4195,9 +4318,14 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {publicRegistrations.map((reg: any, index: number) => (
+                        {filteredPublicRegistrations.map((reg: any, index: number) => (
                           <TableRow key={reg.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
-                            <TableCell className="font-mono text-sm">{reg.registration_number}</TableCell>
+                            <TableCell>
+                              <Badge className="bg-blue-100 text-blue-800 whitespace-nowrap">
+                                Public
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-mono text-sm font-semibold">{reg.registration_number}</TableCell>
                             <TableCell>
                               <div>
                                 <div className="font-semibold text-gray-900">{reg.full_name}</div>

@@ -24,6 +24,40 @@ CREATE INDEX IF NOT EXISTS idx_public_registrations_email ON public_event_regist
 CREATE INDEX IF NOT EXISTS idx_public_registrations_status ON public_event_registrations(status);
 CREATE INDEX IF NOT EXISTS idx_public_registrations_created ON public_event_registrations(created_at DESC);
 
+-- Create function for generating public registration numbers
+CREATE OR REPLACE FUNCTION generate_public_registration_number()
+RETURNS TEXT AS $$
+DECLARE
+  next_num INTEGER;
+  reg_number TEXT;
+BEGIN
+  SELECT COALESCE(MAX(CAST(registration_number AS INTEGER)), 0) + 1
+  INTO next_num
+  FROM public_event_registrations
+  WHERE registration_number ~ '^[0-9]+$';
+  
+  reg_number := LPAD(next_num::TEXT, 4, '0');
+  RETURN reg_number;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to auto-generate registration numbers
+CREATE OR REPLACE FUNCTION set_public_registration_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.registration_number IS NULL OR NEW.registration_number = '' THEN
+    NEW.registration_number := generate_public_registration_number();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS public_registration_number_trigger ON public_event_registrations;
+CREATE TRIGGER public_registration_number_trigger
+BEFORE INSERT ON public_event_registrations
+FOR EACH ROW
+EXECUTE FUNCTION set_public_registration_number();
+
 -- Add RLS policies (optional - for security)
 ALTER TABLE public_event_registrations ENABLE ROW LEVEL SECURITY;
 
