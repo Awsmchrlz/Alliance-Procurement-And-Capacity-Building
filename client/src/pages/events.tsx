@@ -254,14 +254,14 @@ const EventsPage = () => {
                             <CardContent className="space-y-4">
                               <div className={`space-y-3 ${event.featured ? "grid md:grid-cols-2 gap-4" : ""}`}>
                                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                                  <Calendar className="w-4 h-4 text-[#1C356B]" />
+                                  <Calendar className="w-4 h-4 text-[#1C356B] flex-shrink-0" />
                                   <span>
                                     {format(new Date(event.startDate), "MMM d, yyyy")}
                                   </span>
                                 </div>
 
                                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                                  <Clock className="w-4 h-4 text-[#1C356B]" />
+                                  <Clock className="w-4 h-4 text-[#1C356B] flex-shrink-0" />
                                   <span>
                                     {format(new Date(event.startDate), "h:mm a")}
                                   </span>
@@ -269,7 +269,7 @@ const EventsPage = () => {
 
                                 {event.location && (
                                   <div className="flex items-center gap-3 text-sm text-gray-600">
-                                    <MapPin className="w-4 h-4 text-[#1C356B]" />
+                                    <MapPin className="w-4 h-4 text-[#1C356B] flex-shrink-0" />
                                     <span className="line-clamp-1">
                                       {event.location}
                                     </span>
@@ -281,22 +281,22 @@ const EventsPage = () => {
                                 {status === "upcoming" && !isRegistered ? (
                                   <button
                                     onClick={() => handleRegisterClick(event)}
-                                    className={`w-full font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
+                                    className={`w-full font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${
                                       event.featured 
-                                        ? "bg-[#FDC123] hover:bg-[#FDC123]/90 text-[#1C356B] py-4 sm:py-6 px-3 sm:px-6 text-sm sm:text-xl min-h-[56px] sm:min-h-[72px]"
-                                        : "bg-[#1C356B] hover:bg-[#2d4a7a] active:bg-[#1a2f5a] text-white py-4 sm:py-5 px-3 sm:px-4 text-sm sm:text-lg min-h-[56px] sm:min-h-[64px]"
+                                        ? "bg-[#1C356B] hover:bg-[#2d4a7a] text-white py-3 sm:py-4 px-4 sm:px-6 text-base sm:text-lg min-h-[48px] sm:min-h-[56px]"
+                                        : "bg-[#1C356B] hover:bg-[#2d4a7a] text-white py-3 px-4 text-sm sm:text-base min-h-[48px]"
                                     }`}
                                   >
-                                    <span className="whitespace-nowrap">{event.featured ? "REGISTER HERE" : "Register for Event"}</span>
-                                    <ArrowRight className={event.featured ? "w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" : "w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"} />
+                                    <span className="truncate">{event.featured ? "REGISTER HERE" : "Register for Event"}</span>
+                                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                   </button>
                                 ) : isRegistered ? (
-                                  <div className="w-full bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold py-5 px-4 rounded-xl flex items-center justify-center gap-3 min-h-[64px] text-lg">
-                                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                                  <div className="w-full bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 min-h-[48px] text-sm sm:text-base">
+                                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                     <span>Already Registered</span>
                                   </div>
                                 ) : (
-                                  <div className="w-full bg-gray-50 border-2 border-gray-200 text-gray-500 font-bold py-5 px-4 rounded-xl flex items-center justify-center min-h-[64px] text-lg">
+                                  <div className="w-full bg-gray-50 border-2 border-gray-200 text-gray-500 font-bold py-3 px-4 rounded-lg flex items-center justify-center min-h-[48px] text-sm sm:text-base">
                                     <span>
                                       {status === "ongoing" ? "Event in Progress" : "Event Completed"}
                                     </span>
