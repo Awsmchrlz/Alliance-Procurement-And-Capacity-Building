@@ -41,56 +41,66 @@ export function FeaturedEventSection() {
 
   return (
     <section id="events" className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-          {featuredEvent.imageUrl && (
-            <div className="h-48 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] overflow-hidden">
-              <img
-                src={featuredEvent.imageUrl}
-                alt={featuredEvent.title}
-                className="w-full h-full object-cover opacity-80"
-              />
-            </div>
-          )}
-
-          <div className="p-6">
-            <h3 className="font-bold text-2xl text-gray-900 mb-3 line-clamp-2">
-              {featuredEvent.title}
-            </h3>
-
-            {featuredEvent.description && (
-              <p className="text-sm text-gray-600 mb-5 line-clamp-3">
-                {featuredEvent.description}
-              </p>
-            )}
-
-            <div className="space-y-3 mb-6 text-sm text-gray-600">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#1C356B] flex-shrink-0" />
-                <span>{format(new Date(featuredEvent.startDate), "MMM d, yyyy")}</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#1C356B] flex-shrink-0" />
-                <span>{format(new Date(featuredEvent.startDate), "h:mm a")}</span>
-              </div>
-
-              {featuredEvent.location && (
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#1C356B] flex-shrink-0" />
-                  <span className="line-clamp-1">{featuredEvent.location}</span>
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={() => setSelectedEvent(featuredEvent)}
-              className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-base"
-            >
-              <span>Register Here</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+          {/* Featured landscape image */}
+          <div className="w-full h-64 sm:h-80 lg:h-96 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] overflow-hidden">
+            <img
+              src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1774472691/tt_esxpym.png"
+              alt={featuredEvent.title}
+              className="w-full h-full object-cover"
+            />
           </div>
+
+          {/* Event details section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 lg:p-8">
+            {/* Left side - Event info */}
+            <div>
+              <h3 className="font-bold text-2xl lg:text-3xl text-gray-900 mb-3 line-clamp-3">
+                {featuredEvent.title}
+              </h3>
+
+              {featuredEvent.description && (
+                <p className="text-sm lg:text-base text-gray-600 mb-6 line-clamp-4">
+                  {featuredEvent.description}
+                </p>
+              )}
+
+              <div className="space-y-3 mb-6 text-sm lg:text-base text-gray-600">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-[#1C356B] flex-shrink-0" />
+                  <span>{format(new Date(featuredEvent.startDate), "MMM d, yyyy")}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-[#1C356B] flex-shrink-0" />
+                  <span>{format(new Date(featuredEvent.startDate), "h:mm a")}</span>
+                </div>
+
+                {featuredEvent.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-[#1C356B] flex-shrink-0" />
+                    <span className="line-clamp-1">{featuredEvent.location}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right side - Register button */}
+            <div className="flex flex-col justify-center">
+              <button
+                onClick={() => setSelectedEvent(featuredEvent)}
+                className="w-full bg-[#1C356B] hover:bg-[#2d4a7a] text-white font-bold py-4 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 text-lg shadow-md hover:shadow-lg"
+              >
+                <span>Register Here</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+              <p className="text-center text-sm text-gray-500 mt-4">
+                Limited spots available - Register now!
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
 
