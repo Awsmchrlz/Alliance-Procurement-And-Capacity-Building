@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Calendar,
@@ -383,6 +384,9 @@ const EventsPage = () => {
       {/* Registration Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-0">
+          <div className="sr-only">
+            <DialogTitle>Event Registration</DialogTitle>
+          </div>
           {selectedEvent && (
             <PublicEventRegistration
               event={selectedEvent}

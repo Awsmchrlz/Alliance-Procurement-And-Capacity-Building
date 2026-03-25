@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { PublicEventRegistration } from "./public-event-registration";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { Event } from "@shared/schema";
@@ -107,6 +107,9 @@ export function FeaturedEventSection() {
       {/* Registration Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-0">
+          <div className="sr-only">
+            <DialogTitle>Event Registration</DialogTitle>
+          </div>
           {selectedEvent && (
             <PublicEventRegistration
               event={selectedEvent}
