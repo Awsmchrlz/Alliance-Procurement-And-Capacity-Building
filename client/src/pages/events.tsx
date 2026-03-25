@@ -20,7 +20,6 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle,
-  Crown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Event } from "@shared/schema";
@@ -84,19 +83,6 @@ const EventsPage = () => {
     if (now < startDate) return "upcoming";
     if (now >= startDate && now <= endDate) return "ongoing";
     return "past";
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "upcoming":
-        return <Badge className="bg-green-100 text-green-800">Upcoming</Badge>;
-      case "ongoing":
-        return <Badge className="bg-blue-100 text-blue-800">Ongoing</Badge>;
-      case "past":
-        return <Badge className="bg-gray-100 text-gray-800">Past</Badge>;
-      default:
-        return null;
-    }
   };
 
   if (isLoading) {

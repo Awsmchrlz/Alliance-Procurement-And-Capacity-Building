@@ -205,7 +205,6 @@ export function PublicEventRegistration({
         eventTitle: event.title,
       });
       setSuccess(true);
-      if (onSuccess) onSuccess();
     } catch (error: any) {
       toast({
         title: "Registration Failed",
@@ -352,7 +351,10 @@ export function PublicEventRegistration({
               Register Another Person
             </Button>
             <Button 
-              onClick={() => window.location.href = "/"} 
+              onClick={() => {
+                if (onSuccess) onSuccess();
+                window.location.href = "/";
+              }} 
               variant="outline"
               className="flex-1 border-gray-300 text-gray-700 py-3 text-base font-semibold rounded-lg hover:bg-gray-50 transition-colors"
             >
