@@ -89,7 +89,7 @@ export function PublicEventRegistration({
 
   const handleGroupSelect = (group: RegistrationGroup) => {
     setSelectedGroup(group);
-    setFormData((prev) => ({ ...prev, position: "", positionOther: "" }));
+    setFormData((prev) => ({ ...prev, position: "" }));
   };
 
   const handleSubmit = async () => {
@@ -140,12 +140,7 @@ export function PublicEventRegistration({
     }
 
     if (!positionTrimmed) {
-      toast({ title: "Please select your position", variant: "destructive" });
-      return;
-    }
-
-    if (positionTrimmed === "Other" && !positionOtherTrimmed) {
-      toast({ title: "Please specify your position", variant: "destructive" });
+      toast({ title: "Please enter your position", variant: "destructive" });
       return;
     }
 
@@ -181,7 +176,7 @@ export function PublicEventRegistration({
         email: emailTrimmed,
         phoneNumber: phoneNumberTrimmed,
         title: titleTrimmed === "Other" ? titleOtherTrimmed : titleTrimmed,
-        position: positionTrimmed === "Other" ? positionOtherTrimmed : positionTrimmed,
+        position: positionTrimmed,
         province: provinceTrimmed,
         district: districtTrimmed,
         paymentModes: [formData.paymentMethod],
@@ -335,11 +330,24 @@ export function PublicEventRegistration({
             </p>
           </div>
 
+          {/* WhatsApp Group Link */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+            <p className="text-green-900 text-center mb-4">
+              Join our WhatsApp group to stay updated with event information and announcements.
+            </p>
+            <Button 
+              onClick={() => window.open("https://chat.whatsapp.com/CW29irWXZGx2xxSJKo9yjQ?mode=gi_tto", "_blank")}
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-base font-semibold rounded-lg transition-colors"
+            >
+              Continue to WhatsApp Group
+            </Button>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Button 
               onClick={reset} 
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 text-base font-semibold rounded-lg transition-colors"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 text-base font-semibold rounded-lg transition-colors"
             >
               Register Another Person
             </Button>
@@ -525,34 +533,13 @@ export function PublicEventRegistration({
                 <Label className="text-sm font-semibold text-gray-900 mb-2 block">
                   Position *
                 </Label>
-                <Select value={formData.position} onValueChange={(value) => updateField("position", value)}>
-                  <SelectTrigger className="h-11 text-base">
-                    <SelectValue placeholder="Select your position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GROUP_TITLES[selectedGroup].map((position) => (
-                      <SelectItem key={position} value={position}>
-                        {position}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  value={formData.position}
+                  onChange={(e) => updateField("position", e.target.value)}
+                  placeholder="Enter your position"
+                  className="h-11 text-base"
+                />
               </div>
-
-              {formData.position === "Other" && (
-                <div>
-                  <Label className="text-sm font-semibold text-gray-900 mb-2 block">
-                    Specify your position *
-                  </Label>
-                  <Input
-                    value={formData.positionOther}
-                    onChange={(e) => updateField("positionOther", e.target.value)}
-                    placeholder="Enter your position"
-                    className="h-11 text-base"
-                  />
-                </div>
-              )}
 
               {/* Row 4: Province & District */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
