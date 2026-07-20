@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { PublicEventRegistration } from "@/components/public-event-registration";
+import { WomenLeadershipRegistration } from "@/components/women-leadership-registration";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -83,6 +84,12 @@ const EventsPage = () => {
     if (now < startDate) return "upcoming";
     if (now >= startDate && now <= endDate) return "ongoing";
     return "past";
+  };
+
+  // Check if this is the Women Leadership event
+  const isWomenLeadershipEvent = (event: Event) => {
+    return event.title.toLowerCase().includes("women in leadership") || 
+           event.title.toLowerCase().includes("women leadership");
   };
 
   if (isLoading) {
@@ -374,10 +381,19 @@ const EventsPage = () => {
             <DialogTitle>Event Registration</DialogTitle>
           </div>
           {selectedEvent && (
-            <PublicEventRegistration
-              event={selectedEvent}
-              onSuccess={() => setSelectedEvent(null)}
-            />
+            <>
+              {isWomenLeadershipEvent(selectedEvent) ? (
+                <WomenLeadershipRegistration
+                  event={selectedEvent}
+                  onSuccess={() => setSelectedEvent(null)}
+                />
+              ) : (
+                <PublicEventRegistration
+                  event={selectedEvent}
+                  onSuccess={() => setSelectedEvent(null)}
+                />
+              )}
+            </>
           )}
         </DialogContent>
       </Dialog>

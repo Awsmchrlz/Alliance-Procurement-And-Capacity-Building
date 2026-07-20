@@ -626,6 +626,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Women Leadership registration endpoint (no authentication required)
+  app.post("/api/events/women-leadership-register", async (req, res) => {
+    try {
+      const {
+        eventId,
+        delegateType,
+        fullName,
+        institution,
+        gender,
+        email,
+        phoneNumber,
+        title,
+        position,
+        province,
+        district,
+        country,
+        includeGala,
+        includeAccommodation,
+        includeBoatCruise,
+        paymentMethod,
+        totalPrice,
+        currency,
+      } = req.body;
+
+      // Validation
+      if (!eventId || !delegateType || !fullName || !email || !phoneNumber) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check if event exists
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      // Generate unique registration number
+      const registrationNumber = await storage.generateRegistrationNumber();
+
+      // Create a temporary user entry or use existing user
+      let userId = null;
+      const existingUser = await storage.getUserByEmailOrPhone(email);
+      
+      if (existingUser) {
+        userId = existingUser.id;
+      } else {
+        // For public registrations without user accounts, we'll use email as identifier
+        // Store in public_event_registrations table instead
+      }
+
+      // Store registration details
+      const registrationData = {
+        event_id: eventId,
+        registration_number: registrationNumber,
+        full_name: fullName.trim(),
+        institution: institution?.trim(),
+        gender,
+        email: email.trim().toLowerCase(),
+        phone_number: phoneNumber.trim(),
+        title: title?.trim(),
+        position: position?.trim(),
+        province: province?.trim(),
+        district: district?.trim(),
+        country: country?.trim(),
+        delegate_type: delegateType,
+        include_gala: includeGala || false,
+        include_accommodation: includeAccommodation || false,
+        include_boat_cruise: includeBoatCruise || false,
+        payment_method: paymentMethod,
+        total_price: totalPrice,
+        currency,
+        status: "pending",
+        payment_status: "pending",
+      };
+
+      const { data: registration, error } = await supabaseAdmin
+        .from("public_event_registrations")
+        .insert(registrationData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Database insert error:", error);
+        throw new Error("Failed to save registration");
+      }
+
+      console.log("✅ Women Leadership registration saved:", registration.id);
+
+      // Send confirmation email (fire-and-forget)
+      emailService
+        .sendEventRegistrationConfirmation({
+          firstName: fullName.split(" ")[0],
+          lastName: fullName.split(" ").slice(1).join(" ") || "",
+          email: email.trim(),
+          eventTitle: event.title,
+          eventDate: event.startDate,
+          registrationNumber,
+          organization: institution,
+          country: country || province || "Zambia",
+        })
+        .catch((emailError) => {
+          console.error("Failed to send confirmation email:", emailError.message);
+        });
+
+      res.status(201).json({
+        message: "Registration successful",
+        registrationNumber,
+        registration,
+      });
+    } catch (error: any) {
+      console.error("Women Leadership registration error:", error);
+      res.status(500).json({
+        message: "Registration failed",
+        details: error.message,
+      });
+    }
+  });
+
   // Get public registrations (admin only)
   app.get(
     "/api/admin/public-registrations",

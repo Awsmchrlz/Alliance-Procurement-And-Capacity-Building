@@ -6,6 +6,7 @@ export function HeroSection() {
   
   // Background images array - replace with your actual image URLs
   const backgroundImages = [
+      "https://res.cloudinary.com/duu5rnmeu/image/upload/v1784542196/Women-in-leadership_mqfj1y.jpg",
       "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858603/groupPhoto2_gkijtp.jpg",
       "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858602/groupPhoto7_bjfam9.jpg",
       "https://res.cloudinary.com/duu5rnmeu/image/upload/v1755858601/groupPhoto3_vvwwcr.jpg",
