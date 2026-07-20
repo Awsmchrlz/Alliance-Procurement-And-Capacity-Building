@@ -85,12 +85,6 @@ const EventsPage = () => {
     return "past";
   };
 
-  // Check if this is the Women Leadership event
-  const isWomenLeadershipEvent = (event: Event) => {
-    return event.title.toLowerCase().includes("women in leadership") || 
-           event.title.toLowerCase().includes("women leadership");
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -380,19 +374,10 @@ const EventsPage = () => {
             <DialogTitle>Event Registration</DialogTitle>
           </div>
           {selectedEvent && (
-            <>
-              {isWomenLeadershipEvent(selectedEvent) ? (
-                <WomenLeadershipRegistration
-                  event={selectedEvent}
-                  onSuccess={() => setSelectedEvent(null)}
-                />
-              ) : (
-                <PublicEventRegistration
-                  event={selectedEvent}
-                  onSuccess={() => setSelectedEvent(null)}
-                />
-              )}
-            </>
+            <PublicEventRegistration
+              event={selectedEvent}
+              onSuccess={() => setSelectedEvent(null)}
+            />
           )}
         </DialogContent>
       </Dialog>
