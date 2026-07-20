@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { PublicEventRegistration } from "@/components/public-event-registration";
-import { WomenLeadershipRegistration } from "@/components/women-leadership-registration";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
