@@ -678,6 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store registration details
       const registrationData = {
         event_id: eventId,
+        registration_group: "default",
         registration_number: registrationNumber,
         full_name: fullName.trim(),
         institution: institution?.trim(),
