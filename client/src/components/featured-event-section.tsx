@@ -22,22 +22,35 @@ export function FeaturedEventSection() {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Find the featured event
-  let featuredEvent = events.find((e: Event) => e.featured === true);
+  // Prioritize Women in Leadership event, then any featured event, then fallback
+  let featuredEvent = events.find((e: Event) => 
+    e.title.toLowerCase().includes("women in leadership") || 
+    e.title.toLowerCase().includes("women leadership")
+  );
 
-  // FALLBACK: If no featured event from API, create a mock event so the form always shows
+  if (!featuredEvent) {
+    featuredEvent = events.find((e: Event) => e.featured === true);
+  }
+
+  // FALLBACK: If no featured event from API, create a mock event
   if (!featuredEvent) {
     featuredEvent = {
-      id: "ministry-health-2026",
-      title: "2026 NATIONAL SEMINAR \"MINISTRY OF HEALTH\"",
-      description: "THEME: STRENGTHENING RECORD MANAGEMENT AND INTERNAL CONTROLS TO ENHANCE VALUE FOR MONEY IN THE PUBLIC SECTOR",
-      location: "Livingstone, Zambia",
-      startDate: new Date("2026-03-25"),
-      endDate: new Date("2026-04-02"),
+      id: "women-leadership-2026",
+      title: "Women in Leadership and Governance Seminar 2026",
+      description: "THEME: EMPOWERING WOMEN FOR SUSTAINABLE LEADERSHIP: DRIVING GOVERNANCE AND BUSINESS IN THE 21ST CENTURY",
+      location: "Avani Victoria Falls Resort, Livingstone, Zambia",
+      startDate: new Date("2026-10-28"),
+      endDate: new Date("2026-10-30"),
+      imageUrl: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1784542196/Women-in-leadership_mqfj1y.jpg",
       featured: true,
       createdAt: new Date(),
     } as Event;
   }
+
+  // Use Women Leadership image if it's that event, otherwise use event's image or default
+  const eventImage = featuredEvent.title.toLowerCase().includes("women")
+    ? "https://res.cloudinary.com/duu5rnmeu/image/upload/v1784542196/Women-in-leadership_mqfj1y.jpg"
+    : featuredEvent.imageUrl || "https://res.cloudinary.com/duu5rnmeu/image/upload/v1774472691/tt_esxpym.png";
 
   return (
     <section id="events" className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -46,7 +59,7 @@ export function FeaturedEventSection() {
           {/* Featured landscape image */}
           <div className="w-full h-64 sm:h-80 lg:h-96 bg-gradient-to-br from-[#1C356B] to-[#2d4a7a] overflow-hidden">
             <img
-              src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1774472691/tt_esxpym.png"
+              src={eventImage}
               alt={featuredEvent.title}
               className="w-full h-full object-cover"
             />
