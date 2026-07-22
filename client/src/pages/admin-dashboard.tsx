@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/lib/supabase";
 import {
@@ -97,6 +97,7 @@ import {
   Info,
   Edit,
   Trash2,
+  Upload,
 } from "lucide-react";
 
 // Type definitions
@@ -275,13 +276,17 @@ export default function AdminDashboard() {
   // Evidence viewer
   const [evidenceViewer, setEvidenceViewer] = useState<{
     open: boolean;
-    evidencePath: string;
+    evidencePath: string | null;
     fileName?: string;
     registrationId?: string;
   }>({
     open: false,
-    evidencePath: "",
+    evidencePath: null,
   });
+
+  // State for uploading public registration evidence
+  const [uploadingRegId, setUploadingRegId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Admin user registration functionality
   const [showUserRegistrationDialog, setShowUserRegistrationDialog] =
@@ -546,7 +551,8 @@ export default function AdminDashboard() {
   }, [searchTerm, users, events, registrations]);
 
   // Filter public registrations based on search and filters
-  const filteredPublicRegistrations = useMemo(() => {
+  const [filteredPublicRegistrations, setFilteredPublicRegistrations] = useState<any[]>([]);
+  useEffect(() => {
     let filtered = publicRegistrations;
 
     // Filter by search term
@@ -604,7 +610,7 @@ export default function AdminDashboard() {
       );
     }
 
-    return filtered;
+    setFilteredPublicRegistrations(filtered);
   }, [publicRegistrations, publicRegSearchTerm, publicRegGroupFilter, publicRegStatusFilter, publicRegPaymentFilter, publicRegTitleFilter, publicRegPositionFilter, publicRegGenderFilter]);
 
   const refreshData = async () => {
@@ -1231,7 +1237,65 @@ export default function AdminDashboard() {
       ),
     );
 
+    // Also update public registrations
+    setPublicRegistrations((prev) =>
+      prev.map((reg) =>
+        reg.id === evidenceViewer.registrationId
+          ? { ...reg, payment_evidence: newEvidencePath }
+          : reg,
+      ),
+    );
+    setFilteredPublicRegistrations((prev) =>
+      prev.map((reg) =>
+        reg.id === evidenceViewer.registrationId
+          ? { ...reg, payment_evidence: newEvidencePath }
+          : reg,
+      ),
+    );
+
     console.log("✅ Evidence updated in admin dashboard:", newEvidencePath);
+  };
+
+  const handlePublicEvidenceUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !uploadingRegId) return;
+    
+    try {
+      toast({ title: "Uploading evidence...", description: "Please wait while the file is uploaded." });
+      const { data: { session } } = await supabase.auth.getSession();
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await fetch('/api/events/upload-payment-evidence', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!uploadRes.ok) throw new Error('Upload failed');
+      const { url } = await uploadRes.json();
+      
+      const patchRes = await fetch(`/api/admin/public-registrations/${uploadingRegId}/evidence`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ payment_evidence: url })
+      });
+      
+      if (!patchRes.ok) throw new Error('Update failed');
+      
+      toast({ title: 'Evidence uploaded successfully' });
+      
+      setPublicRegistrations(prev => prev.map(r => r.id === uploadingRegId ? { ...r, payment_evidence: url } : r));
+      setFilteredPublicRegistrations(prev => prev.map(r => r.id === uploadingRegId ? { ...r, payment_evidence: url } : r));
+      
+    } catch(error) {
+      toast({ title: 'Failed to upload evidence', variant: 'destructive' });
+    } finally {
+      setUploadingRegId(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const exportToExcel = (type: string) => {
@@ -4376,9 +4440,16 @@ export default function AdminDashboard() {
                         {filteredPublicRegistrations.map((reg: any, index: number) => (
                           <TableRow key={reg.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}>
                             <TableCell>
-                              <Badge className="bg-blue-100 text-blue-800 whitespace-nowrap">
-                                Public
-                              </Badge>
+                              <div className="flex flex-col gap-1">
+                                <Badge className="bg-blue-100 text-blue-800 whitespace-nowrap w-fit">
+                                  Public
+                                </Badge>
+                                {reg.delegate_type && (
+                                  <span className="text-xs font-medium text-gray-500 capitalize">
+                                    {reg.delegate_type}
+                                  </span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="font-mono text-sm font-semibold">{reg.registration_number}</TableCell>
                             <TableCell>
@@ -4406,12 +4477,22 @@ export default function AdminDashboard() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {reg.payment_modes?.map((mode: string) => (
-                                  <Badge key={mode} variant="secondary" className="text-xs">
-                                    {mode === "cash" ? "Cash" : mode === "mobileMoney" ? "Mobile" : "Bank"}
-                                  </Badge>
-                                ))}
+                              <div className="flex flex-col gap-1">
+                                <div className="flex flex-wrap gap-1">
+                                  {reg.payment_modes?.map((mode: string) => (
+                                    <Badge key={mode} variant="secondary" className="text-xs">
+                                      {mode === "cash" ? "Cash" : mode === "mobileMoney" ? "Mobile" : "Bank"}
+                                    </Badge>
+                                  ))}
+                                </div>
+                                {reg.payment_evidence ? (
+                                  <span className="text-xs text-green-600 font-medium flex items-center">
+                                    <FileText className="w-3 h-3 mr-1" />
+                                    Evidence Attached
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-400 italic">No Evidence</span>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -4495,6 +4576,33 @@ export default function AdminDashboard() {
                                       Cancel
                                     </DropdownMenuItem>
                                   )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      if (reg.payment_evidence) {
+                                        // View Evidence (it's a public URL)
+                                        window.open(reg.payment_evidence, '_blank');
+                                      } else {
+                                        // Upload Evidence
+                                        setUploadingRegId(reg.id);
+                                        if (fileInputRef.current) {
+                                          fileInputRef.current.click();
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    {reg.payment_evidence ? (
+                                      <>
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        View Evidence
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Upload Evidence
+                                      </>
+                                    )}
+                                  </DropdownMenuItem>
                                   {isSuperAdmin && (
                                     <>
                                       <DropdownMenuSeparator />
@@ -5409,6 +5517,15 @@ export default function AdminDashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Hidden File Input for Public Registration Evidence */}
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          onChange={handlePublicEvidenceUpload}
+        />
 
         {/* Evidence Viewer */}
         <EvidenceViewer

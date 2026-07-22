@@ -550,14 +550,24 @@ export default function Dashboard() {
                                 registration,
                               );
 
-                              setEvidenceViewer({
-                                open: true,
-                                evidencePath: registration.paymentEvidence,
-                                fileName: registration.paymentEvidence
-                                  ?.split("/")
-                                  .pop(),
-                                registrationId: registration.id,
-                              });
+                              if (
+                                (registration as any).isPublicRegistration ||
+                                (registration.paymentEvidence &&
+                                  registration.paymentEvidence.startsWith(
+                                    "http",
+                                  ))
+                              ) {
+                                window.open(registration.paymentEvidence as string, "_blank");
+                              } else {
+                                setEvidenceViewer({
+                                  open: true,
+                                  evidencePath: registration.paymentEvidence,
+                                  fileName: registration.paymentEvidence
+                                    ?.split("/")
+                                    .pop(),
+                                  registrationId: registration.id,
+                                });
+                              }
                             }}
                           >
                             <Eye className="w-3 h-3 mr-1" />
