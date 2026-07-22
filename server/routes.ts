@@ -758,7 +758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currency,
         status: "pending",
         payment_status: "pending",
-        payment_evidence: paymentEvidenceUrl || null,
+        ...(paymentEvidenceUrl ? { payment_evidence: paymentEvidenceUrl } : {}),
       };
 
       const { data: registration, error } = await supabaseAdmin
