@@ -28,6 +28,8 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [successData, setSuccessData] = useState<any>(null);
+  const [paymentEvidenceFile, setPaymentEvidenceFile] = useState<File | null>(null);
+  const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
 
   // Price calculations
   const calculateLocalPrice = (includeGala: boolean, includeAccommodation: boolean, includeBoatCruise: boolean) => {
@@ -95,6 +97,25 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
     try {
       let payload: any = { eventId: event.id };
       let endpoint = "";
+
+      // Upload proof of payment if provided
+      let paymentEvidenceUrl: string | null = null;
+      if (paymentEvidenceFile) {
+        setIsUploadingEvidence(true);
+        const uploadForm = new FormData();
+        uploadForm.append("file", paymentEvidenceFile);
+        try {
+          const uploadRes = await fetch("/api/events/upload-payment-evidence", {
+            method: "POST",
+            body: uploadForm,
+          });
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok) throw new Error(uploadData.message || "Upload failed");
+          paymentEvidenceUrl = uploadData.url;
+        } finally {
+          setIsUploadingEvidence(false);
+        }
+      }
 
       if (registrationType === "local") {
         const totalPrice = calculateLocalPrice(
@@ -190,6 +211,7 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
     setRegistrationType(null);
     setFormData({});
     setSuccessData(null);
+    setPaymentEvidenceFile(null);
   };
 
   const handleRegistrationTypeSelect = (type: RegistrationType) => {
@@ -305,76 +327,76 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
           <h2 className="text-3xl font-bold text-white mb-2 text-center">Choose Your Registration Type</h2>
           <p className="text-blue-100 text-center mb-8">Select the option that best fits your needs</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-5">
             {/* Local Delegate */}
             <button
               onClick={() => handleRegistrationTypeSelect("local")}
-              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-5 md:p-6 rounded-2xl transition-all text-left group flex flex-col h-full"
+              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-4 md:p-5 rounded-xl transition-all text-left group flex flex-col h-full"
             >
-              <div className="flex justify-center md:justify-start mb-4">
-                <div className="p-3 bg-blue-500/20 rounded-2xl group-hover:bg-blue-500/30 transition-colors">
-                  <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors shrink-0">
+                  <Users className="w-6 h-6 text-white" />
                 </div>
+                <h3 className="text-base md:text-lg font-bold text-white leading-tight">Local Delegate</h3>
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2 text-center md:text-left">Local Delegate</h3>
-              <div className="space-y-1.5 text-blue-100 text-sm mb-4 flex-grow text-center md:text-left">
+              <div className="space-y-1 text-blue-100 text-xs mb-3 flex-grow">
                 <p>✓ All sessions & materials</p>
                 <p>✓ Meals & refreshments</p>
                 <p>✓ Certificate</p>
                 <p>✓ Optional add-ons</p>
               </div>
-              <div className="border-t border-white/20 pt-4 mt-auto text-center md:text-left w-full">
-                <p className="text-xs text-blue-200 mb-1">Starting from</p>
-                <p className="text-2xl md:text-3xl font-bold text-white">ZMW 8,500</p>
-                <p className="text-xs text-blue-200 mt-1">+ optional packages</p>
+              <div className="border-t border-white/20 pt-3 mt-auto w-full">
+                <p className="text-xs text-blue-200 mb-0.5">Starting from</p>
+                <p className="text-xl md:text-2xl font-bold text-white">ZMW 8,500</p>
+                <p className="text-xs text-blue-200">+ optional packages</p>
               </div>
             </button>
 
             {/* International Delegate */}
             <button
               onClick={() => handleRegistrationTypeSelect("international")}
-              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-5 md:p-6 rounded-2xl transition-all text-left group flex flex-col h-full"
+              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-4 md:p-5 rounded-xl transition-all text-left group flex flex-col h-full"
             >
-              <div className="flex justify-center md:justify-start mb-4">
-                <div className="p-3 bg-purple-500/20 rounded-2xl group-hover:bg-purple-500/30 transition-colors">
-                  <Globe className="w-8 h-8 md:w-10 md:h-10 text-white" />
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors shrink-0">
+                  <Globe className="w-6 h-6 text-white" />
                 </div>
+                <h3 className="text-base md:text-lg font-bold text-white leading-tight">International Delegate</h3>
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2 text-center md:text-left">International Delegate</h3>
-              <div className="space-y-1.5 text-blue-100 text-sm mb-4 flex-grow text-center md:text-left">
+              <div className="space-y-1 text-blue-100 text-xs mb-3 flex-grow">
                 <p>✓ All local benefits</p>
                 <p>✓ 4 nights accommodation</p>
                 <p>✓ Airport transfers</p>
                 <p>✓ Gala & boat cruise</p>
               </div>
-              <div className="border-t border-white/20 pt-4 mt-auto text-center md:text-left w-full">
-                <p className="text-xs text-blue-200 mb-1">Full package</p>
-                <p className="text-2xl md:text-3xl font-bold text-white">$1,750</p>
-                <p className="text-xs text-blue-200 mt-1">or $985 w/o accommodation</p>
+              <div className="border-t border-white/20 pt-3 mt-auto w-full">
+                <p className="text-xs text-blue-200 mb-0.5">Full package</p>
+                <p className="text-xl md:text-2xl font-bold text-white">$1,750</p>
+                <p className="text-xs text-blue-200">or $985 w/o accommodation</p>
               </div>
             </button>
 
             {/* Sponsorship */}
             <button
               onClick={() => handleRegistrationTypeSelect("sponsorship")}
-              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-5 md:p-6 rounded-2xl transition-all text-left group flex flex-col h-full"
+              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-4 md:p-5 rounded-xl transition-all text-left group flex flex-col h-full"
             >
-              <div className="flex justify-center md:justify-start mb-4">
-                <div className="p-3 bg-pink-500/20 rounded-2xl group-hover:bg-pink-500/30 transition-colors">
-                  <Award className="w-8 h-8 md:w-10 md:h-10 text-white" />
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-pink-500/20 rounded-xl group-hover:bg-pink-500/30 transition-colors shrink-0">
+                  <Award className="w-6 h-6 text-white" />
                 </div>
+                <h3 className="text-base md:text-lg font-bold text-white leading-tight">Sponsorship</h3>
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2 text-center md:text-left">Sponsorship</h3>
-              <div className="space-y-1.5 text-blue-100 text-sm mb-4 flex-grow text-center md:text-left">
+              <div className="space-y-1 text-blue-100 text-xs mb-3 flex-grow">
                 <p>✓ Brand visibility</p>
                 <p>✓ Speaking opportunities</p>
                 <p>✓ Exhibition booth</p>
                 <p>✓ Networking</p>
               </div>
-              <div className="border-t border-white/20 pt-4 mt-auto text-center md:text-left w-full">
-                <p className="text-xs text-blue-200 mb-1">Packages from</p>
-                <p className="text-2xl md:text-3xl font-bold text-white">ZMW 30K</p>
-                <p className="text-xs text-blue-200 mt-1">Bronze to Platinum</p>
+              <div className="border-t border-white/20 pt-3 mt-auto w-full">
+                <p className="text-xs text-blue-200 mb-0.5">Packages from</p>
+                <p className="text-xl md:text-2xl font-bold text-white">ZMW 30K</p>
+                <p className="text-xs text-blue-200">Bronze to Platinum</p>
               </div>
             </button>
           </div>
@@ -709,7 +731,7 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
 
           {/* Payment Method - for delegates only */}
           {(registrationType === "local" || registrationType === "international") && (
-            <div className="bg-gray-50 p-6 rounded-lg">
+            <div className="bg-gray-50 p-6 rounded-lg space-y-4">
               <Label className="text-sm font-semibold text-gray-900 mb-4 block">
                 Payment Method <span className="text-red-500">*</span>
               </Label>
@@ -730,6 +752,60 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
                   ))}
                 </div>
               </RadioGroup>
+
+              {/* Proof of Payment Upload */}
+              <div className="mt-5 pt-5 border-t border-gray-200">
+                <Label className="text-sm font-semibold text-gray-900 mb-1 block">
+                  Proof of Payment <span className="text-gray-400 font-normal">(Optional)</span>
+                </Label>
+                <p className="text-xs text-gray-500 mb-3">Attach a bank receipt, screenshot, or PDF. Max 5MB.</p>
+                <label
+                  htmlFor="payment-evidence"
+                  className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                    paymentEvidenceFile
+                      ? "border-green-400 bg-green-50"
+                      : "border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50"
+                  }`}
+                >
+                  {paymentEvidenceFile ? (
+                    <div className="flex flex-col items-center gap-1 px-3 text-center">
+                      <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <span className="text-sm font-medium text-green-700 truncate max-w-xs">{paymentEvidenceFile.name}</span>
+                      <span className="text-xs text-gray-500">{(paymentEvidenceFile.size / 1024).toFixed(0)} KB · Click to change</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                      <span className="text-sm text-gray-600">Click to upload or drag & drop</span>
+                      <span className="text-xs text-gray-400">JPEG, PNG, WebP, PDF</span>
+                    </div>
+                  )}
+                  <input
+                    id="payment-evidence"
+                    type="file"
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      if (f.size > 5 * 1024 * 1024) {
+                        toast({ title: "File too large", description: "Maximum file size is 5MB", variant: "destructive" });
+                        return;
+                      }
+                      setPaymentEvidenceFile(f);
+                    }}
+                  />
+                </label>
+                {paymentEvidenceFile && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentEvidenceFile(null)}
+                    className="mt-2 text-xs text-red-500 hover:text-red-700 underline"
+                  >
+                    Remove file
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -737,10 +813,10 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
               onClick={validateAndSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingEvidence}
               className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 text-base font-semibold"
             >
-              {isSubmitting ? "Submitting..." : registrationType === "sponsorship" ? "Submit Application" : "Submit Registration"}
+              {isUploadingEvidence ? "Uploading evidence..." : isSubmitting ? "Submitting..." : registrationType === "sponsorship" ? "Submit Application" : "Submit Registration"}
             </Button>
             <Button
               onClick={() => setStep("select")}

@@ -627,6 +627,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Women Leadership registration endpoint (no authentication required)
+  // Public proof-of-payment upload (no auth required – registration hasn't been created yet)
+  app.post("/api/events/upload-payment-evidence", async (req, res) => {
+    try {
+      const files = req.files;
+      if (!files || !files.file) {
+        return res.status(400).json({ message: "No file provided" });
+      }
+
+      const file = Array.isArray(files.file) ? files.file[0] : files.file;
+
+      // Validate file type
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+      if (!allowedTypes.includes(file.mimetype)) {
+        return res.status(400).json({ message: "Only images (JPEG, PNG, WebP) and PDF files are allowed" });
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ message: "File size must be under 5MB" });
+      }
+
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !serviceRoleKey) {
+        return res.status(500).json({ message: "Storage not configured" });
+      }
+
+      const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+      const timestamp = Date.now();
+      const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const filePath = `public-registrations/payment-evidence/${timestamp}_${safeFileName}`;
+
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from("payment-evidence")
+        .upload(filePath, file.data, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.mimetype,
+        });
+
+      if (uploadError) {
+        console.error("Evidence upload error:", uploadError);
+        return res.status(500).json({ message: "Failed to upload file", details: uploadError.message });
+      }
+
+      const { data: { publicUrl } } = supabaseAdmin.storage
+        .from("payment-evidence")
+        .getPublicUrl(filePath);
+
+      console.log("✅ Payment evidence uploaded:", filePath);
+      res.status(201).json({ url: publicUrl, filePath });
+    } catch (error: any) {
+      console.error("Payment evidence upload error:", error);
+      res.status(500).json({ message: "Upload failed", details: error.message });
+    }
+  });
+
   app.post("/api/events/women-leadership-register", async (req, res) => {
     try {
       const {
@@ -648,6 +705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethod,
         totalPrice,
         currency,
+        paymentEvidenceUrl,
       } = req.body;
 
       // Validation
@@ -678,7 +736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store registration details
       const registrationData = {
         event_id: eventId,
-        registration_group: "default",
+        registration_group: "group1",
         registration_number: registrationNumber,
         full_name: fullName.trim(),
         institution: institution?.trim(),
@@ -700,6 +758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currency,
         status: "pending",
         payment_status: "pending",
+        payment_evidence: paymentEvidenceUrl || null,
       };
 
       const { data: registration, error } = await supabaseAdmin
