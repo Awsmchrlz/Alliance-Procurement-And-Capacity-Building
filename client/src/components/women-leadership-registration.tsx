@@ -305,27 +305,27 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
           <h2 className="text-3xl font-bold text-white mb-2 text-center">Choose Your Registration Type</h2>
           <p className="text-blue-100 text-center mb-8">Select the option that best fits your needs</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {/* Local Delegate */}
             <button
               onClick={() => handleRegistrationTypeSelect("local")}
-              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-8 rounded-2xl transition-all text-left group"
+              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-5 md:p-6 rounded-2xl transition-all text-left group flex flex-col h-full"
             >
-              <div className="flex justify-center mb-6">
-                <div className="p-4 bg-blue-500/20 rounded-2xl group-hover:bg-blue-500/30 transition-colors">
-                  <Users className="w-12 h-12 text-white" />
+              <div className="flex justify-center md:justify-start mb-4">
+                <div className="p-3 bg-blue-500/20 rounded-2xl group-hover:bg-blue-500/30 transition-colors">
+                  <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3 text-center">Local Delegate</h3>
-              <div className="space-y-2 text-blue-100 text-sm mb-6">
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-2 text-center md:text-left">Local Delegate</h3>
+              <div className="space-y-1.5 text-blue-100 text-sm mb-4 flex-grow text-center md:text-left">
                 <p>✓ All sessions & materials</p>
                 <p>✓ Meals & refreshments</p>
                 <p>✓ Certificate</p>
                 <p>✓ Optional add-ons</p>
               </div>
-              <div className="border-t border-white/20 pt-4">
-                <p className="text-xs text-blue-200 mb-2">Starting from</p>
-                <p className="text-3xl font-bold text-white">ZMW 8,500</p>
+              <div className="border-t border-white/20 pt-4 mt-auto text-center md:text-left w-full">
+                <p className="text-xs text-blue-200 mb-1">Starting from</p>
+                <p className="text-2xl md:text-3xl font-bold text-white">ZMW 8,500</p>
                 <p className="text-xs text-blue-200 mt-1">+ optional packages</p>
               </div>
             </button>
@@ -333,47 +333,47 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
             {/* International Delegate */}
             <button
               onClick={() => handleRegistrationTypeSelect("international")}
-              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-8 rounded-2xl transition-all text-left group"
+              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-5 md:p-6 rounded-2xl transition-all text-left group flex flex-col h-full"
             >
-              <div className="flex justify-center mb-6">
-                <div className="p-4 bg-purple-500/20 rounded-2xl group-hover:bg-purple-500/30 transition-colors">
-                  <Globe className="w-12 h-12 text-white" />
+              <div className="flex justify-center md:justify-start mb-4">
+                <div className="p-3 bg-purple-500/20 rounded-2xl group-hover:bg-purple-500/30 transition-colors">
+                  <Globe className="w-8 h-8 md:w-10 md:h-10 text-white" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3 text-center">International Delegate</h3>
-              <div className="space-y-2 text-blue-100 text-sm mb-6">
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-2 text-center md:text-left">International Delegate</h3>
+              <div className="space-y-1.5 text-blue-100 text-sm mb-4 flex-grow text-center md:text-left">
                 <p>✓ All local benefits</p>
                 <p>✓ 4 nights accommodation</p>
                 <p>✓ Airport transfers</p>
                 <p>✓ Gala & boat cruise</p>
               </div>
-              <div className="border-t border-white/20 pt-4">
-                <p className="text-xs text-blue-200 mb-2">Full package</p>
-                <p className="text-3xl font-bold text-white">$1,750</p>
-                <p className="text-xs text-blue-200 mt-1">or $985 without accommodation</p>
+              <div className="border-t border-white/20 pt-4 mt-auto text-center md:text-left w-full">
+                <p className="text-xs text-blue-200 mb-1">Full package</p>
+                <p className="text-2xl md:text-3xl font-bold text-white">$1,750</p>
+                <p className="text-xs text-blue-200 mt-1">or $985 w/o accommodation</p>
               </div>
             </button>
 
             {/* Sponsorship */}
             <button
               onClick={() => handleRegistrationTypeSelect("sponsorship")}
-              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-8 rounded-2xl transition-all text-left group"
+              className="bg-white/10 backdrop-blur-md border-2 border-white/20 hover:border-white/60 hover:bg-white/20 p-5 md:p-6 rounded-2xl transition-all text-left group flex flex-col h-full"
             >
-              <div className="flex justify-center mb-6">
-                <div className="p-4 bg-pink-500/20 rounded-2xl group-hover:bg-pink-500/30 transition-colors">
-                  <Award className="w-12 h-12 text-white" />
+              <div className="flex justify-center md:justify-start mb-4">
+                <div className="p-3 bg-pink-500/20 rounded-2xl group-hover:bg-pink-500/30 transition-colors">
+                  <Award className="w-8 h-8 md:w-10 md:h-10 text-white" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3 text-center">Sponsorship</h3>
-              <div className="space-y-2 text-blue-100 text-sm mb-6">
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-2 text-center md:text-left">Sponsorship</h3>
+              <div className="space-y-1.5 text-blue-100 text-sm mb-4 flex-grow text-center md:text-left">
                 <p>✓ Brand visibility</p>
                 <p>✓ Speaking opportunities</p>
                 <p>✓ Exhibition booth</p>
                 <p>✓ Networking</p>
               </div>
-              <div className="border-t border-white/20 pt-4">
-                <p className="text-xs text-blue-200 mb-2">Packages from</p>
-                <p className="text-3xl font-bold text-white">ZMW 30K</p>
+              <div className="border-t border-white/20 pt-4 mt-auto text-center md:text-left w-full">
+                <p className="text-xs text-blue-200 mb-1">Packages from</p>
+                <p className="text-2xl md:text-3xl font-bold text-white">ZMW 30K</p>
                 <p className="text-xs text-blue-200 mt-1">Bronze to Platinum</p>
               </div>
             </button>
