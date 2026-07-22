@@ -139,6 +139,7 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
           includeAccommodation: formData.includeAccommodation ?? false,
           includeBoatCruise: formData.includeBoatCruise ?? false,
           paymentMethod: formData.paymentMethod,
+          paymentEvidenceUrl,
           totalPrice,
           currency: "ZMW",
         };
@@ -158,6 +159,7 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
           country: formData.country.trim(),
           includeAccommodation: formData.includeAccommodation ?? true,
           paymentMethod: formData.paymentMethod,
+          paymentEvidenceUrl,
           totalPrice,
           currency: "USD",
         };
