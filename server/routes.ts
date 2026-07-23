@@ -719,9 +719,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Event not found" });
       }
 
-      // Generate unique registration number
-      const registrationNumber = await storage.generateRegistrationNumber();
-
       // Create a temporary user entry or use existing user
       let userId = null;
       const existingUser = await storage.getUserByEmailOrPhone(email);
@@ -737,7 +734,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const registrationData = {
         event_id: eventId,
         registration_group: "group1",
-        registration_number: registrationNumber,
         full_name: fullName.trim(),
         institution: institution?.trim(),
         gender,
@@ -773,6 +769,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log("✅ Women Leadership registration saved:", registration.id);
+
+      const registrationNumber = registration.registration_number;
 
       // Send confirmation email (fire-and-forget)
       emailService
