@@ -1789,39 +1789,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const registrations = await storage.getEventRegistrationsByUser(userId);
 
-        // Fetch public registrations for the user by email
-        const userEmail = req.supabaseUser.email;
+        // Fetch the user's details to ensure we have the correct email
+        const userDetails = await storage.getUser(userId);
+        const userEmail = userDetails?.email || req.supabaseUser.email;
         let publicRegistrations: any[] = [];
+        
         if (userEmail) {
           const { data, error } = await supabaseAdmin
             .from("public_event_registrations")
             .select("*")
-            .eq("email", userEmail);
+            .ilike("email", userEmail);
             
           if (!error && data) {
-            publicRegistrations = data.map(pr => ({
-              id: pr.id,
-              registrationNumber: pr.registration_number,
-              userId: userId,
-              eventId: pr.event_id,
-              paymentStatus: pr.payment_status || "pending",
-              registeredAt: pr.created_at,
-              country: pr.country,
-              organization: pr.institution,
-              position: pr.position,
-              notes: null,
-              hasPaid: pr.payment_status === "paid",
-              paymentEvidence: pr.payment_evidence,
-              paymentMethod: pr.payment_modes ? pr.payment_modes[0] : pr.payment_method,
-              currency: pr.currency,
-              pricePaid: pr.total_price,
-              delegateType: pr.delegate_type,
-              dinnerGalaAttendance: pr.include_gala,
-              accommodationPackage: pr.include_accommodation,
-              boatCruisePackage: pr.include_boat_cruise,
-              isPublicRegistration: true,
-              status: pr.status
-            }));
+            publicRegistrations = data.map(pr => {
+              const paymentStatusStr = (pr.payment_status || "pending").toLowerCase();
+              return {
+                id: pr.id,
+                registrationNumber: pr.registration_number,
+                userId: userId,
+                eventId: pr.event_id,
+                paymentStatus: paymentStatusStr,
+                registeredAt: pr.created_at,
+                country: pr.country,
+                organization: pr.institution,
+                position: pr.position,
+                notes: null,
+                hasPaid: paymentStatusStr === "paid",
+                paymentEvidence: pr.payment_evidence,
+                paymentMethod: pr.payment_modes ? pr.payment_modes[0] : pr.payment_method,
+                currency: pr.currency,
+                pricePaid: pr.total_price,
+                delegateType: pr.delegate_type,
+                dinnerGalaAttendance: pr.include_gala,
+                accommodationPackage: pr.include_accommodation,
+                boatCruisePackage: pr.include_boat_cruise,
+                isPublicRegistration: true,
+                status: (pr.status || "pending").toLowerCase()
+              };
+            });
           }
         }
 
@@ -1833,12 +1838,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           registrationIds: allRegistrations.map((r) => r.id),
         });
 
-        const registrationsWithEvents = await Promise.all(
+        const registrationsWithEventsUnfiltered = await Promise.all(
           allRegistrations.map(async (registration) => {
             const event = await storage.getEvent(registration.eventId);
-            return { ...registration, event };
-          }),
+            return event ? { ...registration, event } : null;
+          })
         );
+        
+        const registrationsWithEvents = registrationsWithEventsUnfiltered.filter(Boolean);
 
         res.json(registrationsWithEvents);
       } catch (error) {
