@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="md removal" />
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="clean up">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -55,7 +57,8 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/charleschisale/Desktop/Repositories/Personal/Alliance-Procurement-And-Capacity-Buildinga&quot;
   }
 }</component>
   <component name="TaskManager">
@@ -65,78 +68,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1757290716460</updated>
-    </task>
-    <task id="LOCAL-00025" summary="SEO and few other changes">
-      <option name="closed" value="true" />
-      <created>1757946410774</created>
-      <option name="number" value="00025" />
-      <option name="presentableId" value="LOCAL-00025" />
-      <option name="project" value="LOCAL" />
-      <updated>1757946410774</updated>
-    </task>
-    <task id="LOCAL-00026" summary="SEO and few other changes">
-      <option name="closed" value="true" />
-      <created>1757947022732</created>
-      <option name="number" value="00026" />
-      <option name="presentableId" value="LOCAL-00026" />
-      <option name="project" value="LOCAL" />
-      <updated>1757947022733</updated>
-    </task>
-    <task id="LOCAL-00027" summary="SEO and few other changes">
-      <option name="closed" value="true" />
-      <created>1757947546715</created>
-      <option name="number" value="00027" />
-      <option name="presentableId" value="LOCAL-00027" />
-      <option name="project" value="LOCAL" />
-      <updated>1757947546715</updated>
-    </task>
-    <task id="LOCAL-00028" summary="Group payments and unique identifier as email and phone">
-      <option name="closed" value="true" />
-      <created>1758115402748</created>
-      <option name="number" value="00028" />
-      <option name="presentableId" value="LOCAL-00028" />
-      <option name="project" value="LOCAL" />
-      <updated>1758115402748</updated>
-    </task>
-    <task id="LOCAL-00029" summary="Group payments and unique identifier as email and phone">
-      <option name="closed" value="true" />
-      <created>1758123179125</created>
-      <option name="number" value="00029" />
-      <option name="presentableId" value="LOCAL-00029" />
-      <option name="project" value="LOCAL" />
-      <updated>1758123179125</updated>
-    </task>
-    <task id="LOCAL-00030" summary="Group payments and unique identifier as email and phone">
-      <option name="closed" value="true" />
-      <created>1758123521349</created>
-      <option name="number" value="00030" />
-      <option name="presentableId" value="LOCAL-00030" />
-      <option name="project" value="LOCAL" />
-      <updated>1758123521350</updated>
-    </task>
-    <task id="LOCAL-00031" summary="Group payments and unique identifier as email and phone">
-      <option name="closed" value="true" />
-      <created>1758123818765</created>
-      <option name="number" value="00031" />
-      <option name="presentableId" value="LOCAL-00031" />
-      <option name="project" value="LOCAL" />
-      <updated>1758123818765</updated>
-    </task>
-    <task id="LOCAL-00032" summary="Group payments and unique identifier as email and phone">
-      <option name="closed" value="true" />
-      <created>1758124786388</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1758124786388</updated>
-    </task>
-    <task id="LOCAL-00033" summary="Group payments and unique identifier as email and phone">
-      <option name="closed" value="true" />
-      <created>1758368452053</created>
-      <option name="number" value="00033" />
-      <option name="presentableId" value="LOCAL-00033" />
-      <option name="project" value="LOCAL" />
-      <updated>1758368452053</updated>
     </task>
     <task id="LOCAL-00034" summary="Sponsorship and registration dialogs and flow">
       <option name="closed" value="true" />
@@ -458,7 +389,79 @@
       <option name="project" value="LOCAL" />
       <updated>1773914537158</updated>
     </task>
-    <option name="localTasksCounter" value="74" />
+    <task id="LOCAL-00074" summary="md removal">
+      <option name="closed" value="true" />
+      <created>1784676206623</created>
+      <option name="number" value="00074" />
+      <option name="presentableId" value="LOCAL-00074" />
+      <option name="project" value="LOCAL" />
+      <updated>1784676206624</updated>
+    </task>
+    <task id="LOCAL-00075" summary="md removal">
+      <option name="closed" value="true" />
+      <created>1784676698351</created>
+      <option name="number" value="00075" />
+      <option name="presentableId" value="LOCAL-00075" />
+      <option name="project" value="LOCAL" />
+      <updated>1784676698352</updated>
+    </task>
+    <task id="LOCAL-00076" summary="md removal">
+      <option name="closed" value="true" />
+      <created>1784679557486</created>
+      <option name="number" value="00076" />
+      <option name="presentableId" value="LOCAL-00076" />
+      <option name="project" value="LOCAL" />
+      <updated>1784679557486</updated>
+    </task>
+    <task id="LOCAL-00077" summary="md removal">
+      <option name="closed" value="true" />
+      <created>1784680798447</created>
+      <option name="number" value="00077" />
+      <option name="presentableId" value="LOCAL-00077" />
+      <option name="project" value="LOCAL" />
+      <updated>1784680798447</updated>
+    </task>
+    <task id="LOCAL-00078" summary="md removal">
+      <option name="closed" value="true" />
+      <created>1784680817575</created>
+      <option name="number" value="00078" />
+      <option name="presentableId" value="LOCAL-00078" />
+      <option name="project" value="LOCAL" />
+      <updated>1784680817575</updated>
+    </task>
+    <task id="LOCAL-00079" summary="md removal">
+      <option name="closed" value="true" />
+      <created>1784687069375</created>
+      <option name="number" value="00079" />
+      <option name="presentableId" value="LOCAL-00079" />
+      <option name="project" value="LOCAL" />
+      <updated>1784687069375</updated>
+    </task>
+    <task id="LOCAL-00080" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1784688017284</created>
+      <option name="number" value="00080" />
+      <option name="presentableId" value="LOCAL-00080" />
+      <option name="project" value="LOCAL" />
+      <updated>1784688017284</updated>
+    </task>
+    <task id="LOCAL-00081" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1784793110709</created>
+      <option name="number" value="00081" />
+      <option name="presentableId" value="LOCAL-00081" />
+      <option name="project" value="LOCAL" />
+      <updated>1784793110709</updated>
+    </task>
+    <task id="LOCAL-00082" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1784793234881</created>
+      <option name="number" value="00082" />
+      <option name="presentableId" value="LOCAL-00082" />
+      <option name="project" value="LOCAL" />
+      <updated>1784793234883</updated>
+    </task>
+    <option name="localTasksCounter" value="83" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -485,7 +488,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="clean up" />
     <MESSAGE value="please work" />
     <MESSAGE value="going live" />
     <MESSAGE value="post prod fixes" />
@@ -503,6 +505,7 @@
     <MESSAGE value="test fix" />
     <MESSAGE value="dockerhub fixes" />
     <MESSAGE value="md removal" />
-    <option name="LAST_COMMIT_MESSAGE" value="md removal" />
+    <MESSAGE value="clean up" />
+    <option name="LAST_COMMIT_MESSAGE" value="clean up" />
   </component>
 </project>

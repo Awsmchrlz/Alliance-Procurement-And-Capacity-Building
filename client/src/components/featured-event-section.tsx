@@ -41,7 +41,7 @@ export function FeaturedEventSection() {
       location: "Avani Victoria Falls Resort, Livingstone, Zambia",
       startDate: new Date("2026-10-28"),
       endDate: new Date("2026-10-30"),
-      imageUrl: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1784542196/Women-in-leadership_mqfj1y.jpg",
+      imageUrl: "https://res.cloudinary.com/duu5rnmeu/image/upload/v1785074258/compressed_under200kb_xagw3m.jpg",
       featured: true,
       createdAt: new Date(),
     } as Event;
@@ -49,7 +49,7 @@ export function FeaturedEventSection() {
 
   // Use Women Leadership image if it's that event, otherwise use event's image or default
   const eventImage = featuredEvent.title.toLowerCase().includes("women")
-    ? "https://res.cloudinary.com/duu5rnmeu/image/upload/v1784542196/Women-in-leadership_mqfj1y.jpg"
+    ? "https://res.cloudinary.com/duu5rnmeu/image/upload/v1785074258/compressed_under200kb_xagw3m.jpg"
     : featuredEvent.imageUrl || "https://res.cloudinary.com/duu5rnmeu/image/upload/v1774472691/tt_esxpym.png";
 
   return (

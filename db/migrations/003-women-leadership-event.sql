@@ -41,7 +41,7 @@ INSERT INTO events (
   10500.00,
   500,
   0,
-  'https://res.cloudinary.com/duu5rnmeu/image/upload/v1784542196/Women-in-leadership_mqfj1y.jpg',
+  'https://res.cloudinary.com/duu5rnmeu/image/upload/v1785074258/compressed_under200kb_xagw3m.jpg',
   ARRAY['leadership', 'governance', 'women empowerment', 'business', 'conference', 'capacity building'],
   true,
   NOW()
