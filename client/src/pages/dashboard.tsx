@@ -534,22 +534,6 @@ export default function Dashboard() {
                             variant="outline"
                             className="border-blue-200 text-blue-600 hover:bg-blue-50"
                             onClick={() => {
-                              console.log(
-                                "🔍 Dashboard Debug - Opening evidence viewer:",
-                              );
-                              console.log(
-                                "  - registration.paymentEvidence:",
-                                registration.paymentEvidence,
-                              );
-                              console.log(
-                                "  - registration.id:",
-                                registration.id,
-                              );
-                              console.log(
-                                "  - registration object:",
-                                registration,
-                              );
-
                               if (
                                 (registration as any).isPublicRegistration ||
                                 (registration.paymentEvidence &&

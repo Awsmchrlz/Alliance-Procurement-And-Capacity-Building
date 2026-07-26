@@ -98,18 +98,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
-    console.log("🚀 Starting user registration process...");
-    console.log("Request body:", JSON.stringify(req.body, null, 2));
-
     try {
       // Validate request body against schema
       const userData = insertUserSchema.parse(req.body);
-      console.log("✅ Request data validated successfully");
 
       // Check if user already exists by phone number (unique identifier)
-      console.log(
-        `🔍 Checking if user with phone ${userData.phoneNumber} already exists...`,
-      );
       const { emailExists, phoneExists } = await storage.checkUserExists(
         userData.email,
         userData.phoneNumber,
@@ -126,39 +119,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Note: Multiple users can share the same email (company emails)
-      if (emailExists) {
-        console.log(
-          `ℹ️ Email ${userData.email} is already in use (shared company email allowed)`,
-        );
-      } else {
-        console.log(`✅ Email ${userData.email} is available`);
       }
-      console.log(
-        `✅ Phone number ${userData.phoneNumber} is available for registration`,
-      );
 
       // Check if this is the first user (make them super_admin)
-      console.log("🔍 Checking if this is the first user...");
-      const allUsers = await storage.getAllUsers();
       const isFirstUser = allUsers.length === 0;
       const finalRole = isFirstUser
         ? "super_admin"
         : userData.role || "ordinary_user";
-      console.log(
-        `📝 User will be assigned role: ${finalRole} (first user: ${isFirstUser})`,
-      );
 
       // Create user in Supabase with role in user_metadata
-      console.log("🔨 Creating user account...");
       const user = await storage.createUser({
         ...userData,
         role: finalRole,
       });
-      console.log(`✅ User account created successfully: ${user.id}`);
 
       // Send welcome email to new user (fire-and-forget)
-      console.log("📧 Sending welcome email...");
       emailService
         .sendUserWelcomeEmail({
           firstName: user.firstName,

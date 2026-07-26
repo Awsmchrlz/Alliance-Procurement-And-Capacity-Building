@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -226,7 +227,11 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
   // Render Success Screen
   if (step === "success") {
     return (
-      <div className="w-full bg-gradient-to-br from-green-50 to-emerald-50 py-16 px-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="w-full bg-gradient-to-br from-green-50 to-emerald-50 py-16 px-4"
+      >
         <div className="max-w-2xl mx-auto text-center">
           <div className="flex justify-center mb-6">
             <div className="relative">
@@ -300,14 +305,18 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
             </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // Render Selection Screen
   if (step === "select") {
     return (
-      <div className="w-full bg-gradient-to-br from-[#1C356B] via-purple-900 to-pink-900 py-12 px-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="w-full bg-gradient-to-br from-[#1C356B] via-purple-900 to-pink-900 py-12 px-4"
+      >
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
@@ -403,7 +412,7 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -418,7 +427,11 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
   );
 
   return (
-    <div className="w-full bg-white py-8 px-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      className="w-full bg-white py-8 px-4"
+    >
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
@@ -831,6 +844,6 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
