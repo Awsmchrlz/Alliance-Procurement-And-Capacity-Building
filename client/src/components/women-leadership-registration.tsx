@@ -180,6 +180,8 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
           currency: "ZMW",
           specialRequirements: formData.specialRequirements?.trim() || null,
           marketingMaterials: formData.marketingMaterials?.trim() || null,
+          paymentMethod: formData.paymentMethod,
+          paymentEvidenceUrl,
         };
         endpoint = "/api/sponsorships/register";
       }
@@ -744,9 +746,8 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
             </>
           )}
 
-          {/* Payment Method - for delegates only */}
-          {(registrationType === "local" || registrationType === "international") && (
-            <div className="bg-gray-50 p-6 rounded-lg space-y-4">
+          {/* Payment Method & Proof of Payment - for all types */}
+          <div className="bg-gray-50 p-6 rounded-lg space-y-4">
               <Label className="text-sm font-semibold text-gray-900 mb-4 block">
                 Payment Method <span className="text-red-500">*</span>
               </Label>
