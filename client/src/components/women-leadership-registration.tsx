@@ -823,8 +823,6 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
                 )}
               </div>
             </div>
-          )}
-
           {/* Submit Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
