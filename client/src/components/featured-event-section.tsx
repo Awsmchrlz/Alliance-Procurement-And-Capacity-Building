@@ -36,7 +36,7 @@ export function FeaturedEventSection() {
   if (!featuredEvent) {
     featuredEvent = {
       id: "women-leadership-2026",
-      title: "Women in Leadership and Governance Seminar 2026",
+      title: "Women in Leadership, Governance & Business Seminar 2026",
       description: "THEME: EMPOWERING WOMEN FOR SUSTAINABLE LEADERSHIP: DRIVING GOVERNANCE AND BUSINESS IN THE 21ST CENTURY",
       location: "Avani Victoria Falls Resort, Livingstone, Zambia",
       startDate: new Date("2026-10-28"),

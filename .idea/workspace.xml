@@ -67,14 +67,6 @@
       <option name="presentableId" value="Default" />
       <updated>1757290716460</updated>
     </task>
-    <task id="LOCAL-00038" summary="testimonial change, modal resizing project clean up">
-      <option name="closed" value="true" />
-      <created>1758830914092</created>
-      <option name="number" value="00038" />
-      <option name="presentableId" value="LOCAL-00038" />
-      <option name="project" value="LOCAL" />
-      <updated>1758830914092</updated>
-    </task>
     <task id="LOCAL-00039" summary="project clean up, live fixes">
       <option name="closed" value="true" />
       <created>1758833674112</created>
@@ -459,7 +451,15 @@
       <option name="project" value="LOCAL" />
       <updated>1785078674494</updated>
     </task>
-    <option name="localTasksCounter" value="87" />
+    <task id="LOCAL-00087" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785328495591</created>
+      <option name="number" value="00087" />
+      <option name="presentableId" value="LOCAL-00087" />
+      <option name="project" value="LOCAL" />
+      <updated>1785328495591</updated>
+    </task>
+    <option name="localTasksCounter" value="88" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

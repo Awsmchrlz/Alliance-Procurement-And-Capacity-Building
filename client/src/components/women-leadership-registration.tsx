@@ -322,7 +322,7 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-              Women in Leadership and Governance Seminar
+              Women in Leadership, Governance & Business Seminar
             </h1>
             <p className="text-xl text-blue-100 mb-4">Empowering Women for Sustainable Leadership</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-blue-100 text-sm">
