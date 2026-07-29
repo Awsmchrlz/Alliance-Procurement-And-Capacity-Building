@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="clean up">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="clean up" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -68,38 +66,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1757290716460</updated>
-    </task>
-    <task id="LOCAL-00034" summary="Sponsorship and registration dialogs and flow">
-      <option name="closed" value="true" />
-      <created>1758435314370</created>
-      <option name="number" value="00034" />
-      <option name="presentableId" value="LOCAL-00034" />
-      <option name="project" value="LOCAL" />
-      <updated>1758435314370</updated>
-    </task>
-    <task id="LOCAL-00035" summary="Sponsorship and registration dialogs and flow">
-      <option name="closed" value="true" />
-      <created>1758435766922</created>
-      <option name="number" value="00035" />
-      <option name="presentableId" value="LOCAL-00035" />
-      <option name="project" value="LOCAL" />
-      <updated>1758435766922</updated>
-    </task>
-    <task id="LOCAL-00036" summary="testimonial change, modal resizing project clean up">
-      <option name="closed" value="true" />
-      <created>1758720952526</created>
-      <option name="number" value="00036" />
-      <option name="presentableId" value="LOCAL-00036" />
-      <option name="project" value="LOCAL" />
-      <updated>1758720952526</updated>
-    </task>
-    <task id="LOCAL-00037" summary="testimonial change, modal resizing project clean up">
-      <option name="closed" value="true" />
-      <created>1758721469952</created>
-      <option name="number" value="00037" />
-      <option name="presentableId" value="LOCAL-00037" />
-      <option name="project" value="LOCAL" />
-      <updated>1758721469952</updated>
     </task>
     <task id="LOCAL-00038" summary="testimonial change, modal resizing project clean up">
       <option name="closed" value="true" />
@@ -461,7 +427,39 @@
       <option name="project" value="LOCAL" />
       <updated>1784793234883</updated>
     </task>
-    <option name="localTasksCounter" value="83" />
+    <task id="LOCAL-00083" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785074561590</created>
+      <option name="number" value="00083" />
+      <option name="presentableId" value="LOCAL-00083" />
+      <option name="project" value="LOCAL" />
+      <updated>1785074561591</updated>
+    </task>
+    <task id="LOCAL-00084" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785077303893</created>
+      <option name="number" value="00084" />
+      <option name="presentableId" value="LOCAL-00084" />
+      <option name="project" value="LOCAL" />
+      <updated>1785077303893</updated>
+    </task>
+    <task id="LOCAL-00085" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785078364213</created>
+      <option name="number" value="00085" />
+      <option name="presentableId" value="LOCAL-00085" />
+      <option name="project" value="LOCAL" />
+      <updated>1785078364213</updated>
+    </task>
+    <task id="LOCAL-00086" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785078674493</created>
+      <option name="number" value="00086" />
+      <option name="presentableId" value="LOCAL-00086" />
+      <option name="project" value="LOCAL" />
+      <updated>1785078674494</updated>
+    </task>
+    <option name="localTasksCounter" value="87" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

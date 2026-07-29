@@ -119,9 +119,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      }
+
 
       // Check if this is the first user (make them super_admin)
+      const allUsers = await storage.getAllUsers();
       const isFirstUser = allUsers.length === 0;
       const finalRole = isFirstUser
         ? "super_admin"
@@ -2573,10 +2574,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put(
     "/api/users/evidence/:registrationId",
     authenticateSupabase,
-    async (_req: any, res) => {
-      return res
-        .status(403)
-        .json({ message: "Evidence updates are restricted to finance" });
+    async (req: any, res) => {
+      try {
+        const { registrationId } = req.params;
+        const userId = req.supabaseUser.id;
+        const files = req.files;
+
+        if (!files || !files.evidence) {
+          return res.status(400).json({ message: "Evidence file is required" });
+        }
+        
+        const evidenceFile = Array.isArray(files.evidence) ? files.evidence[0] : files.evidence;
+
+        // Validate file type
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+        if (!allowedTypes.includes(evidenceFile.mimetype)) {
+          return res.status(400).json({ message: "Only images (JPEG, PNG, WebP) and PDF files are allowed" });
+        }
+
+        // Validate file size (max 5MB)
+        if (evidenceFile.size > 5 * 1024 * 1024) {
+          return res.status(400).json({ message: "File size must be under 5MB" });
+        }
+
+        console.log(`🔄 Updating evidence for registration: ${registrationId} by user: ${userId}`);
+
+        const registration = await storage.getEventRegistration(registrationId);
+        if (!registration) {
+          return res.status(404).json({ message: "Registration not found" });
+        }
+
+        // Verify ownership
+        if (registration.userId !== userId) {
+          return res.status(403).json({ message: "Not authorized to update this registration" });
+        }
+
+        // Check if registration is cancelled
+        if (registration.paymentStatus === "cancelled") {
+          return res.status(400).json({
+            message: "Cannot update evidence for cancelled registration",
+          });
+        }
+
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+          return res.status(500).json({ message: "Server configuration error" });
+        }
+
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+        const bucket = "payment-evidence";
+
+        const timestamp = Date.now();
+        const safeFileName = evidenceFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const newFilePath = `evidence/${registration.userId}/${registration.eventId}/${timestamp}_${safeFileName}`;
+
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from(bucket)
+          .upload(newFilePath, evidenceFile.data, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: evidenceFile.mimetype,
+          });
+
+        if (uploadError) {
+          console.error(`❌ Upload error:`, uploadError);
+          return res.status(500).json({ message: "Failed to upload new evidence file" });
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabaseAdmin.storage.from(bucket).getPublicUrl(newFilePath);
+
+        const updatedRegistration = await storage.updateEventRegistration(registrationId, {
+          paymentEvidence: publicUrl,
+        });
+
+        res.json({
+          message: "Evidence updated successfully",
+          registration: updatedRegistration,
+        });
+      } catch (error) {
+        console.error("Error updating user evidence:", error);
+        res.status(500).json({ message: "Failed to update evidence" });
+      }
     },
   );
 

@@ -98,6 +98,10 @@ import {
   Edit,
   Trash2,
   Upload,
+  Download,
+  Search,
+  Briefcase,
+  CheckCircle as CheckCircle2
 } from "lucide-react";
 
 // Type definitions
@@ -245,7 +249,8 @@ export default function AdminDashboard() {
     })[]
   >([]);
 
-  const [publicRegistrations, setPublicRegistrations] = useState<any[]>([]);
+    const [publicRegistrations, setPublicRegistrations] = useState<any[]>([]);
+  const [womenRegistrations, setWomenRegistrations] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -341,6 +346,10 @@ export default function AdminDashboard() {
   const [publicRegTitleFilter, setPublicRegTitleFilter] = useState<string>("all");
   const [publicRegPositionFilter, setPublicRegPositionFilter] = useState<string>("all");
   const [publicRegGenderFilter, setPublicRegGenderFilter] = useState<string>("all");
+
+  // Women's event registrations filters
+  const [womenRegSearchTerm, setWomenRegSearchTerm] = useState("");
+  const [womenRegPaymentStatusFilter, setWomenRegPaymentStatusFilter] = useState<string>("all");
 
   // Defensive render helpers to avoid rendering objects directly in JSX
   const asText = (value: any): string => {
@@ -552,6 +561,27 @@ export default function AdminDashboard() {
 
   // Filter public registrations based on search and filters
   const [filteredPublicRegistrations, setFilteredPublicRegistrations] = useState<any[]>([]);
+  const [filteredWomenRegistrations, setFilteredWomenRegistrations] = useState<any[]>([]);
+
+  useEffect(() => {
+    let filtered = womenRegistrations;
+    if (womenRegSearchTerm.trim()) {
+      const term = womenRegSearchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (reg: any) =>
+          reg.full_name?.toLowerCase().includes(term) ||
+          reg.email?.toLowerCase().includes(term) ||
+          reg.phone_number?.toLowerCase().includes(term) ||
+          reg.institution?.toLowerCase().includes(term) ||
+          reg.registration_number?.toLowerCase().includes(term) ||
+          reg.delegate_type?.toLowerCase().includes(term)
+      );
+    }
+    if (womenRegPaymentStatusFilter !== "all") {
+      filtered = filtered.filter((reg: any) => reg.payment_status === womenRegPaymentStatusFilter);
+    }
+    setFilteredWomenRegistrations(filtered);
+  }, [womenRegistrations, womenRegSearchTerm, womenRegPaymentStatusFilter]);
   useEffect(() => {
     let filtered = publicRegistrations;
 
@@ -664,7 +694,7 @@ export default function AdminDashboard() {
         try {
           const usersResponse = await fetch(`/api/admin/users`, {
             headers: {
-              Authorization: `Bearer ${session.access_token}`,
+              Authorization: `Bearer ${session?.access_token}`,
             },
           });
           if (usersResponse.ok) {
@@ -687,7 +717,7 @@ export default function AdminDashboard() {
             `/api/admin/registrations`,
             {
               headers: {
-                Authorization: `Bearer ${session.access_token}`,
+                Authorization: `Bearer ${session?.access_token}`,
               },
             },
           );
@@ -710,7 +740,7 @@ export default function AdminDashboard() {
         try {
           const sponsorshipsResponse = await fetch(`/api/admin/sponsorships`, {
             headers: {
-              Authorization: `Bearer ${session.access_token}`,
+              Authorization: `Bearer ${session?.access_token}`,
             },
           });
           if (sponsorshipsResponse.ok) {
@@ -732,7 +762,7 @@ export default function AdminDashboard() {
         try {
           const exhibitionsResponse = await fetch(`/api/admin/exhibitions`, {
             headers: {
-              Authorization: `Bearer ${session.access_token}`,
+              Authorization: `Bearer ${session?.access_token}`,
             },
           });
           if (exhibitionsResponse.ok) {
@@ -754,13 +784,16 @@ export default function AdminDashboard() {
         try {
           const publicRegsResponse = await fetch(`/api/admin/public-registrations`, {
             headers: {
-              Authorization: `Bearer ${session.access_token}`,
+              Authorization: `Bearer ${session?.access_token}`,
             },
           });
           if (publicRegsResponse.ok) {
             const { publicRegistrations: publicRegsData } =
               await publicRegsResponse.json();
-            setPublicRegistrations(publicRegsData || []);
+            const allRegs = publicRegsData || [];
+            const isWomenEvent = (reg: any) => reg.events?.title?.toLowerCase().includes('women in leadership');
+            setPublicRegistrations(allRegs.filter((r: any) => !isWomenEvent(r)));
+            setWomenRegistrations(allRegs.filter(isWomenEvent));
           } else {
             console.error(
               "Failed to fetch public registrations:",
@@ -1038,7 +1071,7 @@ export default function AdminDashboard() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.access_token) {
+      if (!(await supabase.auth.getSession()).data.session?.access_token) {
         throw new Error("No active session found");
       }
 
@@ -1048,7 +1081,7 @@ export default function AdminDashboard() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({
             role: confirmRoleChange.role,
@@ -1117,7 +1150,7 @@ export default function AdminDashboard() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
           subject: emailSubject,
@@ -1252,6 +1285,20 @@ export default function AdminDashboard() {
           : reg,
       ),
     );
+    setWomenRegistrations((prev) =>
+      prev.map((reg) =>
+        reg.id === evidenceViewer.registrationId
+          ? { ...reg, payment_evidence: newEvidencePath }
+          : reg,
+      ),
+    );
+    setFilteredWomenRegistrations((prev) =>
+      prev.map((reg) =>
+        reg.id === evidenceViewer.registrationId
+          ? { ...reg, payment_evidence: newEvidencePath }
+          : reg,
+      ),
+    );
 
     console.log("✅ Evidence updated in admin dashboard:", newEvidencePath);
   };
@@ -1278,7 +1325,7 @@ export default function AdminDashboard() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
         },
         body: JSON.stringify({ payment_evidence: url })
       });
@@ -1289,6 +1336,8 @@ export default function AdminDashboard() {
       
       setPublicRegistrations(prev => prev.map(r => r.id === uploadingRegId ? { ...r, payment_evidence: url } : r));
       setFilteredPublicRegistrations(prev => prev.map(r => r.id === uploadingRegId ? { ...r, payment_evidence: url } : r));
+      setWomenRegistrations(prev => prev.map(r => r.id === uploadingRegId ? { ...r, payment_evidence: url } : r));
+      setFilteredWomenRegistrations(prev => prev.map(r => r.id === uploadingRegId ? { ...r, payment_evidence: url } : r));
       
     } catch(error) {
       toast({ title: 'Failed to upload evidence', variant: 'destructive' });
@@ -1852,7 +1901,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="overview" className="space-y-6">
           <div className="bg-white rounded-xl border border-slate-200/60 p-1 shadow-sm overflow-x-auto">
             <TabsList
-              className={`grid w-full ${canManageUsers && canManageEvents && isSuperAdmin ? "grid-cols-9" : canManageUsers && canManageEvents ? "grid-cols-8" : canManageUsers || canManageEvents ? "grid-cols-7" : "grid-cols-6"} bg-transparent gap-1 min-w-[800px] sm:min-w-0`}
+              className={`grid w-full ${canManageUsers && canManageEvents && isSuperAdmin ? "grid-cols-10" : canManageUsers && canManageEvents ? "grid-cols-9" : canManageUsers || canManageEvents ? "grid-cols-8" : "grid-cols-7"} bg-transparent gap-1 min-w-[900px] sm:min-w-0`}
             >
               {/* Overview - All admin roles can see */}
               <TabsTrigger
@@ -1901,6 +1950,15 @@ export default function AdminDashboard() {
               >
                 <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 <span className="hidden xs:inline">Public Regs</span>
+              </TabsTrigger>
+
+              {/* Women's Event Registrations - All admin roles can see */}
+              <TabsTrigger
+                value="women-registrations"
+                className="data-[state=active]:bg-[#1C356B] data-[state=active]:text-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4"
+              >
+                <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Women Regs</span>
               </TabsTrigger>
 
               {/* Sponsorships - All admin roles can see */}
@@ -4240,6 +4298,334 @@ export default function AdminDashboard() {
             <AdminDocumentsPanel />
           </TabsContent>
 
+          {/* Women's Event Registrations Tab */}
+          <TabsContent value="women-registrations">
+            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
+              <CardHeader className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-[#1C356B]" />
+                      Women's Event Registrations
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      Manage registrations for the Women in Leadership Event ({filteredWomenRegistrations.length} of {womenRegistrations.length})
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      // Export filtered women's event registrations
+                      const data = filteredWomenRegistrations.map((reg: any) => ({
+                        "Registration #": reg.registration_number,
+                        "Full Name": reg.full_name,
+                        Email: reg.email,
+                        Phone: reg.phone_number,
+                        Institution: reg.institution,
+                        Title: reg.title,
+                        Position: reg.position,
+                        Country: reg.country,
+                        "Delegate Type": reg.delegate_type,
+                        "Gala": reg.include_gala ? 'Yes' : 'No',
+                        "Accommodation": reg.include_accommodation ? 'Yes' : 'No',
+                        "Boat Cruise": reg.include_boat_cruise ? 'Yes' : 'No',
+                        "Payment Method": reg.payment_method,
+                        "Currency": reg.currency,
+                        "Total Price": reg.total_price,
+                        Status: reg.payment_status || reg.status,
+                        "Registered At": formatTime(reg.created_at),
+                      }));
+
+                      const headers = Object.keys(data[0] || {});
+                      const csvContent = [
+                        headers.join(","),
+                        ...data.map((row: any) =>
+                          headers
+                            .map((header) => {
+                              const value = row[header];
+                              if (typeof value === "string" && (value.includes(",") || value.includes('"') || value.includes("\n"))) {
+                                return `"${value.replace(/"/g, '""')}"`;
+                              }
+                              return value;
+                            })
+                            .join(","),
+                        ),
+                      ].join("\n");
+
+                      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                      const link = document.createElement("a");
+                      const url = URL.createObjectURL(blob);
+                      link.setAttribute("href", url);
+                      link.setAttribute("download", `women_event_registrations_${new Date().toISOString().split("T")[0]}.csv`);
+                      link.style.visibility = "hidden";
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    className="w-full sm:w-auto bg-[#D19B27] hover:bg-[#B38421] text-white"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
+                
+                {/* Women's Event Filters */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                    <Input
+                      placeholder="Search registrations..."
+                      className="pl-9 h-10 border-slate-200"
+                      value={womenRegSearchTerm}
+                      onChange={(e) => setWomenRegSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Select value={womenRegPaymentStatusFilter} onValueChange={setWomenRegPaymentStatusFilter}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Payment Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-0">
+                {womenRegistrations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-12 text-slate-500">
+                    <UserPlus className="w-12 h-12 mb-4 text-slate-300" />
+                    <p className="text-lg font-medium text-slate-900">No registrations</p>
+                    <p>There are no registrations for the Women's event yet.</p>
+                  </div>
+                ) : filteredWomenRegistrations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-12 text-slate-500">
+                    <Search className="w-12 h-12 mb-4 text-slate-300" />
+                    <p className="text-lg font-medium text-slate-900">No matches found</p>
+                    <p>No registrations match your current filters.</p>
+                    <Button 
+                      variant="link" 
+                      onClick={() => {
+                        setWomenRegSearchTerm("");
+                        setWomenRegPaymentStatusFilter("all");
+                      }}
+                      className="mt-2 text-[#1C356B]"
+                    >
+                      Clear all filters
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto w-full">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent border-b-slate-200">
+                          <TableHead className="font-semibold whitespace-nowrap">Participant</TableHead>
+                          <TableHead className="font-semibold whitespace-nowrap">Details</TableHead>
+                          <TableHead className="font-semibold whitespace-nowrap">Delegate & Add-ons</TableHead>
+                          <TableHead className="font-semibold whitespace-nowrap">Payment</TableHead>
+                          <TableHead className="font-semibold whitespace-nowrap text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredWomenRegistrations.map((reg: any, index: number) => (
+                          <TableRow 
+                            key={reg.id || index} 
+                            className="hover:bg-slate-50/50 transition-colors"
+                          >
+                            <TableCell className="align-top py-4">
+                              <div className="space-y-1">
+                                <div className="font-medium text-slate-900 text-base">
+                                  {asText(reg.title)} {asText(reg.full_name)}
+                                </div>
+                                <div className="text-sm text-slate-500 flex items-center gap-1.5">
+                                  <Mail className="w-3.5 h-3.5" />
+                                  <a href={`mailto:${asText(reg.email)}`} className="hover:text-[#1C356B] transition-colors">{asText(reg.email)}</a>
+                                </div>
+                                <div className="text-sm text-slate-500 flex items-center gap-1.5">
+                                  <Phone className="w-3.5 h-3.5" />
+                                  <a href={`tel:${asText(reg.phone_number)}`} className="hover:text-[#1C356B] transition-colors">{asText(reg.phone_number)}</a>
+                                </div>
+                                <div className="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded w-fit mt-2">
+                                  {asText(reg.registration_number)}
+                                </div>
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="align-top py-4">
+                              <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <Briefcase className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                                  <div>
+                                    <div className="font-medium text-sm text-slate-900">{asText(reg.position)}</div>
+                                    <div className="text-sm text-slate-500">{asText(reg.institution)}</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-slate-500">
+                                  <MapPin className="w-4 h-4 text-slate-400" />
+                                  {asText(reg.country)}
+                                </div>
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="align-top py-4">
+                              <div className="space-y-2">
+                                <div>
+                                  <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Type:</span>
+                                  <div className="mt-1">
+                                    <Badge variant="outline" className="bg-[#1C356B]/10 text-[#1C356B] border-[#1C356B]/20">
+                                      {asText(reg.delegate_type).replace('_', ' ')}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                {(reg.include_gala || reg.include_accommodation || reg.include_boat_cruise) && (
+                                  <div>
+                                    <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Add-ons:</span>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {reg.include_gala && <Badge variant="secondary" className="text-[10px]">Gala</Badge>}
+                                      {reg.include_accommodation && <Badge variant="secondary" className="text-[10px]">Accom.</Badge>}
+                                      {reg.include_boat_cruise && <Badge variant="secondary" className="text-[10px]">Boat Cruise</Badge>}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="align-top py-4">
+                              <div className="space-y-2">
+                                <div>
+                                  <div className="text-xs text-slate-500 mb-1">Status</div>
+                                  <Badge
+                                    className={`${
+                                      (reg.payment_status || reg.status) === "paid" || (reg.payment_status || reg.status) === "approved"
+                                        ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                        : (reg.payment_status || reg.status) === "rejected" || (reg.payment_status || reg.status) === "cancelled"
+                                        ? "bg-red-100 text-red-800 border-red-200"
+                                        : "bg-amber-100 text-amber-800 border-amber-200"
+                                    }`}
+                                  >
+                                    {((reg.payment_status || reg.status) === "paid" || (reg.payment_status || reg.status) === "approved") && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                                    {((reg.payment_status || reg.status) === "rejected" || (reg.payment_status || reg.status) === "cancelled") && <XCircle className="w-3 h-3 mr-1" />}
+                                    {(reg.payment_status || reg.status) !== "paid" && (reg.payment_status || reg.status) !== "approved" && (reg.payment_status || reg.status) !== "rejected" && (reg.payment_status || reg.status) !== "cancelled" && <Clock className="w-3 h-3 mr-1" />}
+                                    <span className="capitalize">{asText(reg.payment_status || reg.status)}</span>
+                                  </Badge>
+                                </div>
+                                
+                                {reg.total_price && (
+                                  <div className="font-medium text-slate-900 mt-2">
+                                    {asText(reg.currency)} {reg.total_price.toLocaleString()}
+                                  </div>
+                                )}
+                                
+                                {reg.payment_method && (
+                                  <div className="text-xs text-slate-500 capitalize">
+                                    Via: {asText(reg.payment_method).replace('_', ' ')}
+                                  </div>
+                                )}
+                                
+                                {reg.payment_evidence && (
+                                  <div className="mt-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs w-full bg-slate-50"
+                                      onClick={() => setEvidenceViewer({ open: true, evidencePath: reg.payment_evidence || "", fileName: reg.full_name ? `${reg.full_name}_payment_evidence` : "payment_evidence", registrationId: reg.id })}
+                                    >
+                                      <FileText className="w-3 h-3 mr-1" />
+                                      View Proof
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="align-top py-4 text-right">
+                              <div className="flex flex-col gap-2 items-end">
+                                <Select
+                                  defaultValue={reg.payment_status || reg.status}
+                                  onValueChange={async (value) => {
+                                    try {
+                                      // Same endpoint as public registrations status update
+                                      const response = await fetch(`/api/admin/public-registrations/${reg.id}/status`, {
+                                        method: "PATCH",
+                                        headers: {
+                                          "Content-Type": "application/json",
+                                          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                                        },
+                                        body: JSON.stringify({ status: value, payment_status: value }),
+                                      });
+                                      if (response.ok) {
+                                        setWomenRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, status: value, payment_status: value } : r));
+                                        setFilteredWomenRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, status: value, payment_status: value } : r));
+                                        toast({
+                                          title: "Status updated",
+                                          description: "Registration status has been successfully updated.",
+                                        });
+                                      }
+                                    } catch (err) {
+                                      console.error("Error updating status:", err);
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to update registration status.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="w-[120px] h-8 text-xs">
+                                    <SelectValue placeholder="Update Status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="paid">Paid</SelectItem>
+                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                  </SelectContent>
+                                </Select>
+
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={async () => {
+                                      if (confirm("Are you sure you want to delete this registration?")) {
+                                        try {
+                                          const response = await fetch(`/api/admin/public-registrations/${reg.id}`, {
+                                            method: "DELETE",
+                                            headers: {
+                                              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                                            },
+                                          });
+                                          if (response.ok) {
+                                            setWomenRegistrations(prev => prev.filter(r => r.id !== reg.id));
+                                            setFilteredWomenRegistrations(prev => prev.filter(r => r.id !== reg.id));
+                                          }
+                                        } catch (err) {
+                                          console.error("Failed to delete", err);
+                                        }
+                                      }
+                                    }}
+                                    title="Delete registration"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </Button>
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-2">
+                                  {formatTime(reg.created_at)}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Public Registrations Tab */}
           <TabsContent value="public-registrations">
             <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-sm">
@@ -4531,7 +4917,7 @@ export default function AdminDashboard() {
                                             method: "PATCH",
                                             headers: {
                                               "Content-Type": "application/json",
-                                              Authorization: `Bearer ${session?.access_token}`,
+                                              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
                                             },
                                             body: JSON.stringify({ status: "confirmed" }),
                                           });
@@ -4558,7 +4944,7 @@ export default function AdminDashboard() {
                                             method: "PATCH",
                                             headers: {
                                               "Content-Type": "application/json",
-                                              Authorization: `Bearer ${session?.access_token}`,
+                                              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
                                             },
                                             body: JSON.stringify({ status: "cancelled" }),
                                           });
@@ -4614,7 +5000,7 @@ export default function AdminDashboard() {
                                             const response = await fetch(`/api/admin/public-registrations/${reg.id}`, {
                                               method: "DELETE",
                                               headers: {
-                                                Authorization: `Bearer ${session?.access_token}`,
+                                                Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
                                               },
                                             });
                                             if (response.ok) {
@@ -5047,7 +5433,7 @@ export default function AdminDashboard() {
                     const {
                       data: { session },
                     } = await supabase.auth.getSession();
-                    if (!session?.access_token) {
+                    if (!(await supabase.auth.getSession()).data.session?.access_token) {
                       throw new Error("No active session found");
                     }
 
@@ -5055,7 +5441,7 @@ export default function AdminDashboard() {
                       method: "POST",
                       headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${session.access_token}`,
+                        Authorization: `Bearer ${session?.access_token}`,
                       },
                       body: JSON.stringify(userRegistrationData),
                     });
@@ -5423,7 +5809,7 @@ export default function AdminDashboard() {
                     const {
                       data: { session },
                     } = await supabase.auth.getSession();
-                    if (!session?.access_token) {
+                    if (!(await supabase.auth.getSession()).data.session?.access_token) {
                       throw new Error("No active session found");
                     }
 
@@ -5431,7 +5817,7 @@ export default function AdminDashboard() {
                       method: "POST",
                       headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${session.access_token}`,
+                        Authorization: `Bearer ${session?.access_token}`,
                       },
                       body: JSON.stringify({
                         userId: selectedUser?.id,

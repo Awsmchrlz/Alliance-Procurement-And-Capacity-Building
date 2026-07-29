@@ -578,6 +578,14 @@ export default function Dashboard() {
                       <>
                         <Button
                           variant="outline"
+                          className="border-blue-200 text-blue-600 hover:bg-blue-50 w-full"
+                          onClick={() => setUploadDialog({ open: true, registration })}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload Proof
+                        </Button>
+                        <Button
+                          variant="outline"
                           className="border-red-200 text-red-600 hover:bg-red-50 w-full"
                           onClick={() => handleCancelRegistration(registration)}
                         >
