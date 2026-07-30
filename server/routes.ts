@@ -1367,9 +1367,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/showcase/sponsorships", async (req, res) => {
     try {
       const sponsorships = await storage.getAllSponsorships();
-      // Filter only approved sponsorships
+      const events = await storage.getAllEvents();
+      const womensEvent = events.find((e: any) => e.title.includes("Women in Leadership"));
+      
+      // Filter only approved sponsorships for the Women's Event
       const approvedSponsorships = sponsorships.filter(
-        (s: any) => s.status === "approved" || s.status === "Approved",
+        (s: any) => 
+          (s.status === "approved" || s.status === "Approved") && 
+          (!womensEvent || s.eventId === womensEvent.id)
       );
       res.json(approvedSponsorships);
     } catch (error: any) {
@@ -1384,9 +1389,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/showcase/exhibitions", async (req, res) => {
     try {
       const exhibitions = await storage.getAllExhibitions();
-      // Filter only approved exhibitions
+      const events = await storage.getAllEvents();
+      const womensEvent = events.find((e: any) => e.title.includes("Women in Leadership"));
+
+      // Filter only approved exhibitions for the Women's Event
       const approvedExhibitions = exhibitions.filter(
-        (e: any) => e.status === "approved" || e.status === "Approved",
+        (e: any) => 
+          (e.status === "approved" || e.status === "Approved") &&
+          (!womensEvent || e.eventId === womensEvent.id)
       );
       res.json(approvedExhibitions);
     } catch (error: any) {

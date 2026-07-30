@@ -507,7 +507,10 @@ export function PublicEventRegistration({
                             Standard Participation (Includes Gala Dinner)
                           </label>
                         </div>
-                        <span className="font-bold text-gray-900">ZMW 10,500</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-bold text-gray-900">ZMW 10,500</span>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD 525</span>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer">
                         <div className="flex items-center space-x-3">
@@ -516,7 +519,10 @@ export function PublicEventRegistration({
                             Participation Fee without Gala Dinner
                           </label>
                         </div>
-                        <span className="font-bold text-gray-900">ZMW 8,500</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-bold text-gray-900">ZMW 8,500</span>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD 425</span>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer">
                         <div className="flex items-center space-x-3">
@@ -525,7 +531,10 @@ export function PublicEventRegistration({
                             Participation With 3 days accommodation at Avani + Gala Dinner
                           </label>
                         </div>
-                        <span className="font-bold text-gray-900">ZMW 24,500</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-bold text-gray-900">ZMW 24,500</span>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD 1,225</span>
+                        </div>
                       </div>
                     </div>
                   </RadioGroup>
@@ -544,7 +553,10 @@ export function PublicEventRegistration({
                             <span className="text-xs text-gray-500">Includes 4 nights accommodation, Gala dinner, Boat cruise, Airport transfer</span>
                           </div>
                         </div>
-                        <span className="font-bold text-gray-900">$1,750</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-bold text-gray-900">USD 1,750</span>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ ZMW 35,000</span>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer">
                         <div className="flex items-center space-x-3">
@@ -556,7 +568,10 @@ export function PublicEventRegistration({
                             <span className="text-xs text-gray-500">Includes Gala dinner and Boat cruise (Accommodation not included)</span>
                           </div>
                         </div>
-                        <span className="font-bold text-gray-900">$985</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-bold text-gray-900">USD 985</span>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ ZMW 19,700</span>
+                        </div>
                       </div>
                     </div>
                   </RadioGroup>
@@ -566,12 +581,12 @@ export function PublicEventRegistration({
                   <RadioGroup value={formData.sponsorshipPackage} onValueChange={(value) => updateField("sponsorshipPackage", value as SponsorshipPackage)}>
                     <div className="space-y-3">
                       {[
-                        { id: "platinum", label: "Platinum Sponsor", price: "ZMW 250,000" },
-                        { id: "gold", label: "Gold Sponsor", price: "ZMW 100,000" },
-                        { id: "silver", label: "Silver Sponsor", price: "ZMW 50,000" },
-                        { id: "bronze", label: "Bronze Sponsor", price: "ZMW 30,000" },
-                        { id: "exhibitor_institutional", label: "Institutional Exhibitor", price: "ZMW 35,000" },
-                        { id: "exhibitor_individual", label: "Individual Exhibitor", price: "ZMW 12,850" },
+                        { id: "platinum", label: "Platinum Sponsor", priceZMW: "250,000", priceUSD: "12,500" },
+                        { id: "gold", label: "Gold Sponsor", priceZMW: "100,000", priceUSD: "5,000" },
+                        { id: "silver", label: "Silver Sponsor", priceZMW: "50,000", priceUSD: "2,500" },
+                        { id: "bronze", label: "Bronze Sponsor", priceZMW: "30,000", priceUSD: "1,500" },
+                        { id: "exhibitor_institutional", label: "Institutional Exhibitor", priceZMW: "35,000", priceUSD: "1,750" },
+                        { id: "exhibitor_individual", label: "Individual Exhibitor", priceZMW: "12,850", priceUSD: "645" },
                       ].map((pkg) => (
                         <div key={pkg.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer">
                           <div className="flex items-center space-x-3">
@@ -580,7 +595,10 @@ export function PublicEventRegistration({
                               {pkg.label}
                             </label>
                           </div>
-                          <span className="font-bold text-gray-900">{pkg.price}</span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="font-bold text-gray-900">ZMW {pkg.priceZMW}</span>
+                            <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD {pkg.priceUSD}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -605,8 +623,13 @@ export function PublicEventRegistration({
                       >
                         Include Boat Cruise
                       </label>
-                      <span className="font-bold text-gray-900">
-                        {selectedDelegateType === "international" ? "+ $65 (Approx ZMW 1,800)" : "+ ZMW 1,800"}
+                      <span className="flex flex-col items-end gap-1">
+                        <span className="font-bold text-gray-900">
+                          {selectedDelegateType === "international" ? "USD 65" : "ZMW 1,800"}
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">
+                          {selectedDelegateType === "international" ? "~ ZMW 1,800" : "~ USD 90"}
+                        </span>
                       </span>
                     </div>
                   </div>
