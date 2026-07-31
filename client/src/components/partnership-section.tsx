@@ -516,7 +516,6 @@ export function PartnershipSection({
               </Card>
             ))}
           </div>
-          </div>
         </div>
 
         {/* Contact Information */}

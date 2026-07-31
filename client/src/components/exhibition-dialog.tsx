@@ -728,27 +728,9 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
+                </button>
               </div>
-            </label>
-          </div>
-
-          {evidenceFile && (
-            <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-green-800">{evidenceFile.name}</span>
-                <span className="text-xs text-green-600">({formatFileSize(evidenceFile.size)})</span>
-              </div>
-              <button
-                onClick={() => setEvidenceFile(null)}
-                className="text-red-500 hover:text-red-700 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          )}
+            )}
 
           <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
             💡 <strong>Payment Evidence:</strong> Upload your payment receipt or screenshot after making the payment. This helps us process your exhibition booking faster.
