@@ -178,10 +178,17 @@ export function PartnershipSection({
     enabled: !propEvent,
   });
 
-  // Use provided event or first available event
-  const event =
-    propEvent ||
-    (Array.isArray(events) && events.length > 0 ? events[0] : null);
+  let defaultEvent = Array.isArray(events) ? events.find(e => 
+    e.title.toLowerCase().includes("women in leadership") || 
+    e.title.toLowerCase().includes("women leadership")
+  ) : null;
+
+  if (!defaultEvent && Array.isArray(events)) {
+    defaultEvent = events.find(e => e.featured === true) || (events.length > 0 ? events[0] : null);
+  }
+
+  // Use provided event or the prioritized default event
+  const event = propEvent || defaultEvent;
 
 
   return (

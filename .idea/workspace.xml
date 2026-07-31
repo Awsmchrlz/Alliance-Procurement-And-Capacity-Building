@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="clean up">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/components/partnership-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/partnership-section.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,30 +69,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1757290716460</updated>
-    </task>
-    <task id="LOCAL-00043" summary="contact form">
-      <option name="closed" value="true" />
-      <created>1759144518038</created>
-      <option name="number" value="00043" />
-      <option name="presentableId" value="LOCAL-00043" />
-      <option name="project" value="LOCAL" />
-      <updated>1759144518038</updated>
-    </task>
-    <task id="LOCAL-00044" summary="contact form">
-      <option name="closed" value="true" />
-      <created>1759144571483</created>
-      <option name="number" value="00044" />
-      <option name="presentableId" value="LOCAL-00044" />
-      <option name="project" value="LOCAL" />
-      <updated>1759144571483</updated>
-    </task>
-    <task id="LOCAL-00045" summary="contact form">
-      <option name="closed" value="true" />
-      <created>1759150748022</created>
-      <option name="number" value="00045" />
-      <option name="presentableId" value="LOCAL-00045" />
-      <option name="project" value="LOCAL" />
-      <updated>1759150748022</updated>
     </task>
     <task id="LOCAL-00046" summary="contact form">
       <option name="closed" value="true" />
@@ -461,7 +438,31 @@
       <option name="project" value="LOCAL" />
       <updated>1785486955953</updated>
     </task>
-    <option name="localTasksCounter" value="92" />
+    <task id="LOCAL-00092" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785500400946</created>
+      <option name="number" value="00092" />
+      <option name="presentableId" value="LOCAL-00092" />
+      <option name="project" value="LOCAL" />
+      <updated>1785500400946</updated>
+    </task>
+    <task id="LOCAL-00093" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785502604559</created>
+      <option name="number" value="00093" />
+      <option name="presentableId" value="LOCAL-00093" />
+      <option name="project" value="LOCAL" />
+      <updated>1785502604559</updated>
+    </task>
+    <task id="LOCAL-00094" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785503252339</created>
+      <option name="number" value="00094" />
+      <option name="presentableId" value="LOCAL-00094" />
+      <option name="project" value="LOCAL" />
+      <updated>1785503252339</updated>
+    </task>
+    <option name="localTasksCounter" value="95" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
