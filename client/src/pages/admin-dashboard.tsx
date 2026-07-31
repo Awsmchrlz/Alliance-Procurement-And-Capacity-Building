@@ -1665,6 +1665,11 @@ export default function AdminDashboard() {
     );
   }
 
+  const defaultEvent = events.find(e => 
+    e.title.toLowerCase().includes("women in leadership") || 
+    e.title.toLowerCase().includes("women leadership")
+  ) || events.find(e => e.featured === true) || events[0];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
@@ -5933,7 +5938,7 @@ export default function AdminDashboard() {
             <SponsorshipDialog
               open={showCreateSponsorshipDialog}
               onOpenChange={setShowCreateSponsorshipDialog}
-              event={{...events[0], description: events[0].description || ""} as any}
+              event={{...defaultEvent, description: defaultEvent.description || ""} as any}
               onSuccess={() => {
                 setShowCreateSponsorshipDialog(false);
                 refreshData();
@@ -5948,7 +5953,7 @@ export default function AdminDashboard() {
             <ExhibitionDialog
               open={showCreateExhibitionDialog}
               onOpenChange={setShowCreateExhibitionDialog}
-              event={{...events[0], description: events[0].description || ""} as any}
+              event={{...defaultEvent, description: defaultEvent.description || ""} as any}
               onSuccess={() => {
                 setShowCreateExhibitionDialog(false);
                 refreshData();
