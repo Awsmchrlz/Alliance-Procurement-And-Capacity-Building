@@ -29,8 +29,8 @@ const SPONSORSHIP_PACKAGES = [
   {
     id: "platinum",
     name: "Platinum Sponsor",
-    priceUSD: 15000,
-    priceZMW: 300000, // Approximate conversion
+    priceUSD: 12500,
+    priceZMW: 250000,
     icon: Crown,
     color: "from-slate-300 via-slate-400 to-slate-500",
     textColor: "text-slate-800",
@@ -38,23 +38,19 @@ const SPONSORSHIP_PACKAGES = [
     popular: false,
     featured: true,
     benefits: [
-      "Prime logo placement on all conference materials and media",
-      "Speaking slot (15 minutes) at the Opening Ceremony",
-      "Branded keynote session (optional co-hosting)",
-      "Booth in prime location at exhibition space",
-      "Branding on conference bags, lanyards, and banners",
-      "10 complimentary full conference passes",
-      "Company promotional materials in all delegate packs",
-      "One exclusive sponsored side event",
-      "Recognition in all press releases, newsletters, and social media",
-      "Meet-and-greet with the Invited Guest of honor, keynote speakers and dignitaries",
+      "Speaking slot 15 minutes every day.",
+      "Booth in prime location at exhibition space.",
+      "Branding on conference bags, lanyards, and banners.",
+      "Company promotional materials in all delegate packs.",
+      "Recognition in all press releases, newsletters, and social media.",
+      "Meet-and-greet with the Guest of honor, keynote speakers and dignitaries.",
     ],
   },
   {
     id: "gold",
     name: "Gold Sponsor",
-    priceUSD: 13000,
-    priceZMW: 250000,
+    priceUSD: 5000,
+    priceZMW: 100000,
     icon: Award,
     color: "from-yellow-400 via-yellow-500 to-yellow-600",
     textColor: "text-yellow-900",
@@ -62,21 +58,21 @@ const SPONSORSHIP_PACKAGES = [
     popular: false,
     featured: false,
     benefits: [
-      "Featured logo on banners, Facebook, and social media",
-      "10-minute speaking slot in plenary session",
-      "Booth at exhibition space",
-      "Branding during one key session",
-      "6 complimentary full conference passes",
-      "Company materials in delegate packs",
-      "Social media mentions and interview opportunities",
-      "Meet-and-greet with the Invited Guest of Honor, keynote speakers and dignitaries",
+      "Featured logo on banners, Facebook, Website and social media.",
+      "10-minute speaking slot in plenary session.",
+      "Booth at exhibition space.",
+      "Branding during one key session.",
+      "Speaking slot 9 minutes every day.",
+      "Company materials in delegate packs.",
+      "Social media mentions and interview opportunities.",
+      "Meet-and-greet with the Guest of Honor, keynote speakers and dignitaries",
     ],
   },
   {
     id: "silver",
     name: "Silver Sponsor",
-    priceUSD: 11000,
-    priceZMW: 200000,
+    priceUSD: 2500,
+    priceZMW: 50000,
     icon: Medal,
     color: "from-gray-300 via-gray-400 to-gray-500",
     textColor: "text-gray-800",
@@ -84,19 +80,18 @@ const SPONSORSHIP_PACKAGES = [
     popular: false,
     featured: false,
     benefits: [
-      "Logo placement on Facebook, and printed programs",
-      "Exhibition booth",
-      "4 complimentary passes",
-      "Opportunity to host a breakout session or technical workshop",
-      "Inclusion in media and social media coverage",
-      "Meet-and-greet with the Invited Guest of Honor, keynote speakers and dignitaries",
+      "Logo placement on Facebook, Website and printed programs.",
+      "Exhibition booth.",
+      "Opportunity to host a breakout session workshop.",
+      "Inclusion in media and social media coverage.",
+      "Meet-and-greet with the Guest of Honor, keynote speakers and dignitaries",
     ],
   },
   {
     id: "bronze",
     name: "Bronze Sponsor",
-    priceUSD: 9000,
-    priceZMW: 150000,
+    priceUSD: 1500,
+    priceZMW: 30000,
     icon: Star,
     color: "from-amber-600 via-amber-700 to-amber-800",
     textColor: "text-amber-100",
@@ -104,28 +99,43 @@ const SPONSORSHIP_PACKAGES = [
     popular: false,
     featured: false,
     benefits: [
-      "Logo on Facebook page and printed program",
-      "2 complimentary passes",
-      "Shared booth space",
-      "Company literature in delegate packs",
+      "Logo on Facebook page, Website and printed program.",
+      "Shared booth space.",
+      "Company literature in delegate packs.",
     ],
   },
 ];
 
-const EXHIBITION_PACKAGE = {
-  name: "Exhibition Package",
-  priceUSD: 7000,
-  priceZMW: 100000,
-  icon: Store,
-  color: "from-red-600 via-red-700 to-red-800",
-  textColor: "text-red-100",
-  borderColor: "border-red-600",
-  benefits: [
-    "Booth at exhibition space",
-    "1 complimentary pass",
-    "Logo on exhibitor's page in program and online",
-  ],
-};
+const EXHIBITION_PACKAGES = [
+  {
+    id: "exhibitor_institutional",
+    name: "Institutional Exhibitor",
+    priceUSD: 1750,
+    priceZMW: 35000,
+    icon: Store,
+    color: "from-red-600 via-red-700 to-red-800",
+    textColor: "text-red-100",
+    borderColor: "border-red-600",
+    benefits: [
+      "Booth at exhibition space.",
+      "Logo on exhibitor’s page in program and online.",
+    ],
+  },
+  {
+    id: "exhibitor_individual",
+    name: "Individual Exhibitor",
+    priceUSD: 645,
+    priceZMW: 12850,
+    icon: Store,
+    color: "from-blue-600 via-blue-700 to-blue-800",
+    textColor: "text-blue-100",
+    borderColor: "border-blue-600",
+    benefits: [
+      "Booth at exhibition space.",
+      "Logo on exhibitor’s page in program and online.",
+    ],
+  }
+];
 
 export function PartnershipSection({
   event: propEvent,
@@ -436,72 +446,76 @@ export function PartnershipSection({
             </p>
           </div>
 
-          <div className="max-w-md mx-auto">
-            <Card className="overflow-hidden bg-white shadow-lg hover:shadow-2xl transition-all duration-300 rounded-3xl border-0">
-              <div className="p-6">
-                {/* Badge and Title */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-3">
-                    <div className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500 text-white">
-                      EXHIBITION
+          {/* Exhibition Package - Special Layout */}
+          <div className="mt-16 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+            {EXHIBITION_PACKAGES.map((pkg) => (
+              <Card key={pkg.id} className="overflow-hidden bg-white shadow-lg hover:shadow-2xl transition-all duration-300 rounded-3xl border-0">
+                <div className="p-6">
+                  {/* Badge and Title */}
+                  <div className="mb-4">
+                    <div className="flex items-center mb-3">
+                      <div className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500 text-white">
+                        EXHIBITION
+                      </div>
+                      <div className="ml-3 h-0.5 flex-1 bg-red-500/30"></div>
                     </div>
-                    <div className="ml-3 h-0.5 flex-1 bg-red-500/30"></div>
+
+                    {/* Icon and Title */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div
+                        className={`w-12 h-12 p-2 rounded-xl bg-gradient-to-r ${pkg.color}`}
+                      >
+                        <Store className="w-full h-full text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-primary-blue text-xl leading-tight">
+                          {pkg.name}
+                        </h3>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Icon and Title */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div
-                      className={`w-12 h-12 p-2 rounded-xl bg-gradient-to-r ${EXHIBITION_PACKAGE.color}`}
-                    >
-                      <Store className="w-full h-full text-white" />
+                  {/* Price Display */}
+                  <div className="mb-4 flex flex-col gap-1">
+                    <div className="text-2xl font-bold text-primary-blue">
+                      {currencyType === "local" 
+                        ? `ZMW ${pkg.priceZMW.toLocaleString()}` 
+                        : `USD ${pkg.priceUSD.toLocaleString()}`}
                     </div>
-                    <div>
-                      <h3 className="font-bold text-primary-blue text-xl leading-tight">
-                        {EXHIBITION_PACKAGE.name}
-                      </h3>
+                    <div className="text-sm font-semibold text-gray-500 bg-gray-100 py-1 px-2 rounded-md w-fit">
+                      {currencyType === "local" 
+                        ? `USD ${pkg.priceUSD.toLocaleString()}` 
+                        : `ZMW ${pkg.priceZMW.toLocaleString()}`}
+                    </div>
+                  </div>
+
+                  {/* Benefits */}
+                  <div className="space-y-2 mb-6">
+                    {pkg.benefits.map((benefit, index) => (
+                      <div key={index} className="flex items-start text-sm">
+                        <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700">{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Apply Button */}
+                  <div className="pt-3">
+                    <div className="text-center">
+                      <Button
+                        onClick={() => setExhibitionDialogOpen(true)}
+                        className="w-full bg-primary-yellow hover:bg-primary-yellow/80 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all duration-300 hover:shadow-lg"
+                        disabled={!event}
+                      >
+                        Apply Now
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
                     </div>
                   </div>
                 </div>
-
-                {/* Price Display */}
-                <div className="mb-4 flex flex-col gap-1">
-                  <div className="text-2xl font-bold text-primary-blue">
-                    {currencyType === "local" 
-                      ? `ZMW ${EXHIBITION_PACKAGE.priceZMW.toLocaleString()}` 
-                      : `USD ${EXHIBITION_PACKAGE.priceUSD.toLocaleString()}`}
-                  </div>
-                  <div className="text-sm font-semibold text-gray-500 bg-gray-100 py-1 px-2 rounded-md w-fit">
-                    {currencyType === "local" 
-                      ? `USD ${EXHIBITION_PACKAGE.priceUSD.toLocaleString()}` 
-                      : `ZMW ${EXHIBITION_PACKAGE.priceZMW.toLocaleString()}`}
-                  </div>
-                </div>
-
-                {/* Benefits */}
-                <div className="space-y-2 mb-6">
-                  {EXHIBITION_PACKAGE.benefits.map((benefit, index) => (
-                    <div key={index} className="flex items-start text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Apply Button */}
-                <div className="pt-3">
-                  <div className="text-center">
-                    <Button
-                      onClick={() => setExhibitionDialogOpen(true)}
-                      className="w-full bg-primary-yellow hover:bg-primary-yellow/80 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all duration-300 hover:shadow-lg"
-                      disabled={!event}
-                    >
-                      Apply Now
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            ))}
+          </div>
           </div>
         </div>
 
