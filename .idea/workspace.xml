@@ -67,22 +67,6 @@
       <option name="presentableId" value="Default" />
       <updated>1757290716460</updated>
     </task>
-    <task id="LOCAL-00039" summary="project clean up, live fixes">
-      <option name="closed" value="true" />
-      <created>1758833674112</created>
-      <option name="number" value="00039" />
-      <option name="presentableId" value="LOCAL-00039" />
-      <option name="project" value="LOCAL" />
-      <updated>1758833674112</updated>
-    </task>
-    <task id="LOCAL-00040" summary="project clean up, live fixes">
-      <option name="closed" value="true" />
-      <created>1758879768517</created>
-      <option name="number" value="00040" />
-      <option name="presentableId" value="LOCAL-00040" />
-      <option name="project" value="LOCAL" />
-      <updated>1758879768517</updated>
-    </task>
     <task id="LOCAL-00041" summary="project clean up, live fixes">
       <option name="closed" value="true" />
       <created>1759140349164</created>
@@ -459,7 +443,23 @@
       <option name="project" value="LOCAL" />
       <updated>1785328495591</updated>
     </task>
-    <option name="localTasksCounter" value="88" />
+    <task id="LOCAL-00088" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785355066336</created>
+      <option name="number" value="00088" />
+      <option name="presentableId" value="LOCAL-00088" />
+      <option name="project" value="LOCAL" />
+      <updated>1785355066336</updated>
+    </task>
+    <task id="LOCAL-00089" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785404749166</created>
+      <option name="number" value="00089" />
+      <option name="presentableId" value="LOCAL-00089" />
+      <option name="project" value="LOCAL" />
+      <updated>1785404749166</updated>
+    </task>
+    <option name="localTasksCounter" value="90" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

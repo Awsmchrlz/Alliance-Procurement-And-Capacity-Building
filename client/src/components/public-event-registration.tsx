@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle, ArrowLeft, Globe, MapPin, Building } from "lucide-react";
+import { CheckCircle, ArrowLeft, Globe, MapPin, Building, Upload, X } from "lucide-react";
 import { Event } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,6 +54,8 @@ export function PublicEventRegistration({
   const [success, setSuccess] = useState(false);
   const [successData, setSuccessData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentEvidenceFile, setPaymentEvidenceFile] = useState<File | null>(null);
+  const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -208,6 +210,30 @@ export function PublicEventRegistration({
     }
 
     setIsSubmitting(true);
+    setIsUploadingEvidence(true);
+
+    let paymentEvidenceUrl: string | null = null;
+    if (paymentEvidenceFile) {
+      try {
+        const uploadForm = new FormData();
+        uploadForm.append("file", paymentEvidenceFile);
+        const uploadRes = await fetch("/api/events/upload-payment-evidence", {
+          method: "POST",
+          body: uploadForm,
+        });
+        if (!uploadRes.ok) {
+          throw new Error("Failed to upload payment evidence");
+        }
+        const uploadData = await uploadRes.json();
+        paymentEvidenceUrl = uploadData.url;
+      } catch (err) {
+        setIsUploadingEvidence(false);
+        setIsSubmitting(false);
+        toast({ title: "Upload Failed", description: "Could not upload payment evidence.", variant: "destructive" });
+        return;
+      }
+    }
+    setIsUploadingEvidence(false);
 
     const { price, currency } = calculateTotal();
     const includeGala = 
@@ -237,6 +263,7 @@ export function PublicEventRegistration({
         includeAccommodation,
         includeBoatCruise,
         paymentMethod: formData.paymentMethod,
+        paymentEvidenceUrl,
         totalPrice: price,
         currency: currency,
       };
@@ -299,6 +326,7 @@ export function PublicEventRegistration({
       sponsorshipPackage: "",
       includeBoatCruise: false,
     });
+    setPaymentEvidenceFile(null);
   };
 
   if (success) {
@@ -807,6 +835,60 @@ export function PublicEventRegistration({
                     ))}
                   </div>
                 </RadioGroup>
+
+                {/* Proof of Payment Upload */}
+                <div className="mt-5 pt-5 border-t border-gray-200">
+                  <Label className="text-sm font-semibold text-gray-900 mb-1 block">
+                    Proof of Payment <span className="text-gray-400 font-normal">(Optional)</span>
+                  </Label>
+                  <p className="text-xs text-gray-500 mb-3">Attach a bank receipt, screenshot, or PDF. Max 5MB.</p>
+                  <label
+                    htmlFor="payment-evidence"
+                    className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                      paymentEvidenceFile
+                        ? "border-green-400 bg-green-50"
+                        : "border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50"
+                    }`}
+                  >
+                    {paymentEvidenceFile ? (
+                      <div className="flex flex-col items-center gap-1 px-3 text-center">
+                        <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span className="text-sm font-medium text-green-700 truncate max-w-xs">{paymentEvidenceFile.name}</span>
+                        <span className="text-xs text-gray-500">{(paymentEvidenceFile.size / 1024).toFixed(0)} KB · Click to change</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                        <span className="text-sm text-gray-600">Click to upload or drag & drop</span>
+                        <span className="text-xs text-gray-400">JPEG, PNG, WebP, PDF</span>
+                      </div>
+                    )}
+                    <input
+                      id="payment-evidence"
+                      type="file"
+                      className="hidden"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        if (f.size > 5 * 1024 * 1024) {
+                          toast({ title: "File too large", description: "Maximum file size is 5MB", variant: "destructive" });
+                          return;
+                        }
+                        setPaymentEvidenceFile(f);
+                      }}
+                    />
+                  </label>
+                  {paymentEvidenceFile && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentEvidenceFile(null)}
+                      className="mt-2 text-xs text-red-500 hover:text-red-700 underline"
+                    >
+                      Remove file
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Total Calculation */}
@@ -825,10 +907,10 @@ export function PublicEventRegistration({
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button
                   onClick={handleSubmit}
-                  disabled={isSubmitting || price === 0}
+                  disabled={isSubmitting || isUploadingEvidence || price === 0}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 text-base font-bold rounded-xl h-auto"
                 >
-                  {isSubmitting ? "Submitting..." : "Submit Registration"}
+                  {isUploadingEvidence ? "Uploading evidence..." : isSubmitting ? "Submitting..." : "Submit Registration"}
                 </Button>
                 <Button
                   onClick={() => setSelectedDelegateType(null)}
