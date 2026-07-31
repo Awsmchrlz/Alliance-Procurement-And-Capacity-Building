@@ -257,26 +257,23 @@ export function EvidenceViewer({
       // Step 1: Upload new file directly to Supabase storage (same as registration dialog)
       const fileExtension = newFile.name.split('.').pop();
       const sanitizedFileName = `evidence_${Date.now()}.${fileExtension}`;
-      const bucket = 'evidence';
+      const bucket = 'payment-evidence';
       
       // Get user ID from session
       const userId = session.user.id;
       
-      // We need to get the event ID from the current evidence path or registration
-      // For now, let's extract it from the current evidence path
-      let eventId = '';
+      // We need to construct a valid path. If we can't extract eventId, use a generic fallback
+      let eventId = 'unknown-event';
       if (currentEvidencePath) {
         const pathParts = currentEvidencePath.split('/');
         if (pathParts.length >= 3 && pathParts[0] === 'evidence') {
           eventId = pathParts[2]; // evidence/userId/eventId/filename
+        } else if (pathParts.length >= 2) {
+          eventId = pathParts[0]; // fallback to whatever the first folder is
         }
       }
       
-      if (!eventId) {
-        throw new Error('Could not determine event ID from evidence path');
-      }
-      
-      const newFilePath = `evidence/${userId}/${eventId}/${sanitizedFileName}`;
+      const newFilePath = `updated-evidence/${userId}/${eventId}/${sanitizedFileName}`;
       
       console.log('Uploading to path:', newFilePath);
       

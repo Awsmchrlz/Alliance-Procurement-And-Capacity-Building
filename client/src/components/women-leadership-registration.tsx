@@ -112,7 +112,7 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
           });
           const uploadData = await uploadRes.json();
           if (!uploadRes.ok) throw new Error(uploadData.message || "Upload failed");
-          paymentEvidenceUrl = uploadData.url;
+          paymentEvidenceUrl = uploadData.filePath;
         } finally {
           setIsUploadingEvidence(false);
         }

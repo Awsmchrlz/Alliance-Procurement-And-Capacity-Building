@@ -225,7 +225,7 @@ export function PublicEventRegistration({
           throw new Error("Failed to upload payment evidence");
         }
         const uploadData = await uploadRes.json();
-        paymentEvidenceUrl = uploadData.url;
+        paymentEvidenceUrl = uploadData.filePath;
       } catch (err) {
         setIsUploadingEvidence(false);
         setIsSubmitting(false);
