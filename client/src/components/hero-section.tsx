@@ -67,16 +67,21 @@ export function HeroSection() {
 
           {/* Logo Section - Left on desktop, top on mobile */}
           <div className="w-full lg:w-1/2 order-1 lg:order-1">
-            <div className="relative w-full h-48 sm:h-64 lg:h-80 xl:h-96">
+            <div className="relative w-full h-48 sm:h-64 lg:h-80 xl:h-96 flex flex-row items-center justify-center gap-4 sm:gap-6 bg-white/5 backdrop-blur-sm rounded-xl p-4 shadow-lg lg:bg-transparent lg:backdrop-blur-none lg:shadow-none lg:p-0">
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1755860055/APCB_logo_o7rt91.png"
                 alt="Alliance Procurement & Capacity Building Logo"
-                className="w-full h-full object-contain lg:object-cover rounded-lg"
+                className="w-1/2 h-full object-contain rounded-lg shadow-md lg:shadow-none lg:object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300"
                 onError={(e) => {
                   // Fallback styling if image fails to load
-                  e.currentTarget.className = "w-full h-full bg-white/10 rounded-lg flex items-center justify-center";
+                  e.currentTarget.className = "w-1/2 h-full bg-white/10 rounded-lg flex items-center justify-center";
                   e.currentTarget.innerHTML = '<span class="text-[#87CEEB] text-2xl font-bold">APCB</span>';
                 }}
+              />
+              <img
+                src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1785547710/Alliance_PCB_Foundation_transparent_under100KB_fgdovt.png"
+                alt="Alliance PCB Foundation Logo"
+                className="w-1/2 h-full object-contain rounded-lg drop-shadow-md hover:scale-105 transition-transform duration-300"
               />
             </div>
           </div>

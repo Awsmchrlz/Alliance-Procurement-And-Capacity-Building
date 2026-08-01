@@ -539,23 +539,17 @@ function RegistrationDialog({
             throw new Error("File size too large (max 10MB)");
           }
 
-          const fileName = `evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-          const filePath = `${user.id}/${event.id}/${fileName}`;
+          const uploadForm = new FormData();
+          uploadForm.append("file", evidenceFile);
 
-          const { data, error } = await supabase.storage
-            .from("payment-evidence")
-            .upload(filePath, evidenceFile, {
-              cacheControl: "3600",
-              upsert: false,
-              contentType: evidenceFile.type || "application/octet-stream",
-            });
-
-          if (error) {
-            console.error("Supabase upload error:", error);
-            throw new Error(`Upload failed: ${error.message}`);
-          }
-
-          evidenceUrl = filePath;
+          const uploadRes = await fetch("/api/events/upload-payment-evidence", {
+            method: "POST",
+            body: uploadForm,
+          });
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok) throw new Error(uploadData.message || "Upload failed");
+          
+          evidenceUrl = uploadData.filePath;
         } catch (error: any) {
           console.error("File upload error:", error);
 

@@ -315,18 +315,17 @@ export function SponsorshipDialog({
           formData.paymentMethod === "bank")
       ) {
         try {
-          const fileName = `sponsorship_evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-          const filePath = `sponsorships/${event.id}/${fileName}`;
-          const { data, error } = await supabase.storage
-            .from("payment-evidence")
-            .upload(filePath, evidenceFile, {
-              cacheControl: "3600",
-              upsert: false,
-              contentType: evidenceFile.type || "application/octet-stream",
-            });
+          const uploadForm = new FormData();
+          uploadForm.append("file", evidenceFile);
 
-          if (error) throw error;
-          evidenceUrl = filePath;
+          const uploadRes = await fetch("/api/events/upload-payment-evidence", {
+            method: "POST",
+            body: uploadForm,
+          });
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok) throw new Error(uploadData.message || "Upload failed");
+          
+          evidenceUrl = uploadData.filePath;
         } catch (error) {
           console.error("File upload error:", error);
           toast({

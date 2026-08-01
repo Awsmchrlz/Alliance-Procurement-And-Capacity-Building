@@ -198,22 +198,17 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
       
       if (evidenceFile && (formData.paymentMethod === 'mobile' || formData.paymentMethod === 'bank')) {
         try {
-          const fileName = `exhibition_evidence_${Date.now()}_${evidenceFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-          const filePath = `exhibitions/${event.id}/${fileName}`;
+          const uploadForm = new FormData();
+          uploadForm.append("file", evidenceFile);
+
+          const uploadRes = await fetch("/api/events/upload-payment-evidence", {
+            method: "POST",
+            body: uploadForm,
+          });
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok) throw new Error(uploadData.message || "Upload failed");
           
-          const { data, error } = await supabase.storage
-            .from('payment-evidence')
-            .upload(filePath, evidenceFile, {
-              cacheControl: '3600',
-              upsert: false,
-              contentType: evidenceFile.type || 'application/octet-stream',
-            });
-          
-          if (error) {
-            throw error;
-          }
-          
-          evidenceUrl = filePath;
+          evidenceUrl = uploadData.filePath;
           toast({
             title: "Evidence uploaded",
             description: "Payment evidence uploaded successfully!",

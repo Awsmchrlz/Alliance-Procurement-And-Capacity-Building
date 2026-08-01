@@ -1366,7 +1366,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sponsorships = await storage.getAllSponsorships();
       const events = await storage.getAllEvents();
-      const womensEvent = events.find((e: any) => e.title.includes("Women in Leadership"));
+      // Get the Women in Action / Leadership event to filter sponsorships appropriately
+      const womensEvent = events.find((e: any) => e.title?.toLowerCase().includes("women in action") || e.title?.toLowerCase().includes("women in leadership"));
       
       // Filter only approved sponsorships for the Women's Event
       const approvedSponsorships = sponsorships.filter(
@@ -1823,7 +1824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const registrationsWithEventsUnfiltered = await Promise.all(
           allRegistrations.map(async (registration) => {
             const event = await storage.getEvent(registration.eventId);
-            return event ? { ...registration, event } : null;
+            return event ? { ...registration, event } : { ...registration, event: { id: registration.eventId, title: "Archived Event (Details Unavailable)", start_date: registration.registeredAt || new Date().toISOString() } };
           })
         );
         

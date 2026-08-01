@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { format, addHours } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -105,4 +106,14 @@ export function debugUrlDetection(): void {
     urlComponents: { protocol, hostname, port },
     isDevelopment: getBaseUrl() === window.location.origin,
   });
+}
+
+/**
+ * Format a date explicitly forcing it to Zambian time (UTC+2)
+ * Useful for ensuring server UTC timestamps align with local time
+ */
+export function formatZambianTime(date: Date | string | number, formatStr: string): string {
+  const utcDate = new Date(date);
+  const zambianDate = addHours(utcDate, 2);
+  return format(zambianDate, formatStr);
 }

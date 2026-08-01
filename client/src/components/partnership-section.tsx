@@ -179,9 +179,10 @@ export function PartnershipSection({
   });
 
   let defaultEvent = Array.isArray(events) ? events.find(e => 
+    e.title.toLowerCase().includes("women in action") ||
     e.title.toLowerCase().includes("women in leadership") || 
     e.title.toLowerCase().includes("women leadership")
-  ) : null;
+  ) : undefined;
 
   if (!defaultEvent && Array.isArray(events)) {
     defaultEvent = events.find(e => e.featured === true) || (events.length > 0 ? events[0] : null);

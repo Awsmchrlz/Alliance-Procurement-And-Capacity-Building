@@ -5,8 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e518d8ec-c42a-4346-8625-3c4b15a94ef0" name="Changes" comment="clean up">
+      <change afterPath="$PROJECT_DIR$/client/src/components/admin/detail-view-modal.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/client/src/components/admin/exhibitions-tab.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/client/src/components/admin/registrations-tab.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/client/src/components/admin/sponsorships-tab.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/query.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/replace_tabs.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/components/exhibition-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/exhibition-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/components/hero-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/hero-section.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/src/components/partnership-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/partnership-section.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/registration-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/components/sponsorship-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/sponsorship-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/lib/utils.ts" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/lib/utils.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/admin-dashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/server/routes.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,22 +82,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1757290716460</updated>
-    </task>
-    <task id="LOCAL-00046" summary="contact form">
-      <option name="closed" value="true" />
-      <created>1759150807890</created>
-      <option name="number" value="00046" />
-      <option name="presentableId" value="LOCAL-00046" />
-      <option name="project" value="LOCAL" />
-      <updated>1759150807890</updated>
-    </task>
-    <task id="LOCAL-00047" summary="registration dialog and invoice fixes">
-      <option name="closed" value="true" />
-      <created>1759244345081</created>
-      <option name="number" value="00047" />
-      <option name="presentableId" value="LOCAL-00047" />
-      <option name="project" value="LOCAL" />
-      <updated>1759244345081</updated>
     </task>
     <task id="LOCAL-00048" summary="regen">
       <option name="closed" value="true" />
@@ -462,7 +459,23 @@
       <option name="project" value="LOCAL" />
       <updated>1785503252339</updated>
     </task>
-    <option name="localTasksCounter" value="95" />
+    <task id="LOCAL-00095" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785505456544</created>
+      <option name="number" value="00095" />
+      <option name="presentableId" value="LOCAL-00095" />
+      <option name="project" value="LOCAL" />
+      <updated>1785505456544</updated>
+    </task>
+    <task id="LOCAL-00096" summary="clean up">
+      <option name="closed" value="true" />
+      <created>1785505902879</created>
+      <option name="number" value="00096" />
+      <option name="presentableId" value="LOCAL-00096" />
+      <option name="project" value="LOCAL" />
+      <updated>1785505902879</updated>
+    </task>
+    <option name="localTasksCounter" value="97" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
