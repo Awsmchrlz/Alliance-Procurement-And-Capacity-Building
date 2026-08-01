@@ -34,7 +34,7 @@ export function EventCard({
   const WOMENS_DESKTOP_BANNER = "https://res.cloudinary.com/duu5rnmeu/image/upload/v1785573421/banner_under130kb_wcouuv.jpg";
   const isWomensEvent = event.title?.toLowerCase().includes("women in action") ||
     event.title?.toLowerCase().includes("women in leadership");
-  const desktopImageUrl = isWomensEvent ? WOMENS_DESKTOP_BANNER : event.imageUrl;
+  const desktopImageUrl = isWomensEvent ? WOMENS_DESKTOP_BANNER : (event.imageUrl ?? undefined);
 
   const handleRegister = () => {
     setOpen(true);
