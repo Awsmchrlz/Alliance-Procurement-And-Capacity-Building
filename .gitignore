@@ -188,3 +188,5 @@ k8s/create-secrets.sh
 # SECURITY_INCIDENT.md
 
 .DS_Store
+
+.idea
