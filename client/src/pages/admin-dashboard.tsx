@@ -2850,7 +2850,8 @@ export default function AdminDashboard() {
               title="Registration Management"
               registrations={registrations}
               canManageFinance={canManageFinance}
-              handlePaymentStatusChange={(id, status) => handlePaymentStatusChange(id, status)}
+              handlePaymentStatusChange={(id, status) => handlePaymentStatusUpdate(id, status)}
+              onViewEvidence={(url, name) => setEvidenceViewer({ open: true, evidencePath: url, fileName: name, registrationId: "" })}
               extraActions={
                 <>
                   <Button
@@ -3201,7 +3202,8 @@ export default function AdminDashboard() {
               sponsorships={sponsorships} 
               canManageFinance={canManageFinance}
               setShowCreateSponsorshipDialog={setShowCreateSponsorshipDialog}
-              handleStatusChange={handleStatusChange}
+              handleStatusChange={handleSponsorshipStatusUpdate}
+              onViewEvidence={(url, name) => setEvidenceViewer({ open: true, evidencePath: url, fileName: name, registrationId: "" })}
             />
           </TabsContent>
 
@@ -3211,7 +3213,8 @@ export default function AdminDashboard() {
               exhibitions={exhibitions} 
               canManageFinance={canManageFinance}
               setShowCreateExhibitionDialog={setShowCreateExhibitionDialog}
-              handleStatusChange={handleStatusChange}
+              handleStatusChange={handleExhibitionStatusUpdate}
+              onViewEvidence={(url, name) => setEvidenceViewer({ open: true, evidencePath: url, fileName: name, registrationId: "" })}
             />
           </TabsContent>
 

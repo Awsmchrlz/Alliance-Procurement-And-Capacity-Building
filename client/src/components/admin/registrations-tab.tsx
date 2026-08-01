@@ -26,7 +26,6 @@ import {
 import { FileText, Eye, ArrowUpDown, CreditCard } from "lucide-react";
 import { formatZambianTime } from "@/lib/utils";
 import { DetailViewModal, DetailItem } from "./detail-view-modal";
-import { EvidenceViewer } from "@/components/evidence-viewer";
 
 interface RegistrationsTabProps {
   registrations: any[];
@@ -35,6 +34,7 @@ interface RegistrationsTabProps {
   title?: string;
   icon?: React.ReactNode;
   extraActions?: React.ReactNode;
+  onViewEvidence?: (url: string, name: string) => void;
 }
 
 export function RegistrationsTab({
@@ -44,6 +44,7 @@ export function RegistrationsTab({
   title = "Event Registrations",
   icon = <FileText className="w-5 h-5 text-white" />,
   extraActions,
+  onViewEvidence,
 }: RegistrationsTabProps) {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" }>({
     key: "registeredAt",
@@ -214,14 +215,14 @@ export function RegistrationsTab({
                     </TableCell>
                     <TableCell>
                       {reg.paymentEvidence ? (
-                        <EvidenceViewer
-                          url={reg.paymentEvidence}
-                          type={
-                            reg.paymentEvidence.endsWith(".pdf")
-                              ? "pdf"
-                              : "image"
-                          }
-                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => onViewEvidence?.(reg.paymentEvidence, reg.user ? `${reg.user.firstName}_${reg.user.lastName}_evidence` : "payment_evidence")}
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          View
+                        </Button>
                       ) : (
                         <span className="text-sm text-gray-500 italic">None</span>
                       )}

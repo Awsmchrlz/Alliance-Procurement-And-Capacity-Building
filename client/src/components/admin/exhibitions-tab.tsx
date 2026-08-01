@@ -23,16 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Store, Plus, Eye, ArrowUpDown } from "lucide-react";
+import { Store, Plus, Eye, ArrowUpDown, FileText } from "lucide-react";
 import { formatZambianTime } from "@/lib/utils";
 import { DetailViewModal, DetailItem } from "./detail-view-modal";
-import { EvidenceViewer } from "@/components/evidence-viewer";
 
 interface ExhibitionsTabProps {
   exhibitions: any[];
   canManageFinance: boolean;
   setShowCreateExhibitionDialog: (show: boolean) => void;
   handleStatusChange: (id: string, newStatus: string, type: string) => void;
+  onViewEvidence?: (url: string, name: string) => void;
 }
 
 export function ExhibitionsTab({
@@ -40,6 +40,7 @@ export function ExhibitionsTab({
   canManageFinance,
   setShowCreateExhibitionDialog,
   handleStatusChange,
+  onViewEvidence,
 }: ExhibitionsTabProps) {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" }>({
     key: "submittedAt",
@@ -213,10 +214,14 @@ export function ExhibitionsTab({
                     </TableCell>
                     <TableCell>
                       {exhibition.paymentEvidence ? (
-                        <EvidenceViewer
-                          url={exhibition.paymentEvidence}
-                          type="image"
-                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => onViewEvidence?.(exhibition.paymentEvidence, exhibition.companyName ? `${exhibition.companyName}_payment_evidence` : "payment_evidence")}
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          View Evidence
+                        </Button>
                       ) : (
                         <span className="text-sm text-gray-500">None</span>
                       )}

@@ -23,16 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Crown, Plus, Eye, ArrowUpDown, Download } from "lucide-react";
+import { Crown, Plus, Eye, ArrowUpDown, Download, FileText } from "lucide-react";
 import { formatZambianTime } from "@/lib/utils";
 import { DetailViewModal, DetailItem } from "./detail-view-modal";
-import { EvidenceViewer } from "@/components/evidence-viewer";
 
 interface SponsorshipsTabProps {
   sponsorships: any[];
   canManageFinance: boolean;
   setShowCreateSponsorshipDialog: (show: boolean) => void;
   handleStatusChange: (id: string, newStatus: string, type: string) => void;
+  onViewEvidence?: (url: string, name: string) => void;
 }
 
 export function SponsorshipsTab({
@@ -40,6 +40,7 @@ export function SponsorshipsTab({
   canManageFinance,
   setShowCreateSponsorshipDialog,
   handleStatusChange,
+  onViewEvidence,
 }: SponsorshipsTabProps) {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" }>({
     key: "submittedAt",
@@ -215,10 +216,14 @@ export function SponsorshipsTab({
                     </TableCell>
                     <TableCell>
                       {sponsorship.paymentEvidence ? (
-                        <EvidenceViewer
-                          url={sponsorship.paymentEvidence}
-                          type="image"
-                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => onViewEvidence?.(sponsorship.paymentEvidence, sponsorship.companyName ? `${sponsorship.companyName}_payment_evidence` : "payment_evidence")}
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          View Evidence
+                        </Button>
                       ) : (
                         <span className="text-sm text-gray-500">None</span>
                       )}
