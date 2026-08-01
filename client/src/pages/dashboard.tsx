@@ -57,6 +57,7 @@ export default function Dashboard() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  
   const [activeTab, setActiveTab] = useState<"active" | "paid" | "cancelled">(
     "active",
   );
@@ -407,21 +408,6 @@ export default function Dashboard() {
   ) => {
     return (
       <div className="space-y-6">
-        {/* DEBUG INFO INJECTED HERE */}
-        <div className="bg-red-50 p-4 border border-red-200 rounded-md text-xs font-mono overflow-auto mb-4">
-          <p className="font-bold text-red-700 mb-2">Diagnostic Data (Admin Only):</p>
-          <p>Auth Email: {user?.email || "MISSING"}</p>
-          <p>Auth ID: {user?.id || "MISSING"}</p>
-          <p>Raw Registrations Count: {registrations?.length || 0}</p>
-          <p>Public Reg Count: {registrations?.filter((r: any) => r.isPublicRegistration).length || 0}</p>
-          <p>Pending List Count: {pendingRegistrations.length}</p>
-          <p>Paid List Count: {paidRegistrations.length}</p>
-          <details>
-            <summary className="cursor-pointer font-bold mt-2">Raw Registrations Array</summary>
-            <pre className="mt-2 text-[10px]">{JSON.stringify(registrations, null, 2)}</pre>
-          </details>
-        </div>
-
         {list.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">{emptyMessage}</p>

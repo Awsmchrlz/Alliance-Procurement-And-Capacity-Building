@@ -1746,7 +1746,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User dashboard routes
   // Fetch sponsorships for a specific user
   app.get(
     "/api/users/:userId/sponsorships",
@@ -1769,7 +1768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { data, error } = await supabaseAdmin
           .from("sponsorships")
           .select("*")
-          .ilike("email", userEmail.trim())
+          .ilike("email", `%${userEmail.trim()}%`)
           .is("deleted_at", null)
           .order("submitted_at", { ascending: false });
 
@@ -1859,7 +1858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { data, error } = await supabaseAdmin
             .from("public_event_registrations")
             .select("*")
-            .ilike("email", userEmail.trim());
+            .ilike("email", `%${userEmail.trim()}%`);
             
           if (error) {
             console.error("❌ [DASHBOARD] Error fetching public registrations:", error.message);
