@@ -1824,7 +1824,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const registrationsWithEventsUnfiltered = await Promise.all(
           allRegistrations.map(async (registration) => {
             const event = await storage.getEvent(registration.eventId);
-            return event ? { ...registration, event } : { ...registration, event: { id: registration.eventId, title: "Archived Event (Details Unavailable)", start_date: registration.registeredAt || new Date().toISOString() } };
+            if (event) {
+              // Normalize: ensure startDate is always available in camelCase
+              const normalizedEvent = {
+                ...event,
+                startDate: (event as any).startDate || (event as any).start_date || registration.registeredAt || new Date().toISOString(),
+              };
+              return { ...registration, event: normalizedEvent };
+            }
+            // Fallback for archived/missing events
+            return {
+              ...registration,
+              event: {
+                id: registration.eventId,
+                title: "Archived Event",
+                startDate: registration.registeredAt || new Date().toISOString(),
+                start_date: registration.registeredAt || new Date().toISOString(),
+                location: null,
+                featured: false,
+              }
+            };
           })
         );
         

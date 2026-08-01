@@ -213,15 +213,26 @@ export default function Dashboard() {
       registeredAt: ex.submittedAt,
     }));
 
-    const combined = [...eventRegistrations, ...exhibitionRegistrations];
+    const combined = [...eventRegistrations, ...exhibitionRegistrations].map((r) => ({
+      ...r,
+      // Normalize the event object so startDate always works regardless of
+      // whether data came from the DB as start_date or the schema as startDate
+      event: r.event ? {
+        ...r.event,
+        startDate: r.event.startDate || r.event.start_date || r.registeredAt || new Date().toISOString(),
+      } : null,
+    })).filter((r) => r.event !== null);
+
+    // Active = anything that is NOT paid and NOT cancelled
+    const activeStatuses = new Set(["pending", "approved", "submitted", "processing"]);
 
     return {
       paidRegistrations: combined.filter((r) => r.paymentStatus === "paid"),
       pendingRegistrations: combined.filter(
-        (r) => r.paymentStatus === "pending",
+        (r) => activeStatuses.has(r.paymentStatus) || (!r.paymentStatus || r.paymentStatus === ""),
       ),
       cancelledRegistrations: combined.filter(
-        (r) => r.paymentStatus === "cancelled",
+        (r) => r.paymentStatus === "cancelled" || r.paymentStatus === "rejected",
       ),
       allRegistrations: combined,
     };
