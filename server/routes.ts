@@ -1833,9 +1833,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { userId } = req.params;
 
-        console.log("🔍 [DASHBOARD] Fetching registrations for userId:", userId);
-        console.log("🔍 [DASHBOARD] Auth user email:", req.supabaseUser?.email);
-
         // Ensure user can only access their own data (unless admin)
         if (
           req.supabaseRole !== "super_admin" &&
@@ -1846,13 +1843,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const registrations = await storage.getEventRegistrationsByUser(userId);
-        console.log("📋 [DASHBOARD] Standard registrations count:", registrations.length);
 
         // Use the auth user email directly - most reliable source
         const userEmail = req.supabaseUser.email;
         let publicRegistrations: any[] = [];
-        
-        console.log("📧 [DASHBOARD] Looking up public registrations with email:", userEmail);
         
         if (userEmail) {
           const { data, error } = await supabaseAdmin
@@ -1861,9 +1855,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .ilike("email", `%${userEmail.trim()}%`);
             
           if (error) {
-            console.error("❌ [DASHBOARD] Error fetching public registrations:", error.message);
+            console.error("Error fetching public registrations:", error.message);
           } else {
-            console.log("✅ [DASHBOARD] Public registrations found:", data?.length ?? 0);
           }
           
           if (!error && data) {
@@ -1898,8 +1891,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const allRegistrations = [...registrations, ...publicRegistrations];
 
-        console.log("📋 [DASHBOARD] Total registrations (standard + public):", allRegistrations.length);
-
         // For all registrations, fetch event details via supabaseAdmin to bypass RLS
         const registrationsWithEventsUnfiltered = await Promise.all(
           allRegistrations.map(async (registration) => {
@@ -1911,7 +1902,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .single();
 
             if (eventError || !eventData) {
-              console.warn("⚠️ [DASHBOARD] Could not find event for registration:", registration.id, "eventId:", registration.eventId);
               return {
                 ...registration,
                 event: {
