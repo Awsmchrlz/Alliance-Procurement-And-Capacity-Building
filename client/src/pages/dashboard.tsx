@@ -230,6 +230,17 @@ export default function Dashboard() {
     // Active = anything that is NOT paid and NOT cancelled
     const activeStatuses = new Set(["pending", "approved", "submitted", "processing"]);
 
+    console.log("🔍 [DASHBOARD FILTERING] eventRegistrations count:", eventRegistrations.length);
+    console.log("🔍 [DASHBOARD FILTERING] combined count before filter:", combined.length);
+    if (combined.length > 0) {
+      console.log("🔍 [DASHBOARD FILTERING] Sample combined item:", {
+        id: combined[0].id,
+        isPublic: (combined[0] as any).isPublicRegistration,
+        paymentStatus: combined[0].paymentStatus,
+        event: combined[0].event
+      });
+    }
+
     return {
       paidRegistrations: combined.filter((r) => r.paymentStatus === "paid"),
       pendingRegistrations: combined.filter(

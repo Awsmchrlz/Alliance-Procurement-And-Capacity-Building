@@ -1778,21 +1778,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (userEmail) {
           const { data, error } = await supabaseAdmin
             .from("public_event_registrations")
-            .select(`
-              *,
-              events (
-                id,
-                title,
-                description,
-                start_date,
-                end_date,
-                location,
-                price,
-                image_url,
-                featured
-              )
-            `)
-            .ilike("email", userEmail);
+            .select("*")
+            .eq("email", userEmail.trim().toLowerCase());
             
           if (error) {
             console.error("❌ [DASHBOARD] Error fetching public registrations:", error.message);
@@ -1803,26 +1790,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!error && data) {
             publicRegistrations = data.map(pr => {
               const paymentStatusStr = (pr.payment_status || "pending").toLowerCase();
-              // Use the joined event data directly - no need for separate getEvent call
-              const eventData = pr.events ? {
-                id: pr.events.id,
-                title: pr.events.title,
-                description: pr.events.description,
-                startDate: pr.events.start_date,
-                start_date: pr.events.start_date,
-                endDate: pr.events.end_date,
-                location: pr.events.location,
-                price: pr.events.price,
-                imageUrl: pr.events.image_url,
-                featured: pr.events.featured ?? false,
-              } : {
-                id: pr.event_id,
-                title: "Women in Action 2026",
-                startDate: pr.created_at,
-                start_date: pr.created_at,
-                location: "Avani Victoria Falls Resort, Livingstone",
-                featured: true,
-              };
               return {
                 id: pr.id,
                 registrationNumber: pr.registration_number,
@@ -1844,9 +1811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 accommodationPackage: pr.include_accommodation,
                 boatCruisePackage: pr.include_boat_cruise,
                 isPublicRegistration: true,
-                status: (pr.status || "pending").toLowerCase(),
-                // Attach the event directly so we don't need another lookup
-                event: eventData,
+                status: (pr.status || "pending").toLowerCase()
               };
             });
           }
@@ -1856,14 +1821,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log("📋 [DASHBOARD] Total registrations (standard + public):", allRegistrations.length);
 
-        // For standard registrations, fetch event details via supabaseAdmin to bypass RLS
+        // For all registrations, fetch event details via supabaseAdmin to bypass RLS
         const registrationsWithEventsUnfiltered = await Promise.all(
           allRegistrations.map(async (registration) => {
-            // Public registrations already have their event data attached
-            if ((registration as any).isPublicRegistration && (registration as any).event) {
-              return registration;
-            }
-            // For standard registrations, fetch via supabaseAdmin
+            // Fetch via supabaseAdmin so it never gets blocked by RLS
             const { data: eventData, error: eventError } = await supabaseAdmin
               .from("events")
               .select("id, title, description, start_date, end_date, location, price, image_url, featured")
@@ -1876,7 +1837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 ...registration,
                 event: {
                   id: registration.eventId,
-                  title: "Event",
+                  title: (registration as any).isPublicRegistration ? "Women in Action 2026" : "Archived Event",
                   startDate: registration.registeredAt || new Date().toISOString(),
                   start_date: registration.registeredAt || new Date().toISOString(),
                   location: null,
