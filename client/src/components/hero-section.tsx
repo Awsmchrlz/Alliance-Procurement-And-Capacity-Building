@@ -83,7 +83,7 @@ export function HeroSection() {
               <img
                 src="https://res.cloudinary.com/duu5rnmeu/image/upload/v1785547710/Alliance_PCB_Foundation_transparent_under100KB_fgdovt.png"
                 alt="Alliance PCB Foundation Logo"
-                className="w-[35%] h-[55%] sm:h-[60%] object-contain drop-shadow-md hover:scale-105 transition-transform duration-300"
+                className="w-[25%] h-[45%] sm:h-[50%] object-contain drop-shadow-md hover:scale-105 transition-transform duration-300"
               />
             </div>
           </div>

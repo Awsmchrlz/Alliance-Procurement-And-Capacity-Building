@@ -1747,6 +1747,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User dashboard routes
+  // Fetch sponsorships for a specific user
+  app.get(
+    "/api/users/:userId/sponsorships",
+    authenticateSupabase,
+    async (req: any, res) => {
+      try {
+        const { userId } = req.params;
+
+        // Ensure user can only access their own data (unless admin)
+        const isSuperAdmin = req.supabaseRole === Roles.SuperAdmin;
+        if (!isSuperAdmin && req.supabaseUser.id !== userId) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+
+        const userEmail = req.supabaseUser.email;
+        if (!userEmail) {
+          return res.json([]);
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from("sponsorships")
+          .select("*")
+          .ilike("email", userEmail.trim())
+          .is("deleted_at", null)
+          .order("submitted_at", { ascending: false });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        // Map the events data via supabaseAdmin to bypass RLS issues
+        const mappedSponsorships = await Promise.all(
+          (data || []).map(async (sp) => {
+            const { data: eventData } = await supabaseAdmin
+              .from("events")
+              .select("id, title, start_date, location, featured")
+              .eq("id", sp.event_id)
+              .single();
+
+            return {
+              ...sp,
+              // Map DB snake_case fields to camelCase
+              eventId: sp.event_id,
+              companyName: sp.company_name,
+              contactPerson: sp.contact_person,
+              phoneNumber: sp.phone_number,
+              companyAddress: sp.company_address,
+              sponsorshipLevel: sp.sponsorship_level,
+              paymentStatus: (sp.payment_status || "pending").toLowerCase(),
+              paymentEvidence: sp.payment_evidence,
+              paymentMethod: sp.payment_method,
+              submittedAt: sp.submitted_at,
+              status: (sp.status || "pending").toLowerCase(),
+              event: eventData ? {
+                id: eventData.id,
+                title: eventData.title,
+                startDate: eventData.start_date,
+                start_date: eventData.start_date,
+                location: eventData.location,
+                featured: eventData.featured ?? false,
+              } : {
+                id: sp.event_id,
+                title: "Archived Event",
+                startDate: sp.submitted_at || new Date().toISOString(),
+                start_date: sp.submitted_at || new Date().toISOString(),
+                location: null,
+                featured: false,
+              },
+            };
+          })
+        );
+
+        res.json(mappedSponsorships);
+      } catch (error: any) {
+        console.error("Error fetching user sponsorships:", error);
+        res.status(500).json({ message: "Failed to fetch sponsorships", details: error.message });
+      }
+    }
+  );
+
   app.get(
     "/api/users/:userId/registrations",
     authenticateSupabase,
@@ -1779,7 +1859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { data, error } = await supabaseAdmin
             .from("public_event_registrations")
             .select("*")
-            .eq("email", userEmail.trim().toLowerCase());
+            .ilike("email", userEmail.trim());
             
           if (error) {
             console.error("❌ [DASHBOARD] Error fetching public registrations:", error.message);

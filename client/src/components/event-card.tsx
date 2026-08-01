@@ -283,7 +283,7 @@ export function EventCard({
         {event.imageUrl && (
           <div className={`relative overflow-hidden rounded-l-3xl ${isWomensEvent ? "w-1/2" : "w-2/5"}`}>
             <img
-              src={desktopImageUrl}
+              src={desktopImageUrl || undefined}
               alt={event.title}
               className={`w-full h-full ${isWomensEvent ? "object-cover object-top" : "object-cover"}`}
               data-testid={`event-image-${event.id}`}

@@ -133,6 +133,31 @@ export default function Dashboard() {
     refetchOnWindowFocus: true,
   });
 
+  // Fetch user sponsorships
+  const {
+    data: sponsorships,
+    isLoading: isLoadingSponsorships,
+    refetch: refetchSponsorships,
+  } = useQuery({
+    queryKey: ["/api/users", user?.id, "sponsorships"],
+    queryFn: async () => {
+      try {
+        const data = await apiRequest(
+          "GET",
+          `/api/users/${user?.id}/sponsorships`,
+        );
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!user,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
   // Check for registration success flag and show modal
   useEffect(() => {
     const shouldShowSuccess = sessionStorage.getItem("showRegistrationSuccess");
@@ -216,8 +241,18 @@ export default function Dashboard() {
       registrationType: "exhibition" as const,
       registeredAt: ex.submittedAt,
     }));
+    
+    const sponsorshipRegistrations = (sponsorships || []).map((sp: any) => ({
+      ...sp,
+      registrationNumber: `SPO-${sp.id.slice(-8)}`,
+      registrationType: "sponsorship" as const,
+      registeredAt: sp.submittedAt,
+      // Map relevant sponsorship fields for the UI
+      pricePaid: sp.amount,
+      organization: sp.companyName,
+    }));
 
-    const combined = [...eventRegistrations, ...exhibitionRegistrations].map((r) => ({
+    const combined = [...eventRegistrations, ...exhibitionRegistrations, ...sponsorshipRegistrations].map((r) => ({
       ...r,
       // Normalize the event object so startDate always works regardless of
       // whether data came from the DB as start_date or the schema as startDate
@@ -370,25 +405,38 @@ export default function Dashboard() {
     list: RegistrationWithEvent[],
     emptyMessage: string,
   ) => {
-    if (list.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <p className="text-gray-500">{emptyMessage}</p>
-        </div>
-      );
-    }
     return (
       <div className="space-y-6">
-        {list.map((registration) => {
-          const statusConfig = getStatusConfig(registration.paymentStatus);
-          const StatusIcon = statusConfig.icon;
+        {/* DEBUG INFO INJECTED HERE */}
+        <div className="bg-red-50 p-4 border border-red-200 rounded-md text-xs font-mono overflow-auto mb-4">
+          <p className="font-bold text-red-700 mb-2">Diagnostic Data (Admin Only):</p>
+          <p>Auth Email: {user?.email || "MISSING"}</p>
+          <p>Auth ID: {user?.id || "MISSING"}</p>
+          <p>Raw Registrations Count: {registrations?.length || 0}</p>
+          <p>Public Reg Count: {registrations?.filter((r: any) => r.isPublicRegistration).length || 0}</p>
+          <p>Pending List Count: {pendingRegistrations.length}</p>
+          <p>Paid List Count: {paidRegistrations.length}</p>
+          <details>
+            <summary className="cursor-pointer font-bold mt-2">Raw Registrations Array</summary>
+            <pre className="mt-2 text-[10px]">{JSON.stringify(registrations, null, 2)}</pre>
+          </details>
+        </div>
 
-          return (
-            <Card
-              key={registration.id}
-              className={`bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden transition-all ${registration.paymentStatus === "cancelled" ? "opacity-70" : ""}`}
-            >
-              <CardContent className="p-6">
+        {list.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">{emptyMessage}</p>
+          </div>
+        ) : (
+          list.map((registration) => {
+            const statusConfig = getStatusConfig(registration.paymentStatus);
+            const StatusIcon = statusConfig.icon;
+
+            return (
+              <Card
+                key={registration.id}
+                className={`bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden transition-all ${registration.paymentStatus === "cancelled" ? "opacity-70" : ""}`}
+              >
+                <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row gap-6">
                   {/* Event Info */}
                   <div className="flex-1">
@@ -403,15 +451,17 @@ export default function Dashboard() {
                           </h3>
                           <Badge
                             className={
-                              (registration as any).registrationType ===
-                              "exhibition"
+                              (registration as any).registrationType === "exhibition"
                                 ? "bg-purple-100 text-purple-800 border-purple-200"
+                                : (registration as any).registrationType === "sponsorship"
+                                ? "bg-amber-100 text-amber-800 border-amber-200"
                                 : "bg-blue-100 text-blue-800 border-blue-200"
                             }
                           >
-                            {(registration as any).registrationType ===
-                            "exhibition"
+                            {(registration as any).registrationType === "exhibition"
                               ? "Exhibition"
+                              : (registration as any).registrationType === "sponsorship"
+                              ? "Sponsorship"
                               : "Event"}
                           </Badge>
                         </div>
@@ -625,7 +675,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           );
-        })}
+        }))}
       </div>
     );
   };
