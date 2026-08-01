@@ -47,9 +47,9 @@ export function FeaturedEventSection() {
     } as Event;
   }
 
-  // Use Women Leadership image if it's that event, otherwise use event's image or default
+  // Use Women Leadership banner image if it's that event, otherwise use event's image or default
   const eventImage = featuredEvent.title.toLowerCase().includes("women")
-    ? "https://res.cloudinary.com/duu5rnmeu/image/upload/v1785074258/compressed_under200kb_xagw3m.jpg"
+    ? "https://res.cloudinary.com/duu5rnmeu/image/upload/v1785573421/banner_under130kb_wcouuv.jpg"
     : featuredEvent.imageUrl || "https://res.cloudinary.com/duu5rnmeu/image/upload/v1774472691/tt_esxpym.png";
 
   return (
@@ -61,7 +61,7 @@ export function FeaturedEventSection() {
             <img
               src={eventImage}
               alt={featuredEvent.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
             />
           </div>
 

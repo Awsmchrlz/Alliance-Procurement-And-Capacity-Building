@@ -30,6 +30,12 @@ export function EventCard({
   const [open, setOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
+  // Women's event gets a special wide-format banner on desktop to avoid portrait crop
+  const WOMENS_DESKTOP_BANNER = "https://res.cloudinary.com/duu5rnmeu/image/upload/v1785573421/banner_under130kb_wcouuv.jpg";
+  const isWomensEvent = event.title?.toLowerCase().includes("women in action") ||
+    event.title?.toLowerCase().includes("women in leadership");
+  const desktopImageUrl = isWomensEvent ? WOMENS_DESKTOP_BANNER : event.imageUrl;
+
   const handleRegister = () => {
     setOpen(true);
   };
@@ -275,11 +281,11 @@ export function EventCard({
       <div className="hidden lg:flex min-h-[320px]">
         {/* Portrait Image on Left */}
         {event.imageUrl && (
-          <div className="w-2/5 relative overflow-hidden rounded-l-3xl">
+          <div className={`relative overflow-hidden rounded-l-3xl ${isWomensEvent ? "w-1/2" : "w-2/5"}`}>
             <img
-              src={event.imageUrl}
+              src={desktopImageUrl}
               alt={event.title}
-              className="w-full h-full object-cover"
+              className={`w-full h-full ${isWomensEvent ? "object-cover object-top" : "object-cover"}`}
               data-testid={`event-image-${event.id}`}
             />
             {/* Overlay for better text readability if needed */}
