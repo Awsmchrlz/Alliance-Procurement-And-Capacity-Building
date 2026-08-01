@@ -1754,12 +1754,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { userId } = req.params;
 
-        console.log("🔍 Fetching registrations debug:", {
-          requestedUserId: userId,
-          authUserId: req.supabaseUser.id,
-          authUserEmail: req.supabaseUser.email,
-          userRole: req.supabaseRole,
-        });
+        console.log("🔍 [DASHBOARD] Fetching registrations for userId:", userId);
+        console.log("🔍 [DASHBOARD] Auth user email:", req.supabaseUser?.email);
 
         // Ensure user can only access their own data (unless admin)
         if (
@@ -1771,21 +1767,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const registrations = await storage.getEventRegistrationsByUser(userId);
+        console.log("📋 [DASHBOARD] Standard registrations count:", registrations.length);
 
-        // Fetch the user's details to ensure we have the correct email
-        const userDetails = await storage.getUser(userId);
-        const userEmail = userDetails?.email || req.supabaseUser.email;
+        // Use the auth user email directly - most reliable source
+        const userEmail = req.supabaseUser.email;
         let publicRegistrations: any[] = [];
+        
+        console.log("📧 [DASHBOARD] Looking up public registrations with email:", userEmail);
         
         if (userEmail) {
           const { data, error } = await supabaseAdmin
             .from("public_event_registrations")
-            .select("*")
+            .select(`
+              *,
+              events (
+                id,
+                title,
+                description,
+                start_date,
+                end_date,
+                location,
+                price,
+                image_url,
+                featured
+              )
+            `)
             .ilike("email", userEmail);
             
+          if (error) {
+            console.error("❌ [DASHBOARD] Error fetching public registrations:", error.message);
+          } else {
+            console.log("✅ [DASHBOARD] Public registrations found:", data?.length ?? 0);
+          }
+          
           if (!error && data) {
             publicRegistrations = data.map(pr => {
               const paymentStatusStr = (pr.payment_status || "pending").toLowerCase();
+              // Use the joined event data directly - no need for separate getEvent call
+              const eventData = pr.events ? {
+                id: pr.events.id,
+                title: pr.events.title,
+                description: pr.events.description,
+                startDate: pr.events.start_date,
+                start_date: pr.events.start_date,
+                endDate: pr.events.end_date,
+                location: pr.events.location,
+                price: pr.events.price,
+                imageUrl: pr.events.image_url,
+                featured: pr.events.featured ?? false,
+              } : {
+                id: pr.event_id,
+                title: "Women in Action 2026",
+                startDate: pr.created_at,
+                start_date: pr.created_at,
+                location: "Avani Victoria Falls Resort, Livingstone",
+                featured: true,
+              };
               return {
                 id: pr.id,
                 registrationNumber: pr.registration_number,
@@ -1807,7 +1844,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 accommodationPackage: pr.include_accommodation,
                 boatCruisePackage: pr.include_boat_cruise,
                 isPublicRegistration: true,
-                status: (pr.status || "pending").toLowerCase()
+                status: (pr.status || "pending").toLowerCase(),
+                // Attach the event directly so we don't need another lookup
+                event: eventData,
               };
             });
           }
@@ -1815,33 +1854,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const allRegistrations = [...registrations, ...publicRegistrations];
 
-        console.log("📋 Found registrations:", {
-          userId,
-          count: allRegistrations.length,
-          registrationIds: allRegistrations.map((r) => r.id),
-        });
+        console.log("📋 [DASHBOARD] Total registrations (standard + public):", allRegistrations.length);
 
+        // For standard registrations, fetch event details via supabaseAdmin to bypass RLS
         const registrationsWithEventsUnfiltered = await Promise.all(
           allRegistrations.map(async (registration) => {
-            const event = await storage.getEvent(registration.eventId);
-            if (event) {
-              // Normalize: ensure startDate is always available in camelCase
-              const normalizedEvent = {
-                ...event,
-                startDate: (event as any).startDate || (event as any).start_date || registration.registeredAt || new Date().toISOString(),
-              };
-              return { ...registration, event: normalizedEvent };
+            // Public registrations already have their event data attached
+            if ((registration as any).isPublicRegistration && (registration as any).event) {
+              return registration;
             }
-            // Fallback for archived/missing events
+            // For standard registrations, fetch via supabaseAdmin
+            const { data: eventData, error: eventError } = await supabaseAdmin
+              .from("events")
+              .select("id, title, description, start_date, end_date, location, price, image_url, featured")
+              .eq("id", registration.eventId)
+              .single();
+
+            if (eventError || !eventData) {
+              console.warn("⚠️ [DASHBOARD] Could not find event for registration:", registration.id, "eventId:", registration.eventId);
+              return {
+                ...registration,
+                event: {
+                  id: registration.eventId,
+                  title: "Event",
+                  startDate: registration.registeredAt || new Date().toISOString(),
+                  start_date: registration.registeredAt || new Date().toISOString(),
+                  location: null,
+                  featured: false,
+                }
+              };
+            }
+
             return {
               ...registration,
               event: {
-                id: registration.eventId,
-                title: "Archived Event",
-                startDate: registration.registeredAt || new Date().toISOString(),
-                start_date: registration.registeredAt || new Date().toISOString(),
-                location: null,
-                featured: false,
+                id: eventData.id,
+                title: eventData.title,
+                description: eventData.description,
+                startDate: eventData.start_date,
+                start_date: eventData.start_date,
+                endDate: eventData.end_date,
+                location: eventData.location,
+                price: eventData.price,
+                imageUrl: eventData.image_url,
+                featured: eventData.featured ?? false,
               }
             };
           })

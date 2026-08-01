@@ -116,11 +116,15 @@ export default function Dashboard() {
   } = useQuery({
     queryKey: ["/api/users", user?.id, "exhibitions"],
     queryFn: async () => {
-      const response = await apiRequest(
-        "GET",
-        `/api/users/${user?.id}/exhibitions`,
-      );
-      return response.json();
+      try {
+        const data = await apiRequest(
+          "GET",
+          `/api/users/${user?.id}/exhibitions`,
+        );
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
     },
     enabled: !!user,
     staleTime: 0,
