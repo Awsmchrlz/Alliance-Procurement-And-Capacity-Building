@@ -33,7 +33,7 @@ INSERT INTO events (
   created_at
 ) VALUES (
   gen_random_uuid(),
-  'Women in Leadership and Governance Seminar 2026',
+  'Women in Leadership, Governance & Business Seminar 2026',
   'The Alliance Procurement & Capacity Building Africa Indaba 2026 warmly invites you to the International Conference on Women in Leadership, Governance and Business, taking place 28–30 October 2026 at the breathtaking Avani Victoria Falls Resort, Livingstone, Zambia. Theme: "EMPOWERING WOMEN FOR SUSTAINABLE LEADERSHIP: DRIVING GOVERNANCE AND BUSINESS IN THE 21ST CENTURY". Join us for three transformative days featuring plenary sessions, panel discussions, breakout workshops, networking opportunities with distinguished leaders and policymakers, and capacity building sessions designed to empower women in leadership roles across governance and business sectors.',
   '2026-10-28 08:00:00+00',
   '2026-10-30 18:00:00+00',
