@@ -107,6 +107,7 @@ export const sponsorships = pgTable("sponsorships", {
   eventId: varchar("event_id")
     .notNull()
     .references(() => events.id),
+  userId: varchar("user_id"),
   companyName: text("company_name").notNull(),
   contactPerson: text("contact_person").notNull(),
   email: text("email").notNull(),
@@ -136,6 +137,7 @@ export const exhibitions = pgTable("exhibitions", {
   eventId: varchar("event_id")
     .notNull()
     .references(() => events.id),
+  userId: varchar("user_id"),
   companyName: text("company_name").notNull(),
   contactPerson: text("contact_person").notNull(),
   email: text("email").notNull(),

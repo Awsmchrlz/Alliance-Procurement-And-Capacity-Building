@@ -1287,6 +1287,7 @@ export const storage = {
         .from("sponsorships")
         .insert({
           event_id: sponsorshipData.eventId,
+          user_id: sponsorshipData.userId,
           company_name: sponsorshipData.companyName,
           contact_person: sponsorshipData.contactPerson,
           email: sponsorshipData.email,
@@ -1447,6 +1448,7 @@ export const storage = {
         .from("exhibitions")
         .insert({
           event_id: exhibitionData.eventId,
+          user_id: exhibitionData.userId,
           company_name: exhibitionData.companyName,
           contact_person: exhibitionData.contactPerson,
           email: exhibitionData.email,
@@ -1502,8 +1504,13 @@ export const storage = {
     }
   },
 
-  async getExhibitionsByUserEmail(email: string): Promise<any[]> {
+  async getExhibitionsByUserEmail(email: string, userId?: string): Promise<any[]> {
     try {
+      const orFilters: string[] = [`email.ilike.%${email.trim()}%`];
+      if (userId) {
+        orFilters.push(`user_id.eq.${userId}`);
+      }
+
       const { data, error } = await supabase
         .from("exhibitions")
         .select(
@@ -1518,7 +1525,7 @@ export const storage = {
           )
         `,
         )
-        .eq("email", email)
+        .or(orFilters.join(","))
         .order("submitted_at", { ascending: false });
 
       if (error) {

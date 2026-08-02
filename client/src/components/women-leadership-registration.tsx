@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CheckCircle, ArrowLeft, Users, Globe, Award, Calendar, MapPin } from "lucide-react";
 import { Event } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/lib/supabase";
 
 interface WomenLeadershipRegistrationProps {
   event: Event;
@@ -17,13 +19,13 @@ interface WomenLeadershipRegistrationProps {
 
 type RegistrationType = "local" | "international" | "sponsorship" | null;
 
-// Validation helper
 const validateEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const validatePhone = (phone: string): boolean => phone.trim().length >= 7;
 const validateRequired = (value: string, minLength = 2): boolean => value.trim().length >= minLength;
 
 export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershipRegistrationProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [step, setStep] = useState<"select" | "form" | "success">("select");
   const [registrationType, setRegistrationType] = useState<RegistrationType>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,6 +33,13 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
   const [successData, setSuccessData] = useState<any>(null);
   const [paymentEvidenceFile, setPaymentEvidenceFile] = useState<File | null>(null);
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+
+  // Pre-fill email from logged-in user so dashboard can always find registrations
+  useEffect(() => {
+    if (user?.email && !formData.email) {
+      setFormData((prev: any) => ({ ...prev, email: user.email }));
+    }
+  }, [user]);
 
   // Price calculations
   const calculateLocalPrice = (includeGala: boolean, includeAccommodation: boolean, includeBoatCruise: boolean) => {
@@ -186,9 +195,16 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
         endpoint = "/api/sponsorships/register";
       }
 
+      // Include auth token so server can link registration to user account
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
 

@@ -568,7 +568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("Failed to save registration");
       }
 
-      console.log("✅ Public registration saved:", registration.id);
+
 
       // Send confirmation email (fire-and-forget)
       emailService
@@ -650,7 +650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from("payment-evidence")
         .getPublicUrl(filePath);
 
-      console.log("✅ Payment evidence uploaded:", filePath);
+
       res.status(201).json({ url: publicUrl, filePath });
     } catch (error: any) {
       console.error("Payment evidence upload error:", error);
@@ -693,19 +693,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Event not found" });
       }
 
-      // Create a temporary user entry or use existing user
-      let userId = null;
-      const existingUser = await storage.getUserByEmailOrPhone(email);
-      
-      if (existingUser) {
-        userId = existingUser.id;
-      } else {
-        // For public registrations without user accounts, we'll use email as identifier
-        // Store in public_event_registrations table instead
+      // Try to extract logged-in user's ID from auth header (optional — guests can also register)
+      let authUserId: string | null = null;
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+      if (token) {
+        try {
+          const { data } = await supabaseAdmin.auth.getUser(token);
+          if (data?.user) {
+            authUserId = data.user.id;
+          }
+        } catch {}
       }
 
-      // Store registration details
-      const registrationData = {
+      const registrationData: Record<string, any> = {
         event_id: eventId,
         registration_group: "group1",
         full_name: fullName.trim(),
@@ -729,6 +730,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "pending",
         payment_status: "pending",
         ...(paymentEvidenceUrl ? { payment_evidence: paymentEvidenceUrl } : {}),
+        ...(authUserId ? { user_id: authUserId } : {}),
       };
 
       const { data: registration, error } = await supabaseAdmin
@@ -742,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("Failed to save registration");
       }
 
-      console.log("✅ Women Leadership registration saved:", registration.id);
+
 
       const registrationNumber = registration.registration_number;
 
@@ -905,35 +907,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     authenticateSupabase,
     async (req: any, res) => {
       try {
-        console.log("🔍 Registration Request Debug:", {
-          headers: {
-            authorization: req.headers.authorization ? "Present" : "Missing",
-            contentType: req.headers["content-type"],
-          },
-          body: req.body,
-          authUser: {
-            id: req.supabaseUser?.id,
-            email: req.supabaseUser?.email,
-            role: req.supabaseRole,
-          },
-        });
+
 
         const registrationData = insertEventRegistrationSchema.parse(req.body);
 
-        console.log("🔍 Registration Data Parsed:", {
-          bodyUserId: registrationData.userId,
-          authUserId: req.supabaseUser.id,
-          userEmail: req.supabaseUser.email,
-          eventId: registrationData.eventId,
-          match: registrationData.userId === req.supabaseUser.id,
-        });
+
 
         // Ensure the user is registering themselves
         if (registrationData.userId !== req.supabaseUser.id) {
-          console.log("❌ User ID mismatch:", {
-            provided: registrationData.userId,
-            authenticated: req.supabaseUser.id,
-          });
+
           return res
             .status(403)
             .json({ message: "Can only register for yourself" });
@@ -968,12 +950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasPaid: false,
         });
 
-        console.log("✅ Registration created:", {
-          id: registration.id,
-          userId: registration.userId,
-          registrationNumber: registration.registrationNumber,
-          eventId: registration.eventId,
-        });
+
 
         // Get user and event details for email notifications
         const user = await storage.getUser(registrationData.userId);
@@ -1177,6 +1154,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sponsorships/register", async (req, res) => {
     try {
       const sponsorshipData = req.body;
+      
+      // Try to extract logged-in user's ID from auth header
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+      if (token) {
+        try {
+          const { data } = await supabaseAdmin.auth.getUser(token);
+          if (data?.user) {
+            sponsorshipData.userId = data.user.id;
+          }
+        } catch {}
+      }
 
       // Validate required fields
       if (
@@ -1243,6 +1232,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/exhibitions/register", async (req, res) => {
     try {
       const exhibitionData = req.body;
+      
+      // Try to extract logged-in user's ID from auth header
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+      if (token) {
+        try {
+          const { data } = await supabaseAdmin.auth.getUser(token);
+          if (data?.user) {
+            exhibitionData.userId = data.user.id;
+          }
+        } catch {}
+      }
 
       // Validate required fields
       if (
@@ -1761,14 +1762,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const userEmail = req.supabaseUser.email;
-        if (!userEmail) {
+        if (!userEmail && !userId) {
           return res.json([]);
+        }
+
+        const orFilters: string[] = [`user_id.eq.${userId}`];
+        if (userEmail) {
+          orFilters.push(`email.ilike.%${userEmail.trim()}%`);
         }
 
         const { data, error } = await supabaseAdmin
           .from("sponsorships")
           .select("*")
-          .ilike("email", `%${userEmail.trim()}%`)
+          .or(orFilters.join(","))
           .is("deleted_at", null)
           .order("submitted_at", { ascending: false });
 
@@ -1844,23 +1850,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const registrations = await storage.getEventRegistrationsByUser(userId);
 
-        // Use the auth user email directly - most reliable source
+        // Fetch public registrations by user_id (reliable) OR by email (fallback)
         const userEmail = req.supabaseUser.email;
         let publicRegistrations: any[] = [];
-        
+
+        // Build an OR filter: match by user_id OR by email
+        const orFilters: string[] = [`user_id.eq.${userId}`];
         if (userEmail) {
-          const { data, error } = await supabaseAdmin
-            .from("public_event_registrations")
-            .select("*")
-            .ilike("email", `%${userEmail.trim()}%`);
-            
-          if (error) {
-            console.error("Error fetching public registrations:", error.message);
-          } else {
-          }
-          
-          if (!error && data) {
-            publicRegistrations = data.map(pr => {
+          orFilters.push(`email.ilike.%${userEmail.trim()}%`);
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from("public_event_registrations")
+          .select("*")
+          .or(orFilters.join(","));
+
+        if (error) {
+          console.error("Error fetching public registrations:", error.message);
+        }
+
+        if (!error && data) {
+          // Deduplicate in case user_id AND email match the same rows
+          const seen = new Set<string>();
+          publicRegistrations = data
+            .filter(pr => {
+              if (seen.has(pr.id)) return false;
+              seen.add(pr.id);
+              return true;
+            })
+            .map(pr => {
               const paymentStatusStr = (pr.payment_status || "pending").toLowerCase();
               return {
                 id: pr.id,
@@ -1886,7 +1904,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 status: (pr.status || "pending").toLowerCase()
               };
             });
-          }
         }
 
         const allRegistrations = [...registrations, ...publicRegistrations];
@@ -1966,7 +1983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "User not found" });
         }
 
-        const exhibitions = await storage.getExhibitionsByUserEmail(user.email);
+        const exhibitions = await storage.getExhibitionsByUserEmail(user.email, userId);
         console.log(
           `✅ Exhibitions API: Returned ${exhibitions?.length || 0} exhibitions for user ${userId}`,
         );
