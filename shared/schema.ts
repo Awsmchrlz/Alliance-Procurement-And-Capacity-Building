@@ -333,3 +333,42 @@ export type InsertExhibition = z.infer<typeof insertExhibitionSchema>;
 export type Exhibition = typeof exhibitions.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Document = typeof documents.$inferSelect;
+
+
+// Email Schemas
+export interface EmailRecipient {
+  email: string;
+  name: string;
+}
+
+export interface EmailTemplate {
+  subject: string;
+  htmlContent: string;
+  textContent?: string;
+}
+
+export interface UserRegistrationData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+}
+
+export interface EventRegistrationData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  eventTitle: string;
+  eventDate: string | Date;
+  registrationNumber: string;
+  organization?: string;
+  country?: string;
+}
+
+export interface EventCreationData {
+  eventTitle: string;
+  eventDescription: string;
+  eventDate: string | Date;
+  eventLocation: string;
+  eventPrice: string;
+}

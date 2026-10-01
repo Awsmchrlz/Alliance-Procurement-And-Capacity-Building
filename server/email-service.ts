@@ -1,84 +1,23 @@
-// Email service using direct Brevo API calls
-interface EmailRecipient {
-  email: string;
-  name: string;
-}
-
-interface EmailTemplate {
-  subject: string;
-  htmlContent: string;
-  textContent?: string;
-}
-
-export interface UserRegistrationData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-}
-
-export interface EventRegistrationData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  eventTitle: string;
-  eventDate: string | Date;
-  registrationNumber: string;
-  organization?: string;
-  country?: string;
-}
-
-export interface EventCreationData {
-  eventTitle: string;
-  eventDescription: string;
-  eventDate: string | Date;
-  eventLocation: string;
-  eventPrice: string;
-}
+import nodemailer from "nodemailer";
+// Email service using nodemailer
+import { EmailRecipient, EmailTemplate, UserRegistrationData, EventRegistrationData, EventCreationData } from "../shared/schema";
 
 class EmailService {
-  private readonly apiKey: string;
+  private readonly transporter: any;
   private readonly senderEmail: string;
   private readonly senderName: string;
-  private readonly baseUrl = "https://api.brevo.com/v3";
 
   constructor() {
-    this.apiKey =
-      process.env.BREVO_API_KEY || "";
-    this.senderEmail =
-      process.env.BREVO_SENDER_EMAIL || "noreply@example.com";
-    this.senderName =
-      process.env.BREVO_SENDER_NAME || "Alliance Procurement";
+    this.senderEmail = "globaltrainingalliance@gmail.com";
+    this.senderName = "Alliance Procurement";
 
-    if (!this.apiKey) {
-      throw new Error("BREVO_API_KEY environment variable is required");
-    }
-  }
-
-  /**
-   * Make API request to Brevo
-   */
-  private async makeRequest(endpoint: string, data: any): Promise<any> {
-    try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "api-key": this.apiKey,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Brevo API Error (${response.status}): ${errorText}`);
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error("Brevo API request failed:", error);
-      throw new Error(`Failed to send email: ${error.message}`);
-    }
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: this.senderEmail,
+        pass: "chiq durn sgft emyu",
+      },
+    });
   }
 
   /**
@@ -92,21 +31,21 @@ class EmailService {
     cc?: EmailRecipient[],
     bcc?: EmailRecipient[],
   ): Promise<void> {
-    const emailData = {
-      sender: {
-        email: this.senderEmail,
-        name: this.senderName,
-      },
-      to: to,
-      subject: subject,
-      htmlContent: htmlContent,
-      textContent: textContent,
-      cc: cc,
-      bcc: bcc,
-    };
-
-    const result = await this.makeRequest("/smtp/email", emailData);
-    console.log("📧 Email sent successfully:", result?.messageId || "sent");
+    try {
+      const info = await this.transporter.sendMail({
+        from: `"${this.senderName}" <${this.senderEmail}>`,
+        to: to.map((r) => `"${r.name}" <${r.email}>`).join(', '),
+        cc: cc?.map((r) => `"${r.name}" <${r.email}>`).join(', '),
+        bcc: bcc?.map((r) => `"${r.name}" <${r.email}>`).join(', '),
+        subject: subject,
+        text: textContent,
+        html: htmlContent,
+      });
+      console.log("📧 Email sent successfully:", info.messageId);
+    } catch (error: any) {
+      console.error("Nodemailer request failed:", error);
+      throw new Error(`Failed to send email: ${error.message}`);
+    }
   }
 
   /**

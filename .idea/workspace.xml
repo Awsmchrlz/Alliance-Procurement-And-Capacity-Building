@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="74fd52f0-9761-4bf8-b22d-55dd103c2209" name="Changes" comment="h">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/migrations/003-women-leadership-event.sql" beforeDir="false" afterPath="$PROJECT_DIR$/db/migrations/003-women-leadership-event.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -15,9 +16,33 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Awsmchrlz"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Awsmchrlz/Alliance-Procurement-And-Capacity-Building.git",
+    "accountId": "f0dba6a5-28f7-416f-9bb2-c4f54280317c"
+  }
+}]]></component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 1
+}]]></component>
+  <component name="ProjectId" id="3HNYzCSC9BBdMTYEYisVgYx8kfe" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+    <option name="showVisibilityIcons" value="true" />
+  </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "git-widget-placeholder": "main"
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true"
   }
 }]]></component>
   <component name="TaskManager">
@@ -45,7 +70,30 @@
       <option name="project" value="LOCAL" />
       <updated>1785611342814</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="h">
+      <option name="closed" value="true" />
+      <created>1785654340659</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1785654340659</updated>
+    </task>
+    <task id="LOCAL-00005" summary="h">
+      <option name="closed" value="true" />
+      <created>1785657106692</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1785657106692</updated>
+    </task>
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="74fd52f0-9761-4bf8-b22d-55dd103c2209" name="Changes" comment="h" />
+      <created>1785710254541</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1785710254541</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
