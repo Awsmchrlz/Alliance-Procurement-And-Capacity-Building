@@ -78,7 +78,7 @@ export function ConfirmationModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg mx-4 rounded-3xl border-0 shadow-2xl bg-white overflow-hidden">
+      <DialogContent className="w-[calc(100vw-1rem)] md:w-full sm:max-w-lg rounded-3xl border-0 shadow-2xl bg-white overflow-hidden">
         {/* Custom close button */}
         <button
           onClick={handleCancel}

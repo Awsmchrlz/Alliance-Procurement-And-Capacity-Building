@@ -28,7 +28,7 @@ export function DetailViewModal({
 }: DetailViewModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] p-0 overflow-hidden bg-white">
+      <DialogContent className="w-[calc(100vw-1rem)] md:w-full max-w-2xl max-h-[85vh] p-0 overflow-hidden bg-white">
         <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="text-2xl font-bold text-gray-900">
             {title}

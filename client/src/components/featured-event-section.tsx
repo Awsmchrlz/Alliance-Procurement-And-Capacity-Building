@@ -119,7 +119,7 @@ export function FeaturedEventSection() {
 
       {/* Registration Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-0">
+        <DialogContent className="w-[calc(100vw-1rem)] md:w-full max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-0">
           <div className="sr-only">
             <DialogTitle>Event Registration</DialogTitle>
           </div>

@@ -97,7 +97,7 @@ export function RegistrationSuccessModal({
   return (
     <>
       <Dialog open={open && !showLocationModal} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[85vh] overflow-hidden bg-white border-0 shadow-2xl rounded-2xl p-0">
+        <DialogContent className="w-[calc(100vw-1rem)] md:w-full sm:max-w-xl max-h-[100dvh] sm:max-h-[85vh] overflow-hidden bg-white border-0 shadow-2xl rounded-2xl p-0">
           {/* Success Header */}
           <div className="relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-600" />

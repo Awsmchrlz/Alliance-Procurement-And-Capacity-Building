@@ -39,7 +39,7 @@ interface IndabaModalProps {
 export function ProjectsModal({ open, onOpenChange }: ProjectsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl mx-4 rounded-3xl border-0 shadow-2xl bg-white max-h-[95vh] overflow-hidden">
+      <DialogContent className="w-[calc(100vw-1rem)] md:w-full sm:max-w-4xl rounded-3xl border-0 shadow-2xl bg-white max-h-[100dvh] sm:max-h-[95vh] overflow-hidden flex flex-col">
         {/* Custom close button */}
         <button
           onClick={() => onOpenChange(false)}
@@ -164,7 +164,7 @@ export function ProjectsModal({ open, onOpenChange }: ProjectsModalProps) {
 export function IndabaModal({ open, onOpenChange }: IndabaModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl mx-4 rounded-3xl border-0 shadow-2xl bg-white max-h-[95vh] overflow-hidden">
+      <DialogContent className="w-[calc(100vw-1rem)] md:w-full sm:max-w-4xl rounded-3xl border-0 shadow-2xl bg-white max-h-[100dvh] sm:max-h-[95vh] overflow-hidden flex flex-col">
         {/* Custom close button */}
         <button
           onClick={() => onOpenChange(false)}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -100,16 +101,16 @@ export function PublicEventRegistration({
     if (selectedDelegateType === "local") {
       currency = "ZMW";
       if (formData.localPackage === "standard") total += 10500;
-      else if (formData.localPackage === "no_gala") total += 8500;
-      else if (formData.localPackage === "with_accommodation") total += 24500;
+      else if (formData.localPackage === "no_gala") total += 8300;
+      else if (formData.localPackage === "with_accommodation") total += 23600;
       
       if (formData.includeBoatCruise) total += 1800;
     } else if (selectedDelegateType === "international") {
       currency = "USD";
-      if (formData.internationalPackage === "standard") total += 1750;
+      if (formData.internationalPackage === "standard") total += 1950;
       else if (formData.internationalPackage === "no_accommodation") {
-         total += 985;
-         // Boat cruise included in $985 package
+         total += 950;
+         // Boat cruise included in $950 package
       }
       
       // If standard international and they select boat cruise, we assume it's billed in ZMW converted to USD or billed separately?
@@ -209,6 +210,11 @@ export function PublicEventRegistration({
       return;
     }
 
+    if (!paymentEvidenceFile) {
+      toast({ title: "Please upload proof of payment", variant: "destructive" });
+      return;
+    }
+
     setIsSubmitting(true);
     setIsUploadingEvidence(true);
 
@@ -268,11 +274,19 @@ export function PublicEventRegistration({
         currency: currency,
       };
 
+      // Get session to attach user_id if logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch("/api/events/women-leadership-register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(payload),
       });
 
@@ -548,8 +562,8 @@ export function PublicEventRegistration({
                           </label>
                         </div>
                         <div className="flex flex-col items-end gap-1">
-                          <span className="font-bold text-gray-900">ZMW 8,500</span>
-                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD 425</span>
+                          <span className="font-bold text-gray-900">ZMW 8,300</span>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD 415</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer">
@@ -560,8 +574,8 @@ export function PublicEventRegistration({
                           </label>
                         </div>
                         <div className="flex flex-col items-end gap-1">
-                          <span className="font-bold text-gray-900">ZMW 24,500</span>
-                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD 1,225</span>
+                          <span className="font-bold text-gray-900">ZMW 23,600</span>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD 1,180</span>
                         </div>
                       </div>
                     </div>
@@ -582,8 +596,8 @@ export function PublicEventRegistration({
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1">
-                          <span className="font-bold text-gray-900">USD 1,750</span>
-                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ ZMW 35,000</span>
+                          <span className="font-bold text-gray-900">USD 1,950</span>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ ZMW 39,000</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer">
@@ -597,8 +611,8 @@ export function PublicEventRegistration({
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1">
-                          <span className="font-bold text-gray-900">USD 985</span>
-                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ ZMW 19,700</span>
+                          <span className="font-bold text-gray-900">USD 950</span>
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ ZMW 19,000</span>
                         </div>
                       </div>
                     </div>
@@ -839,7 +853,7 @@ export function PublicEventRegistration({
                 {/* Proof of Payment Upload */}
                 <div className="mt-5 pt-5 border-t border-gray-200">
                   <Label className="text-sm font-semibold text-gray-900 mb-1 block">
-                    Proof of Payment <span className="text-gray-400 font-normal">(Optional)</span>
+                    Proof of Payment <span className="text-red-500">*</span>
                   </Label>
                   <p className="text-xs text-gray-500 mb-3">Attach a bank receipt, screenshot, or PDF. Max 5MB.</p>
                   <label

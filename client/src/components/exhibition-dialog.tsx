@@ -744,7 +744,7 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-4xl h-[95vh] sm:max-h-[90vh] bg-white border-0 shadow-2xl rounded-lg sm:rounded-xl flex flex-col p-0 overflow-hidden">
+      <DialogContent className="w-[calc(100vw-1rem)] md:w-full sm:max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-white border-0 shadow-2xl rounded-xl flex flex-col p-0 overflow-hidden">
         {success ? (
           renderSuccessScreen()
         ) : (

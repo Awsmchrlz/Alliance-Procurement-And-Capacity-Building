@@ -291,7 +291,7 @@ export function AdminDocumentsPanel() {
 
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="sm:max-w-[500px] bg-white">
+        <DialogContent className="w-[calc(100vw-1rem)] md:w-full sm:max-w-[500px] bg-white">
           <DialogHeader>
             <DialogTitle className="text-gray-900">Upload Document</DialogTitle>
             <DialogDescription className="text-gray-600">
