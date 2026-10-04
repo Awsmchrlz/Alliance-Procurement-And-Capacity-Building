@@ -257,17 +257,18 @@ export default function Dashboard() {
       ...r,
       // Normalize the event object so startDate always works regardless of
       // whether data came from the DB as start_date or the schema as startDate
-      event: r.event ? {
-        ...r.event,
-        startDate: r.event.startDate || r.event.start_date || r.registeredAt || new Date().toISOString(),
-      } : null,
-    })).filter((r) => r.event !== null);
-
+      ...(r.event ? {
+        event: {
+          ...r.event,
+          startDate: r.event.startDate || r.event.start_date || r.registeredAt || new Date().toISOString(),
+        }
+      } : {})
+    }));
 
     const activeStatuses = new Set(["pending", "approved", "submitted", "processing"]);
 
     return {
-      paidRegistrations: combined.filter((r) => r.paymentStatus === "paid"),
+      paidRegistrations: combined.filter((r) => r.paymentStatus === "paid" || r.paymentStatus === "completed"),
       pendingRegistrations: combined.filter(
         (r) => activeStatuses.has(r.paymentStatus) || (!r.paymentStatus || r.paymentStatus === ""),
       ),

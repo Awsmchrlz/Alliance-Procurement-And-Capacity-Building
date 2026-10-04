@@ -11,10 +11,12 @@ import { ServicesSection } from "@/components/services-section";
 import { NewsletterSection } from "@/components/newsletter-section";
 import { TestimonialsSection } from "@/components/testimonial-section";
 import { Footer } from "@/components/footer";
+import { SEO } from "@/components/SEO";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="Home" />
       <Header />
       <Navigation />
       <HeroSection />

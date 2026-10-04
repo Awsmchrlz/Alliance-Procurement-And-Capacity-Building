@@ -105,21 +105,25 @@ function Router() {
   );
 }
 
+import { HelmetProvider } from "react-helmet-async";
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-          <WhatsAppFloat
-            phoneNumber="+260 571354125"
-            message="Hello! I'd like to know more about Alliance Procurement and Capacity Building services."
-            showTooltip={true}
-          />
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+            <WhatsAppFloat
+              phoneNumber="+260 571354125"
+              message="Hello! I'd like to know more about Alliance Procurement and Capacity Building services."
+              showTooltip={true}
+            />
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 
