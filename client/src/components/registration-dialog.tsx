@@ -459,18 +459,6 @@ function RegistrationDialog({
         }
       }
 
-      // If payment method is mobile or bank, require evidence
-      if (
-        (formData.paymentMethod === "mobile" ||
-          formData.paymentMethod === "bank") &&
-        !evidenceFile
-      ) {
-        return {
-          isValid: false,
-          message: "Please upload payment evidence",
-          field: "evidenceFile",
-        };
-      }
     }
 
     return { isValid: true };
@@ -1523,7 +1511,7 @@ function RegistrationDialog({
                           <Label className="text-sm font-medium text-gray-700">
                             {formData.paymentMethod === "group_payment"
                               ? "Group Payment Evidence (Optional)"
-                              : "Proof of Payment"}
+                              : "Proof of Payment (Optional)"}
                           </Label>
                           {evidenceFile && (
                             <button

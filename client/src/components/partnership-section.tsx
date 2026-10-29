@@ -110,7 +110,6 @@ const EXHIBITION_PACKAGES = [
   {
     id: "exhibitor_institutional",
     name: "Institutional Exhibitor",
-    priceUSD: 1750,
     priceZMW: 35000,
     icon: Store,
     color: "from-red-600 via-red-700 to-red-800",
@@ -124,7 +123,6 @@ const EXHIBITION_PACKAGES = [
   {
     id: "exhibitor_individual",
     name: "Individual Exhibitor",
-    priceUSD: 645,
     priceZMW: 12850,
     icon: Store,
     color: "from-blue-600 via-blue-700 to-blue-800",
@@ -486,14 +484,7 @@ export function PartnershipSection({
                   {/* Price Display */}
                   <div className="mb-4 flex flex-col gap-1">
                     <div className="text-2xl font-bold text-primary-blue">
-                      {currencyType === "local" 
-                        ? `ZMW ${pkg.priceZMW.toLocaleString()}` 
-                        : `USD ${pkg.priceUSD.toLocaleString()}`}
-                    </div>
-                    <div className="text-sm font-semibold text-gray-500 bg-gray-100 py-1 px-2 rounded-md w-fit">
-                      {currencyType === "local" 
-                        ? `USD ${pkg.priceUSD.toLocaleString()}` 
-                        : `ZMW ${pkg.priceZMW.toLocaleString()}`}
+                      ZMW {pkg.priceZMW.toLocaleString()}
                     </div>
                   </div>
 

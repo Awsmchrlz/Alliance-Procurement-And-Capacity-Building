@@ -258,15 +258,6 @@ export function SponsorshipDialog({
     if (step === 3) {
       if (!formData.paymentMethod)
         return { isValid: false, message: "Please select a payment method" };
-
-      // If payment method is mobile or bank, require evidence
-      if (
-        (formData.paymentMethod === "mobile" ||
-          formData.paymentMethod === "bank") &&
-        !evidenceFile
-      ) {
-        return { isValid: false, message: "Please upload payment evidence" };
-      }
     }
 
     return { isValid: true };
@@ -996,7 +987,7 @@ export function SponsorshipDialog({
         formData.paymentMethod === "bank") && (
         <div className="space-y-3">
           <Label className="text-sm font-medium text-gray-700">
-            Payment Evidence <span className="text-red-500">*</span>
+            Payment Evidence <span className="text-xs font-normal text-gray-500">(Optional)</span>
           </Label>
           <div
             className={`border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 ${

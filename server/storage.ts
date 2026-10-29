@@ -1297,7 +1297,7 @@ export const storage = {
           sponsorship_level: sponsorshipData.sponsorshipLevel,
           amount: sponsorshipData.amount,
           currency: sponsorshipData.currency || "USD",
-          payment_evidence: sponsorshipData.paymentEvidence,
+          payment_evidence: sponsorshipData.paymentEvidence || sponsorshipData.paymentEvidenceUrl || null,
           special_requirements: sponsorshipData.specialRequirements,
           marketing_materials: sponsorshipData.marketingMaterials,
           notes: sponsorshipData.notes,

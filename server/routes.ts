@@ -687,9 +687,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
-      if (!paymentEvidenceUrl) {
-        return res.status(400).json({ message: "Proof of payment is required" });
-      }
 
       // Check if event exists
       const event = await storage.getEvent(eventId);
@@ -1183,9 +1180,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
-      if (!sponsorshipData.paymentEvidenceUrl) {
-        return res.status(400).json({ message: "Proof of payment is required" });
-      }
 
       // Check if event exists
       const event = await storage.getEvent(sponsorshipData.eventId);

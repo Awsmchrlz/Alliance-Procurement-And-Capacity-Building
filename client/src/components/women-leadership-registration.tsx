@@ -74,10 +74,6 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
       return;
     }
 
-    // Type-specific validation
-    if (!paymentEvidenceFile) {
-      return toast({ title: "Proof of Payment Required", description: "Please attach a proof of payment to proceed.", variant: "destructive" });
-    }
 
     if (registrationType === "local") {
       if (!validateRequired(formData.fullName)) return toast({ title: "Full name is required", variant: "destructive" });
@@ -792,9 +788,9 @@ export function WomenLeadershipRegistration({ event, onSuccess }: WomenLeadershi
               {/* Proof of Payment Upload */}
               <div className="mt-5 pt-5 border-t border-gray-200">
                 <Label className="text-sm font-semibold text-gray-900 mb-1 block">
-                  Proof of Payment <span className="text-red-500">*</span>
+                  Proof of Payment <span className="text-xs font-normal text-gray-500">(Optional)</span>
                 </Label>
-                <p className="text-xs text-gray-500 mb-3">Attach a bank receipt, screenshot, or PDF. Max 5MB.</p>
+                <p className="text-xs text-gray-500 mb-3">Attach a bank receipt, screenshot, or PDF. You can also upload this later. Max 5MB.</p>
                 <label
                   htmlFor="payment-evidence"
                   className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${

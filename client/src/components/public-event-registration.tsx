@@ -210,16 +210,11 @@ export function PublicEventRegistration({
       return;
     }
 
-    if (!paymentEvidenceFile) {
-      toast({ title: "Please upload proof of payment", variant: "destructive" });
-      return;
-    }
-
     setIsSubmitting(true);
-    setIsUploadingEvidence(true);
 
     let paymentEvidenceUrl: string | null = null;
     if (paymentEvidenceFile) {
+      setIsUploadingEvidence(true);
       try {
         const uploadForm = new FormData();
         uploadForm.append("file", paymentEvidenceFile);
@@ -237,9 +232,10 @@ export function PublicEventRegistration({
         setIsSubmitting(false);
         toast({ title: "Upload Failed", description: "Could not upload payment evidence.", variant: "destructive" });
         return;
+      } finally {
+        setIsUploadingEvidence(false);
       }
     }
-    setIsUploadingEvidence(false);
 
     const { price, currency } = calculateTotal();
     const includeGala = 
@@ -627,8 +623,8 @@ export function PublicEventRegistration({
                         { id: "gold", label: "Gold Sponsor", priceZMW: "100,000", priceUSD: "5,000" },
                         { id: "silver", label: "Silver Sponsor", priceZMW: "50,000", priceUSD: "2,500" },
                         { id: "bronze", label: "Bronze Sponsor", priceZMW: "30,000", priceUSD: "1,500" },
-                        { id: "exhibitor_institutional", label: "Institutional Exhibitor", priceZMW: "35,000", priceUSD: "1,750" },
-                        { id: "exhibitor_individual", label: "Individual Exhibitor", priceZMW: "12,850", priceUSD: "645" },
+                        { id: "exhibitor_institutional", label: "Institutional Exhibitor", priceZMW: "35,000" },
+                        { id: "exhibitor_individual", label: "Individual Exhibitor", priceZMW: "12,850" },
                       ].map((pkg) => (
                         <div key={pkg.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer">
                           <div className="flex items-center space-x-3">
@@ -639,7 +635,9 @@ export function PublicEventRegistration({
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             <span className="font-bold text-gray-900">ZMW {pkg.priceZMW}</span>
-                            <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD {pkg.priceUSD}</span>
+                            {pkg.priceUSD ? (
+                              <span className="text-xs font-semibold text-gray-500 bg-gray-100 py-0.5 px-2 rounded-md">~ USD {pkg.priceUSD}</span>
+                            ) : null}
                           </div>
                         </div>
                       ))}
@@ -853,9 +851,9 @@ export function PublicEventRegistration({
                 {/* Proof of Payment Upload */}
                 <div className="mt-5 pt-5 border-t border-gray-200">
                   <Label className="text-sm font-semibold text-gray-900 mb-1 block">
-                    Proof of Payment <span className="text-red-500">*</span>
+                    Proof of Payment <span className="text-xs font-normal text-gray-500">(Optional)</span>
                   </Label>
-                  <p className="text-xs text-gray-500 mb-3">Attach a bank receipt, screenshot, or PDF. Max 5MB.</p>
+                  <p className="text-xs text-gray-500 mb-3">Attach a bank receipt, screenshot, or PDF. You can also upload this later. Max 5MB.</p>
                   <label
                     htmlFor="payment-evidence"
                     className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${

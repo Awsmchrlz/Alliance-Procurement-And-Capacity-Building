@@ -41,7 +41,6 @@ interface FormDataType {
 const EXHIBITION_PACKAGES = {
   institutional: {
     name: "Institutional Exhibitor",
-    priceUSD: 1750,
     priceZMW: 35000,
     benefits: [
       "Booth at exhibition space.",
@@ -50,7 +49,6 @@ const EXHIBITION_PACKAGES = {
   },
   individual: {
     name: "Individual Exhibitor",
-    priceUSD: 645,
     priceZMW: 12850,
     benefits: [
       "Booth at exhibition space.",
@@ -150,11 +148,6 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
 
     if (step === 3) {
       if (!formData.paymentMethod) return { isValid: false, message: 'Please select a payment method' };
-      
-      // If payment method is mobile or bank, require evidence
-      if ((formData.paymentMethod === 'mobile' || formData.paymentMethod === 'bank') && !evidenceFile) {
-        return { isValid: false, message: 'Please upload payment evidence' };
-      }
     }
 
     return { isValid: true };
@@ -232,8 +225,8 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
         phoneNumber: formData.phoneNumber.trim(),
         website: formData.website.trim() || null,
         boothSize: 'standard',
-        amount: formData.exhibitorType === 'institutional' ? EXHIBITION_PACKAGES.institutional.priceUSD : EXHIBITION_PACKAGES.individual.priceUSD,
-        currency: 'USD',
+        amount: formData.exhibitorType === 'institutional' ? EXHIBITION_PACKAGES.institutional.priceZMW : EXHIBITION_PACKAGES.individual.priceZMW,
+        currency: 'ZMW',
         paymentMethod: formData.paymentMethod,
         paymentEvidence: evidenceUrl,
         productsServices: formData.productsServices.trim() || null,
@@ -452,8 +445,8 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
           className="w-full h-12 sm:h-11 px-4 text-base sm:text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all bg-white"
         >
           <option value="">Select a package...</option>
-          <option value="institutional">{EXHIBITION_PACKAGES.institutional.name} - USD {EXHIBITION_PACKAGES.institutional.priceUSD}</option>
-          <option value="individual">{EXHIBITION_PACKAGES.individual.name} - USD {EXHIBITION_PACKAGES.individual.priceUSD}</option>
+          <option value="institutional">{EXHIBITION_PACKAGES.institutional.name} - ZMW {EXHIBITION_PACKAGES.institutional.priceZMW.toLocaleString()}</option>
+          <option value="individual">{EXHIBITION_PACKAGES.individual.name} - ZMW {EXHIBITION_PACKAGES.individual.priceZMW.toLocaleString()}</option>
         </select>
       </div>
 
@@ -506,7 +499,7 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
               <div>
                 <h4 className="font-semibold text-gray-900">{currentPackage?.name}</h4>
                 <p className="text-2xl font-bold text-red-600">
-                  USD {currentPackage?.priceUSD.toLocaleString()}
+                  ZMW {currentPackage?.priceZMW.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -526,7 +519,7 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
         <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
           <h4 className="font-semibold text-green-800 mb-2">Ready to Submit</h4>
           <p className="text-sm text-green-700">
-            You've selected the <strong>{currentPackage?.name}</strong> for <strong>USD {currentPackage?.priceUSD.toLocaleString()}</strong>. 
+            You've selected the <strong>{currentPackage?.name}</strong> for <strong>ZMW {currentPackage?.priceZMW.toLocaleString()}</strong>. 
             Click "Next Step" to proceed with payment information.
           </p>
         </div>
@@ -552,7 +545,7 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
             <div>
               <h4 className="font-semibold text-gray-900">{currentPackage?.name || "Exhibition Package"}</h4>
               <p className="text-lg font-bold text-red-700">
-                USD {currentPackage?.priceUSD.toLocaleString() || "0"}
+                ZMW {currentPackage?.priceZMW.toLocaleString() || "0"}
               </p>
             </div>
           </div>
@@ -562,13 +555,13 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
             <div className="flex justify-between items-center py-2 border-b border-gray-200">
               <span className="text-sm text-gray-700">{currentPackage?.name || "Package"}</span>
               <span className="font-semibold text-gray-900">
-                USD {currentPackage?.priceUSD.toLocaleString() || "0"}
+                ZMW {currentPackage?.priceZMW.toLocaleString() || "0"}
               </span>
             </div>
             <div className="flex justify-between items-center pt-3 mt-1">
               <span className="font-bold text-gray-900">Total</span>
               <span className="font-bold text-red-600 text-lg">
-                USD {currentPackage?.priceUSD.toLocaleString() || "0"}
+                ZMW {currentPackage?.priceZMW.toLocaleString() || "0"}
               </span>
             </div>
           </div>
@@ -633,40 +626,20 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
         {/* Bank Transfer Details */}
         {formData.paymentMethod === 'bank' && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <h4 className="font-medium text-sm text-red-800 mb-3">Bank Transfer Details</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* USD Account */}
-              <div className="bg-white p-4 rounded-lg border border-red-200 shadow-sm">
-                <div className="text-center mb-3">
-                  <div className="text-sm text-gray-500 mb-1">Call (Global) Account Dollar (USD)</div>
-                  <div className="flex items-center justify-center bg-red-100 p-2 rounded">
-                    <span className="text-sm font-mono font-bold text-red-800">63136717006</span>
-                  </div>
-                </div>
-                <div className="space-y-2 text-xs">
-                  <div><span className="font-medium">Bank:</span> FNB</div>
-                  <div><span className="font-medium">Branch:</span> Makeni Junction</div>
-                  <div><span className="font-medium">Swift:</span> FIRNZMLX</div>
-                  <div><span className="font-medium">Sort Code:</span> 260016</div>
-                  <div><span className="font-medium">Name:</span> Alliance Procurement and Capacity Building Foundation</div>
+            <h4 className="font-medium text-sm text-red-800 mb-3">Bank Transfer Details (Kwacha - ZMW)</h4>
+            <div className="bg-white p-4 rounded-lg border border-red-200 shadow-sm max-w-md mx-auto">
+              <div className="text-center mb-3">
+                <div className="text-sm text-gray-500 mb-1">SME Account Kwacha (ZMW)</div>
+                <div className="flex items-center justify-center bg-red-100 p-2 rounded">
+                  <span className="text-sm font-mono font-bold text-red-800">63136716785</span>
                 </div>
               </div>
-
-              {/* ZMW Account */}
-              <div className="bg-white p-4 rounded-lg border border-red-200 shadow-sm">
-                <div className="text-center mb-3">
-                  <div className="text-sm text-gray-500 mb-1">SME Account Kwacha (ZMW)</div>
-                  <div className="flex items-center justify-center bg-red-100 p-2 rounded">
-                    <span className="text-sm font-mono font-bold text-red-800">63136716785</span>
-                  </div>
-                </div>
-                <div className="space-y-2 text-xs">
-                  <div><span className="font-medium">Bank:</span> FNB</div>
-                  <div><span className="font-medium">Branch:</span> Makeni Junction</div>
-                  <div><span className="font-medium">Swift:</span> FIRNZMLX</div>
-                  <div><span className="font-medium">Sort Code:</span> 260016</div>
-                  <div><span className="font-medium">Name:</span> Alliance Procurement and Capacity Building Foundation</div>
-                </div>
+              <div className="space-y-2 text-xs">
+                <div><span className="font-medium">Bank:</span> FNB</div>
+                <div><span className="font-medium">Branch:</span> Makeni Junction</div>
+                <div><span className="font-medium">Swift:</span> FIRNZMLX</div>
+                <div><span className="font-medium">Sort Code:</span> 260016</div>
+                <div><span className="font-medium">Name:</span> Alliance Procurement and Capacity Building Foundation</div>
               </div>
             </div>
           </div>
@@ -685,7 +658,7 @@ export function ExhibitionDialog({ event, open, onOpenChange, onSuccess }: Exhib
         {/* Payment Evidence Upload */}
         {(formData.paymentMethod === 'mobile' || formData.paymentMethod === 'bank') && (
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-gray-700">Payment Evidence</Label>
+            <Label className="text-sm font-medium text-gray-700">Payment Evidence <span className="text-xs font-normal text-gray-500">(Optional)</span></Label>
             <div className="border-2 border-dashed border-red-300 rounded-lg p-4 text-center hover:border-red-400 transition-colors">
               <input
                 type="file"
