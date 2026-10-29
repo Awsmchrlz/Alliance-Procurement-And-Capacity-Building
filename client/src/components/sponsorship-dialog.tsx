@@ -133,7 +133,7 @@ const INITIAL_FORM_DATA: FormDataType = {
   website: "",
   sponsorshipLevel: "",
   paymentMethod: "",
-  paymentCurrency: "USD",
+  paymentCurrency: "ZMW", // Default to ZMW (change to "USD" if restoring USD pricing)
   additionalInfo: "",
 };
 
@@ -336,11 +336,15 @@ export function SponsorshipDialog({
         phoneNumber: formData.phoneNumber.trim(),
         website: formData.website.trim() || null,
         sponsorshipLevel: formData.sponsorshipLevel,
+        amount: selectedLevel?.priceZMW || 0,
+        currency: "ZMW",
+        /* USD pricing commented out - uncomment below to restore USD:
         amount:
           formData.paymentCurrency === "ZMW"
             ? selectedLevel?.priceZMW || 0
             : selectedLevel?.priceUSD || 0,
         currency: formData.paymentCurrency,
+        */
         paymentMethod: formData.paymentMethod,
         paymentEvidence: evidenceUrl,
         notes: formData.additionalInfo.trim() || null,
@@ -620,7 +624,7 @@ export function SponsorshipDialog({
           </div>
         )}
 
-        {/* Currency Toggle */}
+        {/* Currency Toggle - commented out while all packages are in Kwacha (ZMW). Uncomment to restore USD toggle:
         <div className="bg-white rounded-full p-1 shadow-lg border border-gray-200">
           <div className="flex items-center">
             <button
@@ -661,6 +665,7 @@ export function SponsorshipDialog({
             </button>
           </div>
         </div>
+        */}
       </div>
 
       <div className="grid grid-cols-1 gap-4">
@@ -684,9 +689,12 @@ export function SponsorshipDialog({
                 <div>
                   <h4 className="font-semibold text-gray-900">{level.name}</h4>
                   <p className="text-2xl font-bold text-[#1C356B]">
-                    {formData.paymentCurrency === "ZMW"
+                    ZMW {level.priceZMW.toLocaleString()}
+                    {/* USD pricing display commented out:
+                    formData.paymentCurrency === "ZMW"
                       ? `ZMW ${level.priceZMW.toLocaleString()}`
-                      : `USD ${level.priceUSD.toLocaleString()}`}
+                      : `USD ${level.priceUSD.toLocaleString()}`
+                    */}
                   </p>
                 </div>
               </div>
@@ -770,9 +778,12 @@ export function SponsorshipDialog({
               You've selected the <strong>{selectedLevel.name}</strong> package
               for{" "}
               <strong>
-                {formData.paymentCurrency === "ZMW"
+                ZMW {selectedLevel.priceZMW.toLocaleString()}
+                {/* USD pricing display commented out:
+                formData.paymentCurrency === "ZMW"
                   ? `ZMW ${selectedLevel.priceZMW.toLocaleString()}`
-                  : `USD ${selectedLevel.priceUSD.toLocaleString()}`}
+                  : `USD ${selectedLevel.priceUSD.toLocaleString()}`
+                */}
               </strong>
               . Click "Submit Application" to send your sponsorship request to
               our team.
@@ -802,9 +813,12 @@ export function SponsorshipDialog({
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-700">{selectedLevel.name}</span>
             <span className="font-bold text-lg text-[#1C356B] bg-white px-3 py-1 rounded shadow-sm">
-              {formData.paymentCurrency === "ZMW"
+              ZMW {selectedLevel.priceZMW.toLocaleString()}
+              {/* USD pricing display commented out:
+              formData.paymentCurrency === "ZMW"
                 ? `ZMW ${selectedLevel.priceZMW.toLocaleString()}`
-                : `USD ${selectedLevel.priceUSD.toLocaleString()}`}
+                : `USD ${selectedLevel.priceUSD.toLocaleString()}`
+              */}
             </span>
           </div>
         </div>
@@ -880,11 +894,11 @@ export function SponsorshipDialog({
       {formData.paymentMethod === "bank" && (
         <div className="p-4 bg-[#87CEEB]/5 border border-[#87CEEB]/20 rounded-lg">
           <h4 className="font-medium text-sm text-[#1C356B] mb-3">
-            Bank Transfer Details
+            Bank Transfer Details (Kwacha - ZMW)
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* USD Account */}
-            <div className="bg-white p-4 rounded-lg border border-[#87CEEB]/20 shadow-sm">
+          <div className="max-w-md mx-auto">
+            {/* USD Account - commented out while all packages are in Kwacha (ZMW). Uncomment to restore USD:
+            <div className="bg-white p-4 rounded-lg border border-[#87CEEB]/20 shadow-sm mb-4">
               <div className="text-center mb-3">
                 <div className="text-sm text-gray-500 mb-1">
                   Call (Global) Account Dollar (USD)
@@ -896,24 +910,14 @@ export function SponsorshipDialog({
                 </div>
               </div>
               <div className="space-y-2 text-xs">
-                <div>
-                  <span className="font-medium">Bank:</span> FNB
-                </div>
-                <div>
-                  <span className="font-medium">Branch:</span> Makeni Junction
-                </div>
-                <div>
-                  <span className="font-medium">Swift:</span> FIRNZMLX
-                </div>
-                <div>
-                  <span className="font-medium">Sort Code:</span> 260016
-                </div>
-                <div>
-                  <span className="font-medium">Name:</span> Alliance
-                  Procurement and Capacity Building Foundation
-                </div>
+                <div><span className="font-medium">Bank:</span> FNB</div>
+                <div><span className="font-medium">Branch:</span> Makeni Junction</div>
+                <div><span className="font-medium">Swift:</span> FIRNZMLX</div>
+                <div><span className="font-medium">Sort Code:</span> 260016</div>
+                <div><span className="font-medium">Name:</span> Alliance Procurement and Capacity Building Foundation</div>
               </div>
             </div>
+            */}
 
             {/* ZMW Account */}
             <div className="bg-white p-4 rounded-lg border border-[#87CEEB]/20 shadow-sm">

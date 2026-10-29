@@ -619,10 +619,10 @@ export function PublicEventRegistration({
                   <RadioGroup value={formData.sponsorshipPackage} onValueChange={(value) => updateField("sponsorshipPackage", value as SponsorshipPackage)}>
                     <div className="space-y-3">
                       {[
-                        { id: "platinum", label: "Platinum Sponsor", priceZMW: "250,000", priceUSD: "12,500" },
-                        { id: "gold", label: "Gold Sponsor", priceZMW: "100,000", priceUSD: "5,000" },
-                        { id: "silver", label: "Silver Sponsor", priceZMW: "50,000", priceUSD: "2,500" },
-                        { id: "bronze", label: "Bronze Sponsor", priceZMW: "30,000", priceUSD: "1,500" },
+                        { id: "platinum", label: "Platinum Sponsor", priceZMW: "250,000" /* , priceUSD: "12,500" */ },
+                        { id: "gold", label: "Gold Sponsor", priceZMW: "100,000" /* , priceUSD: "5,000" */ },
+                        { id: "silver", label: "Silver Sponsor", priceZMW: "50,000" /* , priceUSD: "2,500" */ },
+                        { id: "bronze", label: "Bronze Sponsor", priceZMW: "30,000" /* , priceUSD: "1,500" */ },
                         { id: "exhibitor_institutional", label: "Institutional Exhibitor", priceZMW: "35,000" },
                         { id: "exhibitor_individual", label: "Individual Exhibitor", priceZMW: "12,850" },
                       ].map((pkg) => (

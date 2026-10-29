@@ -234,7 +234,7 @@ export function PartnershipSection({
               </div>
             )}
 
-            {/* Currency Toggle */}
+            {/* Currency Toggle - commented out while all packages are in Kwacha (ZMW). Uncomment to restore USD toggle:
             <div className="bg-white rounded-full p-1 shadow-lg border border-gray-200">
               <div className="flex items-center">
                 <button
@@ -273,6 +273,7 @@ export function PartnershipSection({
                 </button>
               </div>
             </div>
+            */}
           </div>
         </div>
 
@@ -349,15 +350,15 @@ export function PartnershipSection({
                     {/* Price Display */}
                     <div className="mb-4 flex flex-col gap-1">
                       <div className="text-2xl font-bold text-primary-blue">
-                        {currencyType === "local" 
-                          ? `ZMW ${pkg.priceZMW.toLocaleString()}` 
-                          : `USD ${pkg.priceUSD.toLocaleString()}`}
+                        ZMW {pkg.priceZMW.toLocaleString()}
                       </div>
+                      {/* USD pricing display commented out - uncomment below to restore USD dual-currency:
                       <div className="text-sm font-semibold text-gray-500 bg-gray-100 py-1 px-2 rounded-md w-fit">
                         {currencyType === "local" 
                           ? `USD ${pkg.priceUSD.toLocaleString()}` 
                           : `ZMW ${pkg.priceZMW.toLocaleString()}`}
                       </div>
+                      */}
                     </div>
 
                     {/* Benefits */}
